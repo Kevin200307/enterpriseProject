@@ -1,0 +1,173 @@
+x-defaults: &defaults
+  restart: unless-stopped
+  networks:
+    - swiftdrop
+  mem_limit: 384m
+
+services:
+  # ---------------------------------------------------------------------
+  # Local infrastructure — Postgres is NOT here, each service's database
+  # lives in Neon (see infra/.env.example). Only Redis and RabbitMQ run
+  # locally since they're shared, in-memory/queueing infra.
+  # ---------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    command: redis-server --requirepass ${REDIS_PASSWORD}
+    restart: unless-stopped
+    networks:
+      - swiftdrop
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "--no-auth-warning", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    restart: unless-stopped
+    networks:
+      - swiftdrop
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USERNAME}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+    ports:
+      - "${RABBITMQ_MANAGEMENT_HOST_PORT:-15673}:15672" # management UI
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ---------------------------------------------------------------------
+  # Application services
+  # ---------------------------------------------------------------------
+  gateway:
+    <<: *defaults
+    build: ../services/gateway
+    ports:
+      - "${GATEWAY_HOST_PORT}:8080"
+    environment:
+      JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=75
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD}
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  ai-assistant-service:
+    <<: *defaults
+    mem_limit: 512m
+    build: ../services/ai-assistant-service
+    environment:
+      JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=75
+      SPRING_AI_OPENAI_API_KEY: ${OPENAI_API_KEY}
+
+  dispatch-service:
+    <<: *defaults
+    build: ../services/dispatch-service
+    environment:
+      JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=75
+      SPRING_DATASOURCE_URL: ${DISPATCH_DB_URL}
+      SPRING_DATASOURCE_USERNAME: ${DISPATCH_DB_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${DISPATCH_DB_PASSWORD}
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USERNAME}
+      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+  identity-service:
+    <<: *defaults
+    build: ../services/identity-service
+    environment:
+      JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=75
+      SPRING_DATASOURCE_URL: ${IDENTITY_DB_URL}
+      SPRING_DATASOURCE_USERNAME: ${IDENTITY_DB_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${IDENTITY_DB_PASSWORD}
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD}
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  merchant-service:
+    <<: *defaults
+    build: ../services/merchant-service
+    environment:
+      JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=75
+      SPRING_DATASOURCE_URL: ${MERCHANT_DB_URL}
+      SPRING_DATASOURCE_USERNAME: ${MERCHANT_DB_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${MERCHANT_DB_PASSWORD}
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USERNAME}
+      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+  notification-service:
+    <<: *defaults
+    build: ../services/notification-service
+    environment:
+      JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=75
+      SPRING_DATASOURCE_URL: ${NOTIFICATION_DB_URL}
+      SPRING_DATASOURCE_USERNAME: ${NOTIFICATION_DB_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${NOTIFICATION_DB_PASSWORD}
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USERNAME}
+      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+  parcel-service:
+    <<: *defaults
+    build: ../services/parcel-service
+    environment:
+      JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=75
+      SPRING_DATASOURCE_URL: ${PARCEL_DB_URL}
+      SPRING_DATASOURCE_USERNAME: ${PARCEL_DB_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${PARCEL_DB_PASSWORD}
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USERNAME}
+      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+  pricing-service:
+    <<: *defaults
+    build: ../services/pricing-service
+    environment:
+      JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=75
+      SPRING_DATASOURCE_URL: ${PRICING_DB_URL}
+      SPRING_DATASOURCE_USERNAME: ${PRICING_DB_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${PRICING_DB_PASSWORD}
+
+  tracking-service:
+    <<: *defaults
+    build: ../services/tracking-service
+    environment:
+      JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=75
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD}
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USERNAME}
+      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+    depends_on:
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+networks:
+  swiftdrop:
+
+volumes:
+  redis-data:
+  rabbitmq-data:
