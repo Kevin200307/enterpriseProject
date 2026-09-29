@@ -1,0 +1,15 @@
+{
+  "eventId": "3f1c2b9e-8a4d-4c6e-9b1a-2d7e5f0c1a23",
+  "eventType": "parcel.status.changed",
+  "version": 1,
+  "occurredAt": "2026-09-29T10:15:30Z",
+  "producer": "parcel-service",
+  "payload": {
+    "parcelId": "b6a4e1d2-5c3f-4a8b-9e7d-1f2a3b4c5d6e",
+    "trackingNumber": "SD-4F7K2Q9M",
+    "fromStatus": "PICKED_UP",
+    "toStatus": "IN_TRANSIT",
+    "actorId": "c9d8e7f6-a5b4-4c3d-8e2f-1a0b9c8d7e6f",
+    "merchantId": null
+  }
+}
