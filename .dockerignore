@@ -1,0 +1,11 @@
+.git
+**/target
+**/node_modules
+**/.idea
+**/.vscode
+**/*.iml
+**/.mvn/wrapper/maven-wrapper.jar
+**/.env
+apps
+infra
+docs

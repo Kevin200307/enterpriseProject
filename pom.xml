@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<!--
+	  Aggregator only: groups the builds so the shared contracts are built before the services.
+	  It is not the modules' parent; each service keeps spring-boot-starter-parent.
+	  Build one service plus what it needs:  ./mvnw -pl services/parcel-service -am package
+	-->
+	<groupId>lk.ac.mrt.swiftdrop</groupId>
+	<artifactId>swiftdrop</artifactId>
+	<version>0.1.0</version>
+	<packaging>pom</packaging>
+
+	<modules>
+		<module>packages/common</module>
+		<module>services/gateway</module>
+		<module>services/ai-assistant-service</module>
+		<module>services/dispatch-service</module>
+		<module>services/identity-service</module>
+		<module>services/merchant-service</module>
+		<module>services/notification-service</module>
+		<module>services/parcel-service</module>
+		<module>services/pricing-service</module>
+		<module>services/tracking-service</module>
+	</modules>
+</project>

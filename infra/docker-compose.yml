@@ -47,7 +47,9 @@ services:
   # ---------------------------------------------------------------------
   gateway:
     <<: *defaults
-    build: ../services/gateway
+    build:
+      context: ..
+      dockerfile: services/gateway/Dockerfile
     ports:
       - "${GATEWAY_HOST_PORT}:8080"
     environment:
@@ -61,14 +63,18 @@ services:
   ai-assistant-service:
     <<: *defaults
     mem_limit: 512m
-    build: ../services/ai-assistant-service
+    build:
+      context: ..
+      dockerfile: services/ai-assistant-service/Dockerfile
     environment:
       JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=75
       SPRING_AI_OPENAI_API_KEY: ${OPENAI_API_KEY}
 
   dispatch-service:
     <<: *defaults
-    build: ../services/dispatch-service
+    build:
+      context: ..
+      dockerfile: services/dispatch-service/Dockerfile
     environment:
       JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=75
       SPRING_DATASOURCE_URL: ${DISPATCH_DB_URL}
@@ -83,7 +89,9 @@ services:
 
   identity-service:
     <<: *defaults
-    build: ../services/identity-service
+    build:
+      context: ..
+      dockerfile: services/identity-service/Dockerfile
     environment:
       JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=75
       SPRING_DATASOURCE_URL: ${IDENTITY_DB_URL}
@@ -97,7 +105,9 @@ services:
 
   merchant-service:
     <<: *defaults
-    build: ../services/merchant-service
+    build:
+      context: ..
+      dockerfile: services/merchant-service/Dockerfile
     environment:
       JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=75
       SPRING_DATASOURCE_URL: ${MERCHANT_DB_URL}
@@ -112,7 +122,9 @@ services:
 
   notification-service:
     <<: *defaults
-    build: ../services/notification-service
+    build:
+      context: ..
+      dockerfile: services/notification-service/Dockerfile
     environment:
       JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=75
       SPRING_DATASOURCE_URL: ${NOTIFICATION_DB_URL}
@@ -127,7 +139,9 @@ services:
 
   parcel-service:
     <<: *defaults
-    build: ../services/parcel-service
+    build:
+      context: ..
+      dockerfile: services/parcel-service/Dockerfile
     environment:
       JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=75
       SPRING_DATASOURCE_URL: ${PARCEL_DB_URL}
@@ -142,7 +156,9 @@ services:
 
   pricing-service:
     <<: *defaults
-    build: ../services/pricing-service
+    build:
+      context: ..
+      dockerfile: services/pricing-service/Dockerfile
     environment:
       JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=75
       SPRING_DATASOURCE_URL: ${PRICING_DB_URL}
@@ -151,7 +167,9 @@ services:
 
   tracking-service:
     <<: *defaults
-    build: ../services/tracking-service
+    build:
+      context: ..
+      dockerfile: services/tracking-service/Dockerfile
     environment:
       JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=75
       SPRING_DATA_REDIS_HOST: redis
