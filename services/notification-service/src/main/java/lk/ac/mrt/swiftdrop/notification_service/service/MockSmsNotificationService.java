@@ -6,18 +6,21 @@ import org.springframework.stereotype.Service;
 
 @Slf4j
 @Service
-public class MockSmsNotificationService {
+public class MockSmsNotificationService implements SmsProvider {
 
+    @Override
     public void sendSms(String phoneNumber, String message) {
         String maskedNumber = maskPhoneNumber(phoneNumber);
         // Security requirement: Never log raw unmasked phone numbers in plain logs
         log.info("[MOCK SMS DISPATCHED] To: {} | Message: {}", maskedNumber, message);
     }
 
+    @Override
     public String buildMessage(String trackingNumber, ParcelStatus status) {
         return "SwiftDrop: Parcel " + trackingNumber + " is now " + status + ". Track at swiftdrop.lk";
     }
 
+    @Override
     public String maskPhoneNumber(String phone) {
         if (phone == null || phone.length() < 7) {
             return "***";
