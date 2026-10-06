@@ -2,7 +2,7 @@
 
 Parcel Delivery & Courier Management System · University of Moratuwa, Enterprise Application Development group assignment.
 
-This file is the single source of truth for **who builds what**. Every GitHub issue in this repository maps to a section below. Read your own section end to end before you write code, and read **[Shared conventions](#shared-conventions)** — it is binding on everyone.
+This file is the single source of truth for **who builds what**. Every GitHub issue in this repository maps to a section below. Read your own section end to end before you write code, and read **[Shared conventions](#shared-conventions)** — it is binding on everyone. **Implement on your [assigned feature branch](#47-git-workflow); when an issue is fully solved, close it.**
 
 - Repo: `Kevin200307/enterpriseProject`
 - Stack: Java 21 · Spring Boot 4.1.1 · Spring Cloud Gateway · PostgreSQL (Neon, one DB per service) · Redis · RabbitMQ · React 18 + TypeScript · Docker Compose · Helm/Kubernetes
@@ -158,10 +158,44 @@ Changing anything in `packages/common` is a **breaking change for the whole team
 
 ### 4.7 Git workflow
 
-- Branch: `feat/<service>/<slug>`, e.g. `feat/parcel/booking-api`. Fix branches use `fix/`.
-- Conventional commits: `feat(parcel): add booking endpoint`.
-- PR into `main`, linked to its issue with `Closes #<n>`, **one approving review** required. The reviewer is the owner of the service you integrate with.
+**Implement only on your assigned feature branch.** Do not invent per-issue branches and do not push feature work straight to `main`.
+
+| Owner | Assigned branch | Issues |
+|---|---|---|
+| Amandi | `feat/identity-and-auth` | IDN-1 … IDN-4 |
+| Kevin | `feat/api-gateway` | GW-1 … GW-4 (+ PLT-2, PLT-3 lead) |
+| Pavindu | `feat/pricing-and-zones` | PRC-1 … PRC-4 |
+| Praveena | `feat/parcel-booking` | PAR-1 … PAR-4 (+ PLT-4 lead) |
+| Methsara | `feat/dispatch-and-couriers` | DSP-1 … DSP-4 |
+| Charithma | `feat/merchant-api` | MER-1 … MER-4 (+ PLT-5 lead) |
+| Maheesha | `feat/live-tracking` | TRK-1 … TRK-4 |
+| Thiranjaya | `feat/notifications` | NTF-1 … NTF-4 |
+| Tharusha | `feat/ai-assistant` | AI-1 … AI-4 |
+| Thanoj | `feat/web-frontend` | FE-1 … FE-4 (+ PLT-1 lead) |
+
+If you already started on a legacy branch (e.g. `feat/Notification-Service`), finish by opening PRs into `main` from that branch **or** merge it into your assigned branch above — still one ownership branch, and still close each finished issue.
+
+Checkout and work:
+
+```bash
+git fetch origin
+git checkout feat/<your-assigned-branch>
+# … implement the issue …
+git push -u origin HEAD
+```
+
+- Conventional commits: `feat(parcel): add booking endpoint` (include the issue tag in the PR title/body, e.g. `[PAR-2]`).
+- Open a PR **from your assigned branch into `main`**. Put `Closes #<n>` in the PR body for every issue that PR fully finishes.
+- **One approving review** required. The reviewer is the owner of the service you integrate with.
 - Never push to `main`. Never commit `infra/.env`, keys, or tokens.
+- Hotfixes use `fix/<short-slug>` cut from `main`, then PR back to `main` (still with `Closes #<n>` if it fixes an open issue).
+
+#### Closing issues
+
+- An issue stays **open** until its acceptance criteria and [§4.8 Definition of Done](#48-definition-of-done) are met.
+- When the work for an issue is done and merged (or ready to merge), **close that issue** — prefer `Closes #<n>` in the PR so GitHub closes it on merge.
+- Do **not** close an issue for partial progress. Leave it open and comment what remains.
+- After merge, confirm the issue is closed. If `Closes` was missing, close it manually and link the PR in a comment.
 
 ### 4.8 Definition of Done
 
@@ -714,10 +748,10 @@ PLT-4 unblocks everyone's local testing — do it early.
 
 ## 8. Rituals
 
-- **Stand-up in the group chat, every other day:** done / doing / blocked, one line each.
-- **Integration day, end of each week:** everyone merges, `PLT-4`'s seed script runs, and the whole stack comes up. Anything broken is fixed that day, not next week.
+- **Stand-up in the group chat, every other day:** done / doing / blocked, one line each. Name the **assigned branch** and the issue tag you are on.
+- **Integration day, end of each week:** everyone merges from their assigned branch into `main`, `PLT-4`'s seed script runs, and the whole stack comes up. Anything broken is fixed that day, not next week.
 - **Contract changes** (anything in `packages/common`, the JWT claims, an event payload, a shared endpoint shape) are announced in the chat **and** in a PR tagging every affected owner. Never change a contract silently.
-- **Keep your issue updated.** A comment when you start, a comment when you are blocked and on whom, and `Closes #n` in the PR. The contribution sheet in `PLT-1` is generated from this history — if it is not in an issue or a commit, it did not happen.
+- **Keep your issue updated.** Comment when you start (on your assigned branch), when you are blocked and on whom, and when acceptance is met. Put `Closes #<n>` in the PR. **After the issue is solved, close it** (via merge or manually). The contribution sheet in `PLT-1` is generated from this history — if it is not in an issue or a commit, it did not happen.
 
 ---
 
@@ -815,6 +849,13 @@ Paste into every GitHub issue. Fill from the matching §5 / §6 block.
 ## Depends on
 - <tags from §9 catalog, or "none">
 
+## Feature branch
+Implement **only** on the assigned branch from [plan.md §4.7](../blob/main/plan.md#47-git-workflow) (e.g. `feat/notifications`).
+Do not open a separate branch per issue.
+
+## Closing this issue
+When acceptance + Definition of Done are met, open a PR from the assigned branch into `main` with `Closes #<n>`, then confirm the issue is **closed**. Do not close for partial work.
+
 ## Definition of Done
 Follow [plan.md §4.8](../blob/main/plan.md#48-definition-of-done). Checklist:
 - [ ] Acceptance criteria met
@@ -826,10 +867,12 @@ Follow [plan.md §4.8](../blob/main/plan.md#48-definition-of-done). Checklist:
 - [ ] springdoc on new endpoints
 - [ ] `docs/SWIFTDROP.md` subsection updated
 - [ ] No secrets / PII in logs or repo
+- [ ] Issue closed after merge (`Closes #<n>`)
 
 ## Links
 - Plan: `plan.md` → `<section heading>`
 - Module: `<path>`
+- Assigned branch: `feat/<…>`
 ```
 
 ---
@@ -967,7 +1010,7 @@ gh issue create \
   --body-file path/to/filled-idn-1.md
 ```
 
-5. After creation, paste the issue number into the PR with `Closes #<n>`.
+5. Implement on the **assigned feature branch** from [§4.7](#47-git-workflow). When the issue is fully solved, open a PR into `main` with `Closes #<n>` and confirm the issue closes.
 
 ---
 
