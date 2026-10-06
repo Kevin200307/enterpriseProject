@@ -112,6 +112,14 @@ spring:
 
 Authorities arrive as `ROLE_<NAME>`, so `@PreAuthorize("hasRole('ADMIN')")` works. Resource-level checks (a courier reading only their own assignments) are **method security plus an explicit test** — a role check alone is not enough.
 
+#### Service-to-service calls
+
+When one service calls another (dispatch → parcel on assign, tracking → parcel on Redis miss, merchant → identity on approval, parcel → identity for actor names):
+
+- Prefer forwarding the **caller's JWT**, or use a short-lived **client-credentials** token issued by identity for machine callers.
+- Never trust inbound `X-User-Id` / `X-User-Roles` / `X-Merchant-Id` unless the gateway set them after JWT validation (`GW-2` strips client-supplied values).
+- Internal routes (`/api/v1/internal/**`) reject ordinary browser tokens that lack the service scope agreed with identity (`IDN-4`).
+
 ### 4.4 Error contract
 
 Every service returns RFC 7807 `application/problem+json` built from `ErrorCode` and `ProblemFields` in the shared jar. Never leak a stack trace, SQL, or PII.
@@ -229,7 +237,7 @@ You own the single door into the system. Everything a browser touches goes throu
 
 #### `GW-1` Routing, service discovery by DNS and health — *M1*
 
-- Define routes in `application.yaml` for all eight downstream services on their Compose DNS names (`http://identity-service:8080`, etc.), each on its `/api/v1/<prefix>/**` path: `auth` + `users` → identity, `parcels` → parcel, `pricing` → pricing, `dispatch` + `couriers` → dispatch, `merchants` → merchant, `tracking` → tracking, `assistant` → ai-assistant.
+- Define routes in `application.yaml` for all eight downstream services on their Compose DNS names (`http://identity-service:8080`, etc.), each on its `/api/v1/<prefix>/**` path: `auth` + `users` → identity, `parcels` → parcel, `pricing` → pricing, `dispatch` + `couriers` → dispatch, `merchants` → merchant, `tracking` → tracking, `notifications` → notification, `assistant` → ai-assistant.
 - Per-route timeouts (connect 2 s, response 10 s) and a circuit breaker that returns `503 UPSTREAM_UNAVAILABLE` in the RFC 7807 shape rather than a raw gateway error page.
 - Expose `/actuator/health` with the downstream health indicators; keep it off the public route list.
 - Add a `docker-compose` `depends_on` note and a `GATEWAY_HOST_PORT` reminder in the README (host **8081**, container 8080).
@@ -369,7 +377,7 @@ You turn a pile of new parcels into a courier's day.
 
 #### `DSP-2` Unassigned queue and courier assignment — *M3*
 
-- Consume `parcel.status.changed.v1` on `Queues.DISPATCH_PARCEL_STATUS_CHANGED` (add this constant to `packages/common` in a PR tagging Praveena and Maheesha) to maintain a local read-model of parcels needing a courier: anything at `CREATED` with no assignment.
+- Consume `parcel.status.changed.v1` on `Queues.DISPATCH_PARCEL_STATUS_CHANGED`. **This constant is not in [packages/common/.../Queues.java](packages/common/src/main/java/lk/ac/mrt/swiftdrop/contracts/messaging/Queues.java) yet** — add it in the DSP-2 PR (tag Praveena and Maheesha; same naming pattern as `TRACKING_PARCEL_STATUS_CHANGED`). Use it to maintain a local read-model of parcels needing a courier: anything at `CREATED` with no assignment.
 - `GET /api/v1/dispatch/queue` (DISPATCHER/ADMIN) — unassigned parcels, oldest first, filterable by pickup zone, each row showing pickup city, size, weight and age.
 - `POST /api/v1/dispatch/assignments` — body `{ parcelId, courierId }`. **Idempotent**: assigning the same parcel twice to the same courier is a no-op `200`; to a different courier → `409 CONFLICT` unless `?reassign=true`. Reject if the courier is inactive or already at `max_daily_load`.
 - `DELETE /api/v1/dispatch/assignments/{id}` — unassign, returning the parcel to the queue with a reason.
@@ -713,52 +721,324 @@ PLT-4 unblocks everyone's local testing — do it early.
 
 ---
 
-## 9. Issue index
+## 9. Issue catalog (create-ready)
 
-| Tag | Title | Owner | Milestone |
-|---|---|---|---|
-| IDN-1 | User schema, registration and password login | Amandi | M1 |
-| IDN-2 | JWT issuance, JWKS and refresh rotation | Amandi | M1 |
-| IDN-3 | Google OAuth 2.0 / OIDC sign-in | Amandi | M2 |
-| IDN-4 | RBAC, admin user APIs and authorization tests | Amandi | M2 |
-| GW-1 | Routing, DNS discovery and health | Kevin | M1 |
-| GW-2 | Edge authentication, CORS and security headers | Kevin | M1 |
-| GW-3 | Rate limiting, tracing and error normalisation | Kevin | M2 |
-| GW-4 | WebSocket proxying and aggregated OpenAPI | Kevin | M2 |
-| PRC-1 | Zone and pricing-rule schema | Pavindu | M1 |
-| PRC-2 | Zone and rule admin API | Pavindu | M2 |
-| PRC-3 | Fee estimation with the Strategy pattern | Pavindu | M2 |
-| PRC-4 | Pricing tests, caching and docs | Pavindu | M3 |
-| PAR-1 | Parcel schema, tracking numbers, status history | Praveena | M1 |
-| PAR-2 | Booking API | Praveena | M2 |
-| PAR-3 | State machine and event publishing | Praveena | M3 |
-| PAR-4 | Proof of delivery, receipts and history | Praveena | M4 |
-| DSP-1 | Courier schema and courier administration | Methsara | M1 |
-| DSP-2 | Unassigned queue and courier assignment | Methsara | M3 |
-| DSP-3 | Workload, manifests and auto-suggest | Methsara | M3 |
-| DSP-4 | Courier-scoped authorization and tests | Methsara | M4 |
-| MER-1 | Merchant schema, registration and approval | Charithma | M1 |
-| MER-2 | API keys and OAuth2 client credentials | Charithma | M4 |
-| MER-3 | Merchant order API | Charithma | M4 |
-| MER-4 | Outbound webhooks with retry and DLQ | Charithma | M4 |
-| TRK-1 | Event consumer with idempotency and DLQ | Maheesha | M3 |
-| TRK-2 | Redis projection of parcel state | Maheesha | M3 |
-| TRK-3 | Public tracking API with PII masking | Maheesha | M3 |
-| TRK-4 | STOMP WebSocket and SSE fallback | Maheesha | M3 |
-| NTF-1 | Notification schema and event consumer | Thiranjaya | M3 |
-| NTF-2 | Email channel and templates | Thiranjaya | M3 |
-| NTF-3 | SMS channel behind a provider interface | Thiranjaya | M4 |
-| NTF-4 | PII redaction, delivery log and admin view | Thiranjaya | M4 |
-| AI-1 | Chat endpoint with conversation memory | Tharusha | M4 |
-| AI-2 | Tools that call the real APIs as the real user | Tharusha | M4 |
-| AI-3 | MCP server | Tharusha | M4 |
-| AI-4 | Guardrails, cost control and tests | Tharusha | M5 |
-| FE-1 | Scaffold the SPA and wire it into the stack | Thanoj | M1 |
-| FE-2 | Authentication, Google sign-in and route guards | Thanoj | M2 |
-| FE-3 | Customer journey and public tracking page | Thanoj | M2/M3 |
-| FE-4 | Merchant, courier, admin consoles and AI widget | Thanoj | M4 |
-| PLT-1 | `docs/SWIFTDROP.md` design pack | Thanoj + Amandi | M5 |
-| PLT-2 | GitHub Actions CI | Kevin + Maheesha | M5 |
-| PLT-3 | Helm umbrella chart and Kubernetes deploy | Kevin + Methsara | M5 |
-| PLT-4 | Complete the Compose stack and seed data | Praveena + Thiranjaya | M2 |
-| PLT-5 | Cross-service test suite and coverage | Charithma + Pavindu + Tharusha | M5 |
+Every row below is one GitHub issue. Full scope lives in [§5](#5-work-breakdown) / [§6](#6-shared-platform-work). Use [§9.1](#91-issue-body-template) when creating issues. Labels always include `area/<service>` (or `area/platform`), `milestone/M*`, and `type/feat` or `type/platform`.
+
+### M1 — Foundation (critical path)
+
+| Tag | Title | Owner | Labels | Depends on | Acceptance (one line) |
+|---|---|---|---|---|---|
+| IDN-1 | User schema, registration and password login | Amandi `@AmandiArangala` | `area/identity`, `milestone/M1`, `type/feat` | — | register → login → `/users/me` against Neon; hashes never returned; login rate-limited |
+| IDN-2 | JWT issuance, JWKS and refresh rotation | Amandi `@AmandiArangala` | `area/identity`, `milestone/M1`, `type/feat` | IDN-1 | second service validates via JWKS only; refresh reuse kills chain; 15 min expiry tested |
+| GW-1 | Routing, DNS discovery and health | Kevin `@Kevin200307` | `area/gateway`, `milestone/M1`, `type/feat` | — | `curl :8081/api/v1/...` reaches each service; stopped upstream → 503 problem body |
+| GW-2 | Edge authentication, CORS and security headers | Kevin `@Kevin200307` | `area/gateway`, `milestone/M1`, `type/feat` | IDN-2 | forged `X-User-Id` rejected; SPA CORS + cookies; security headers present |
+| PRC-1 | Zone and pricing-rule schema | Pavindu `@Pavindu11` | `area/pricing`, `milestone/M1`, `type/feat` | — | migrations + Sri Lankan seed load via Testcontainers Postgres |
+| PAR-1 | Parcel schema, tracking numbers, status history | Praveena `@LP-Ishadi` | `area/parcel`, `milestone/M1`, `type/feat` | — | 10k generated numbers, no collision, match `^SD-[A-HJ-NP-Z2-9]{8}$` |
+| DSP-1 | Courier schema and courier administration | Methsara `@Dimeshmethsara` | `area/dispatch`, `milestone/M1`, `type/feat` | IDN-2 (role check) | migration clean; non-COURIER user rejected with readable message |
+| MER-1 | Merchant schema, registration and approval | Charithma `@CDDassanayake` | `area/merchant`, `milestone/M1`, `type/feat` | IDN-4 (role grant) | register → pending → approve → next login has `MERCHANT` + `merchantId` |
+| FE-1 | Scaffold the SPA and wire it into the stack | Thanoj `@ThanojBuddhima` | `area/web`, `milestone/M1`, `type/feat` | GW-1 (API base) | Compose serves SPA; deep links work; API errors readable |
+
+### M2 — Core flows
+
+| Tag | Title | Owner | Labels | Depends on | Acceptance (one line) |
+|---|---|---|---|---|---|
+| IDN-3 | Google OAuth 2.0 / OIDC sign-in | Amandi `@AmandiArangala` | `area/identity`, `milestone/M2`, `type/feat` | IDN-2, FE-2 (callback) | real Google sign-in; no duplicate users; bad `state` rejected |
+| IDN-4 | RBAC, admin user APIs and authorization tests | Amandi `@AmandiArangala` | `area/identity`, `milestone/M2`, `type/feat` | IDN-2 | authz test class green (template for the team) |
+| GW-3 | Rate limiting, tracing and error normalisation | Kevin `@Kevin200307` | `area/gateway`, `milestone/M2`, `type/feat` | GW-2 | 6th login/min → 429; same request id in gateway log, downstream, error body |
+| GW-4 | WebSocket proxying and aggregated OpenAPI | Kevin `@Kevin200307` | `area/gateway`, `milestone/M2`, `type/feat` | GW-1, TRK-4 paths | WS stable 5+ min; `/docs` lists all services; dashboard partial on upstream down |
+| PRC-2 | Zone and rule admin API | Pavindu `@Pavindu11` | `area/pricing`, `milestone/M2`, `type/feat` | PRC-1, IDN-2 | ADMIN CRUD via gateway; CUSTOMER 403 on writes; authz test |
+| PRC-3 | Fee estimation with the Strategy pattern | Pavindu `@Pavindu11` | `area/pricing`, `milestone/M2`, `type/feat` | PRC-1 | deterministic total; each strategy unit-tested; stub strategy needs no engine change |
+| PAR-2 | Booking API | Praveena `@LP-Ishadi` | `area/parcel`, `milestone/M2`, `type/feat` | PAR-1, PRC-3, IDN-2 | ownership 404 not 403; fee snapshot survives later rule edits |
+| FE-2 | Authentication, Google sign-in and route guards | Thanoj `@ThanojBuddhima` | `area/web`, `milestone/M2`, `type/feat` | FE-1, IDN-2, IDN-3 | silent refresh; one refresh for parallel 401s; wrong role → 403 page |
+| FE-3 | Customer journey and public tracking page | Thanoj `@ThanojBuddhima` | `area/web`, `milestone/M2`, `type/feat` | FE-2, PAR-2, PRC-3; live updates need TRK-4 | live status without refresh; usable at 360px; Lighthouse mobile ≥ 90 on track |
+| PLT-4 | Complete the Compose stack and seed data | Praveena + Thiranjaya `@LP-Ishadi` `@thirsturn` | `area/platform`, `milestone/M2`, `type/platform` | FE-1 (web service) | clone → fill `.env` → two commands → login + track a parcel |
+
+### M3 — Events and realtime
+
+| Tag | Title | Owner | Labels | Depends on | Acceptance (one line) |
+|---|---|---|---|---|---|
+| PRC-4 | Pricing tests, caching and docs | Pavindu `@Pavindu11` | `area/pricing`, `milestone/M3`, `type/feat` | PRC-3 | `service/` JaCoCo ≥ 80%; Swagger example works |
+| PAR-3 | State machine and event publishing | Praveena `@LP-Ishadi` | `area/parcel`, `milestone/M3`, `type/feat` | PAR-2 | one message per legal transition; none on rollback; illegal → 409 |
+| DSP-2 | Unassigned queue and courier assignment | Methsara `@Dimeshmethsara` | `area/dispatch`, `milestone/M3`, `type/feat` | DSP-1, PAR-3 (`Queues.DISPATCH_*` in common) | CREATED appears in queue; assign clears it; duplicate event idempotent |
+| DSP-3 | Workload, manifests and auto-suggest | Methsara `@Dimeshmethsara` | `area/dispatch`, `milestone/M3`, `type/feat` | DSP-2 | workload matches fixture; suggest skips inactive/full; one-round-trip manifest |
+| TRK-1 | Event consumer with idempotency and DLQ | Maheesha `@MaheeshaPaboth` | `area/tracking`, `milestone/M3`, `type/feat` | PAR-3 | replay 5× → one timeline entry; poison → DLQ; queue stays live |
+| TRK-2 | Redis projection of parcel state | Maheesha `@MaheeshaPaboth` | `area/tracking`, `milestone/M3`, `type/feat` | TRK-1 | cold Redis / Redis down degrades to parcel-service; timeline order stable |
+| TRK-3 | Public tracking API with PII masking | Maheesha `@MaheeshaPaboth` | `area/tracking`, `milestone/M3`, `type/feat` | TRK-2, GW-2 allow-list | public payload has no phone/street/UUID; unknown → flat 404 |
+| TRK-4 | STOMP WebSocket and SSE fallback | Maheesha `@MaheeshaPaboth` | `area/tracking`, `milestone/M3`, `type/feat` | TRK-3, GW-4 | two tabs update within 1 s after status PATCH through gateway |
+| NTF-1 | Notification schema and event consumer | Thiranjaya `@thirsturn` | `area/notification`, `milestone/M3`, `type/feat` | PAR-3, IDN-4 lookup | duplicate event → one email; poison → DLQ |
+| NTF-2 | Email channel and templates | Thiranjaya `@thirsturn` | `area/notification`, `milestone/M3`, `type/feat` | NTF-1, PLT-4 Mailpit | six templates render in Mailpit; delivered receipt link works |
+
+### M4 — Partner and admin
+
+| Tag | Title | Owner | Labels | Depends on | Acceptance (one line) |
+|---|---|---|---|---|---|
+| PAR-4 | Proof of delivery, receipts and history | Praveena `@LP-Ishadi` | `area/parcel`, `milestone/M4`, `type/feat` | PAR-3, PLT-4 MinIO | fake `.exe`/`.jpg` rejected; presigned URL expires; PDF total correct |
+| DSP-4 | Courier-scoped authorization and tests | Methsara `@Dimeshmethsara` | `area/dispatch`, `milestone/M4`, `type/feat` | DSP-2, DSP-3 | authz class green; cited in `docs/SWIFTDROP.md` |
+| MER-2 | API keys and OAuth2 client credentials | Charithma `@CDDassanayake` | `area/merchant`, `milestone/M4`, `type/feat` | MER-1, IDN-2 | key shown once; revoked → 401; client-credentials accepted by parcel |
+| MER-3 | Merchant order API | Charithma `@CDDassanayake` | `area/merchant`, `milestone/M4`, `type/feat` | MER-2, PAR-2 | same Idempotency-Key → one parcel; bulk partial success |
+| MER-4 | Outbound webhooks with retry and DLQ | Charithma `@CDDassanayake` | `area/merchant`, `milestone/M4`, `type/feat` | MER-1, PAR-3 | WireMock proves backoff; 400 not retried; restart keeps pending |
+| NTF-3 | SMS channel behind a provider interface | Thiranjaya `@thirsturn` | `area/notification`, `milestone/M4`, `type/feat` | NTF-2 | preferences stop SMS rows; swap channel bean without listener change |
+| NTF-4 | PII redaction, delivery log and admin view | Thiranjaya `@thirsturn` | `area/notification`, `milestone/M4`, `type/feat` | NTF-2 | compose logs during booking→delivery contain no full PII |
+| AI-1 | Chat endpoint with conversation memory | Tharusha `@Prabhashwara2003` | `area/ai`, `milestone/M4`, `type/feat` | GW-1, IDN-2 | multi-turn context; foreign conversationId → 404 |
+| AI-2 | Tools that call the real APIs as the real user | Tharusha `@Prabhashwara2003` | `area/ai`, `milestone/M4`, `type/feat` | AI-1, PAR-2, PRC-3, TRK-3 | tools use caller JWT; outage → apology not exception |
+| AI-3 | MCP server | Tharusha `@Prabhashwara2003` | `area/ai`, `milestone/M4`, `type/feat` | AI-2 | external MCP client lists tools and calls `estimateFee`; unauth refused |
+| FE-4 | Merchant, courier, admin consoles and AI widget | Thanoj `@ThanojBuddhima` | `area/web`, `milestone/M4`, `type/feat` | FE-3 + MER/DSP/IDN/AI APIs | each persona journey works; courier on phone; CSV export correct |
+
+### M5 — Hardening and delivery
+
+| Tag | Title | Owner | Labels | Depends on | Acceptance (one line) |
+|---|---|---|---|---|---|
+| AI-4 | Guardrails, cost control and tests | Tharusha `@Prabhashwara2003` | `area/ai`, `milestone/M5`, `type/feat` | AI-2 | suite green offline; injection does not escalate; 21st msg/hour → 429 |
+| PLT-1 | `docs/SWIFTDROP.md` design pack | Thanoj + Amandi `@ThanojBuddhima` `@AmandiArangala` | `area/platform`, `milestone/M5`, `type/platform` | all services (fill as you go) | stranger can explain architecture and run the system from the doc |
+| PLT-2 | GitHub Actions CI | Kevin + Maheesha `@Kevin200307` `@MaheeshaPaboth` | `area/platform`, `milestone/M5`, `type/platform` | modules buildable | broken test cannot merge; clean PR green &lt; 10 min |
+| PLT-3 | Helm umbrella chart and Kubernetes deploy | Kevin + Methsara `@Kevin200307` `@Dimeshmethsara` | `area/platform`, `milestone/M5`, `type/platform` | PLT-4 patterns | Kind install from doc; public tracking works via Ingress |
+| PLT-5 | Cross-service test suite and coverage | Charithma + Pavindu + Tharusha `@CDDassanayake` `@Pavindu11` `@Prabhashwara2003` | `area/platform`, `milestone/M5`, `type/platform` | PAR-3, TRK, NTF, MER-4, FE | aggregate report committed; Playwright + e2e event test green in CI |
+
+**Count:** 45 issues (9 M1 + 10 M2 + 10 M3 + 11 M4 + 5 M5). Every §5 / §6 tag appears exactly once.
+
+### 9.1 Issue body template
+
+Paste into every GitHub issue. Fill from the matching §5 / §6 block.
+
+```markdown
+## Goal
+<one sentence from the issue title / §5 intro>
+
+## Scope
+- <bullet copied from the §5 / §6 issue>
+- …
+
+## Acceptance
+<exact Acceptance line from §5 / §6>
+
+## Depends on
+- <tags from §9 catalog, or "none">
+
+## Definition of Done
+Follow [plan.md §4.8](../blob/main/plan.md#48-definition-of-done). Checklist:
+- [ ] Acceptance criteria met
+- [ ] Bean Validation + RFC 7807 errors
+- [ ] Unit + slice tests
+- [ ] Flyway migration if schema changed
+- [ ] `./mvnw -pl <module> -am verify` green
+- [ ] Compose health UP for this service
+- [ ] springdoc on new endpoints
+- [ ] `docs/SWIFTDROP.md` subsection updated
+- [ ] No secrets / PII in logs or repo
+
+## Links
+- Plan: `plan.md` → `<section heading>`
+- Module: `<path>`
+```
+
+---
+
+## 10. Architecture at a glance
+
+Stack locked for this repo: **Java 21 · Spring Boot 4.1.1 · Spring Cloud Gateway · Neon Postgres (one DB per service) · Redis · RabbitMQ · React 18 + TypeScript · Docker Compose · Helm/Kubernetes**. Local Compose does **not** run Postgres — each JDBC URL points at Neon ([infra/.env.example](infra/.env.example)).
+
+```mermaid
+flowchart TB
+  subgraph clients [Clients]
+    Web[React_Web]
+    MerchantAPI[Merchant_Systems]
+  end
+
+  subgraph edge [Edge]
+    Gateway[Spring_Cloud_Gateway]
+  end
+
+  subgraph services [Domain_Services]
+    Identity[identity-service]
+    Parcel[parcel-service]
+    Dispatch[dispatch-service]
+    Merchant[merchant-service]
+    Pricing[pricing-service]
+    Notify[notification-service]
+    Tracking[tracking-service]
+    AI[ai-assistant-service]
+  end
+
+  subgraph data [Data_and_Infra]
+    Neon[(Neon_Postgres_per_service)]
+    Redis[(Redis)]
+    MQ[RabbitMQ]
+    Minio[MinIO_PLT4]
+    Mail[Mailpit_PLT4]
+  end
+
+  Web --> Gateway
+  MerchantAPI --> Gateway
+  Gateway --> Identity
+  Gateway --> Parcel
+  Gateway --> Dispatch
+  Gateway --> Merchant
+  Gateway --> Pricing
+  Gateway --> Tracking
+  Gateway --> Notify
+  Gateway --> AI
+  Parcel --> MQ
+  MQ --> Notify
+  MQ --> Tracking
+  MQ --> Merchant
+  MQ --> Dispatch
+  Identity --> Neon
+  Parcel --> Neon
+  Dispatch --> Neon
+  Merchant --> Neon
+  Pricing --> Neon
+  Notify --> Neon
+  Parcel --> Minio
+  Tracking --> Redis
+  Gateway --> Redis
+  Identity --> Redis
+  AI --> Redis
+  Notify --> Mail
+```
+
+**Who owns which store:** identity, parcel, pricing, dispatch, merchant, notification → Neon. Tracking and (conversation memory) AI → Redis. Gateway rate limits → Redis. MinIO and Mailpit land with `PLT-4`.
+
+---
+
+## 11. Ports and environment catalog
+
+### Host ports (local)
+
+| Port | Service | Notes |
+|---|---|---|
+| **8081** | gateway | `GATEWAY_HOST_PORT` → container 8080 |
+| **15673** | RabbitMQ management | `RABBITMQ_MANAGEMENT_HOST_PORT` (avoids clash with 15672) |
+| **5173** | Vite (dev) / planned `web` | `WEB_ORIGIN` default for CORS |
+| **8025** | Mailpit UI | added in `PLT-4` |
+| **9000 / 9001** | MinIO API / console | added in `PLT-4` |
+| *(Compose)* | Redis, RabbitMQ AMQP | not published unless you add ports |
+
+### Environment variables
+
+Already in [infra/.env.example](infra/.env.example):
+
+| Variable | Used by |
+|---|---|
+| `*_DB_URL` / `*_DB_USERNAME` / `*_DB_PASSWORD` | each Neon-backed service |
+| `RABBITMQ_USERNAME` / `RABBITMQ_PASSWORD` / `RABBITMQ_MANAGEMENT_HOST_PORT` | RabbitMQ + consumers |
+| `REDIS_PASSWORD` | gateway, identity, tracking |
+| `OPENAI_API_KEY` | ai-assistant-service |
+| `GATEWAY_HOST_PORT` | Compose port publish |
+
+Add in the owning issues (and to `.env.example` in the same PR):
+
+| Variable | Owner issue | Purpose |
+|---|---|---|
+| `IDENTITY_JWT_PRIVATE_KEY` / `IDENTITY_JWT_PUBLIC_KEY` | IDN-2 | RS256 PEM |
+| `IDENTITY_JWKS_URI` | GW-2 + every resource server | JWKS URL |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | IDN-3 | Google OIDC |
+| `ADMIN_BOOTSTRAP_EMAIL` | IDN-4 | seed admin |
+| `WEB_ORIGIN` | GW-2 | CORS allow-list |
+| `WEB_BASE_URL` | NTF-2 | email tracking links |
+| `MINIO_*` | PAR-4 / PLT-4 | proof-of-delivery bucket |
+| `MAIL_*` / `SPRING_MAIL_*` | NTF-2 / PLT-4 | Mailpit SMTP |
+| `NOTIFICATIONS_ENABLED` | NTF-3 | demo kill switch |
+| `ASSISTANT_ENABLED` | AI-4 / FE-4 | hide AI widget when false |
+
+Never commit `infra/.env`.
+
+---
+
+## 12. Creating GitHub issues from this plan
+
+Do this once (or per milestone). Do **not** invent titles — copy from §9.
+
+1. Create GitHub milestones `M1` … `M5` matching [§3](#3-milestones).
+2. Create labels: `area/identity`, `area/gateway`, `area/pricing`, `area/parcel`, `area/dispatch`, `area/merchant`, `area/tracking`, `area/notification`, `area/ai`, `area/web`, `area/platform`, `milestone/M1`…`M5`, `type/feat`, `type/platform`.
+3. For each §9 row:
+   - **Title:** `` `[IDN-1] User schema, registration and password login` ``
+   - **Body:** [§9.1](#91-issue-body-template) filled from the matching §5 / §6 block
+   - **Assignee:** owner GitHub handle(s)
+   - **Milestone + labels:** from the catalog row
+4. Optional `gh` pattern (run from the repo root after `gh auth login`):
+
+```bash
+gh issue create \
+  --title "[IDN-1] User schema, registration and password login" \
+  --label "area/identity,milestone/M1,type/feat" \
+  --assignee "AmandiArangala" \
+  --milestone "M1" \
+  --body-file path/to/filled-idn-1.md
+```
+
+5. After creation, paste the issue number into the PR with `Closes #<n>`.
+
+---
+
+## 13. Demo script and submission checklist
+
+### Marker walkthrough (≈15 min)
+
+1. **Signup / login** — password path; optional Google (`IDN-3` / `FE-2`).
+2. **Estimate** — customer form shows live fee breakdown (`PRC-3` / `FE-3`).
+3. **Book** — tracking number `SD-…` returned; fee snapshotted (`PAR-2`).
+4. **Public track** — open `/track/{tn}` on a phone; no auth chrome (`TRK-3` / `FE-3`).
+5. **Dispatch + courier** — assign from admin board; courier advances status + uploads proof (`DSP-2` / `FE-4` / `PAR-4`).
+6. **Live UI** — second tab updates without refresh (`TRK-4` / `GW-4`).
+7. **Email** — Mailpit shows booking / status templates (`NTF-2`).
+8. **Merchant** — API key once; create order with `Idempotency-Key`; webhook HMAC delivery log (`MER-2`–`MER-4`).
+9. **Admin** — users, merchant approval, zones/pricing, daily CSV (`FE-4` / `IDN-4` / `PRC-2`).
+10. **AI / MCP** — chat “how much to Kandy?” + optional MCP inspector (`AI-2` / `AI-3`).
+11. **K8s (bonus)** — Kind + Helm from `docs/K8S.md` if time (`PLT-3`).
+
+### Submission checklist
+
+- [ ] `docs/SWIFTDROP.md` complete + PDF export (`PLT-1`)
+- [ ] Contribution sheet filled from issue/PR history (`PLT-1`)
+- [ ] Aggregate JaCoCo under `docs/test-reports/` (`PLT-5`)
+- [ ] Playwright smoke green against seeded Compose (`PLT-5`)
+- [ ] `make seed` / `scripts/seed.sh` reproduces demo data (`PLT-4`)
+- [ ] CI green on `main` (`PLT-2`)
+- [ ] No secrets in the repo; `.env` only local
+- [ ] Demo rehearsed once end-to-end the day before
+
+---
+
+## 14. Marks mapping
+
+| Assignment bucket | Primary issues | Evidence |
+|---|---|---|
+| Design documentation (~20) | PLT-1 (+ every owner fills their subsection) | `docs/SWIFTDROP.md` + diagrams |
+| Testing / coverage (~15) | PLT-5, plus per-service tests in each `*-n` issue | JaCoCo HTML, Playwright, e2e event test |
+| Integration patterns | PAR-3, TRK-*, NTF-*, MER-4, GW-4 | RabbitMQ pub/sub, webhooks retry/DLQ, WebSocket observer, OAuth/API key |
+| Strategy / SOLID rubric | PRC-3, PRC-4, NTF-3, DSP-3 ranking | Javadoc + class diagrams in docs |
+| Security / RBAC | IDN-2, IDN-4, GW-2, DSP-4, TRK-3, NTF-4 | authz tests, PII masking, JWKS |
+| Frontend / UX | FE-1…FE-4 | personas + public mobile track |
+| K8s bonus | PLT-3 | Helm umbrella + Kind walkthrough |
+| AI / MCP bonus | AI-1…AI-4 | chat + MCP + guardrails |
+| Runnable demo | PLT-4, IDN-1/2, GW-1/2, PAR-2, FE-3 | seed + Compose one-command start |
+
+---
+
+## 15. Out of scope
+
+Keep the demo honest — do **not** schedule these as issues:
+
+- Native iOS / Android apps (responsive web only)
+- Real SMS gateway (mock adapter in `NTF-3` is enough)
+- Multi-region / multi-cluster deployment
+- Blockchain or crypto payments
+- Apache Kafka (RabbitMQ satisfies the brief)
+- Full observability stack (Prometheus / Grafana / Loki / Tempo) — nice if spare time; **not** a formal `PLT-6`
+- Local Postgres in Compose (Neon per service is the locked choice)
+
+---
+
+## 16. Risks and contingencies
+
+| Risk | Impact | Mitigation |
+|---|---|---|
+| `IDN-2` (JWKS) slips past week 2 | Every resource server blocked from finishing auth | Land IDN-1/2 first; others code against stubs + Testcontainers until JWKS is up |
+| Neon / Flyway connection issues | Migrations fail; services unhealthy | Use **direct** (non-pooler) endpoints in `.env.example`; one DB per service |
+| Google OAuth redirect mismatch | Demo social login fails | Amandi + Thanoj agree `/oauth/callback` and Google console URI before IDN-3 |
+| RabbitMQ poison message | Consumer stuck; no notifications/tracking | Idempotency + DLQ in TRK-1 / NTF-1 / MER-4 / DSP-2; never infinite requeue |
+| OpenAI key missing on demo day | AI feature dead | `ASSISTANT_ENABLED=false`; SPA hides widget (`AI-4` / `FE-4`) |
+| Contract change in `packages/common` without notice | Cascading breakages | §4.5 + §8: PR tags all owners; never edit a `V1` payload |
+| Scope creep on admin / reports | M4/M5 overrun | FE-4 ships core journeys first; charts/CSV are last |
+| Compose too heavy for a laptop | Integration day fails | `mem_limit` already set; stop unused services; PLT-4 health gating |
