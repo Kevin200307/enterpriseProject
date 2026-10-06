@@ -71,7 +71,8 @@ class EmailNotificationServiceTest {
         String body = emailService.buildBody("SD-11223344", ParcelStatus.DELIVERED);
 
         assertTrue(body.contains("SD-11223344"));
-        assertTrue(body.contains("DELIVERED"));
+        assertTrue(body.contains("delivered"));
         assertTrue(body.contains("SwiftDrop"));
+        assertTrue(body.contains("/receipt"));
     }
 }

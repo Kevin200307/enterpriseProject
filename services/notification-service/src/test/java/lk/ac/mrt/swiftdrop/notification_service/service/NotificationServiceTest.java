@@ -31,13 +31,21 @@ class NotificationServiceTest {
     private EmailNotificationService emailService;
 
     @Mock
-    private MockSmsNotificationService smsService;
+    private SmsProvider smsService;
 
     @Mock
     private NotificationLogRepository logRepository;
 
+    @Mock
+    private IdentityClient identityClient;
+
     @InjectMocks
     private NotificationService notificationService;
+
+    @org.junit.jupiter.api.BeforeEach
+    void setUp() {
+        org.springframework.test.util.ReflectionTestUtils.setField(notificationService, "smsEnabled", true);
+    }
 
     @Test
     @DisplayName("Should send email and SMS when event has not been processed yet (Idempotency)")
@@ -49,8 +57,10 @@ class NotificationServiceTest {
         EventEnvelope<ParcelStatusChangedV1> envelope = EventEnvelope.of(
                 ParcelStatusChangedV1.EVENT_TYPE, ParcelStatusChangedV1.VERSION, "parcel-service", payload);
 
-        when(logRepository.existsByEventIdAndChannel(any(), eq(NotificationChannel.EMAIL))).thenReturn(false);
-        when(logRepository.existsByEventIdAndChannel(any(), eq(NotificationChannel.SMS))).thenReturn(false);
+        when(identityClient.lookupUser(any())).thenReturn(
+                new IdentityClient.UserLookupDto(parcelId, "test@swiftdrop.lk", "+94712345678", "Test User"));
+        when(logRepository.existsByEventIdAndChannelAndRecipientRef(any(), eq(NotificationChannel.EMAIL), any())).thenReturn(false);
+        when(logRepository.existsByEventIdAndChannelAndRecipientRef(any(), eq(NotificationChannel.SMS), any())).thenReturn(false);
         when(emailService.buildSubject(anyString(), any())).thenReturn("Subject");
         when(emailService.buildBody(anyString(), any())).thenReturn("Body");
         when(smsService.buildMessage(anyString(), any())).thenReturn("Message");
@@ -64,7 +74,7 @@ class NotificationServiceTest {
     }
 
     @Test
-    @DisplayName("Should skip sending if already sent for eventId (Idempotent)")
+    @DisplayName("Should skip sending if already sent for eventId and recipient (Idempotent)")
     void shouldSkipIfAlreadySent() {
         UUID eventId = UUID.randomUUID();
         UUID parcelId = UUID.randomUUID();
@@ -73,8 +83,10 @@ class NotificationServiceTest {
         EventEnvelope<ParcelStatusChangedV1> envelope = EventEnvelope.of(
                 ParcelStatusChangedV1.EVENT_TYPE, ParcelStatusChangedV1.VERSION, "parcel-service", payload);
 
-        when(logRepository.existsByEventIdAndChannel(any(), eq(NotificationChannel.EMAIL))).thenReturn(true);
-        when(logRepository.existsByEventIdAndChannel(any(), eq(NotificationChannel.SMS))).thenReturn(true);
+        when(identityClient.lookupUser(any())).thenReturn(
+                new IdentityClient.UserLookupDto(parcelId, "test@swiftdrop.lk", "+94712345678", "Test User"));
+        when(logRepository.existsByEventIdAndChannelAndRecipientRef(any(), eq(NotificationChannel.EMAIL), any())).thenReturn(true);
+        when(logRepository.existsByEventIdAndChannelAndRecipientRef(any(), eq(NotificationChannel.SMS), any())).thenReturn(true);
 
         notificationService.handleParcelStatusChanged(envelope);
 
@@ -92,8 +104,10 @@ class NotificationServiceTest {
         EventEnvelope<ParcelStatusChangedV1> envelope = EventEnvelope.of(
                 ParcelStatusChangedV1.EVENT_TYPE, ParcelStatusChangedV1.VERSION, "parcel-service", payload);
 
-        when(logRepository.existsByEventIdAndChannel(any(), eq(NotificationChannel.EMAIL))).thenReturn(false);
-        when(logRepository.existsByEventIdAndChannel(any(), eq(NotificationChannel.SMS))).thenReturn(true);
+        when(identityClient.lookupUser(any())).thenReturn(
+                new IdentityClient.UserLookupDto(parcelId, "test@swiftdrop.lk", "+94712345678", "Test User"));
+        when(logRepository.existsByEventIdAndChannelAndRecipientRef(any(), eq(NotificationChannel.EMAIL), any())).thenReturn(false);
+        when(logRepository.existsByEventIdAndChannelAndRecipientRef(any(), eq(NotificationChannel.SMS), any())).thenReturn(true);
         when(emailService.buildSubject(anyString(), any())).thenReturn("Subject");
         when(emailService.buildBody(anyString(), any())).thenReturn("Body");
         doThrow(new RuntimeException("Mail server down")).when(emailService).sendEmail(anyString(), anyString(), anyString());

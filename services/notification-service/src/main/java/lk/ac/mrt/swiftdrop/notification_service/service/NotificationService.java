@@ -1,5 +1,6 @@
 package lk.ac.mrt.swiftdrop.notification_service.service;
 
+import java.time.Instant;
 import java.util.UUID;
 import lk.ac.mrt.swiftdrop.contracts.domain.ParcelStatus;
 import lk.ac.mrt.swiftdrop.contracts.events.EventEnvelope;
@@ -10,6 +11,7 @@ import lk.ac.mrt.swiftdrop.notification_service.domain.NotificationStatus;
 import lk.ac.mrt.swiftdrop.notification_service.repository.NotificationLogRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,8 +21,12 @@ import org.springframework.transaction.annotation.Transactional;
 public class NotificationService {
 
     private final EmailNotificationService emailService;
-    private final MockSmsNotificationService smsService;
+    private final SmsProvider smsProvider;
     private final NotificationLogRepository logRepository;
+    private final IdentityClient identityClient;
+
+    @Value("${app.notification.sms.enabled:true}")
+    private boolean smsEnabled;
 
     @Transactional
     public void handleParcelStatusChanged(EventEnvelope<ParcelStatusChangedV1> envelope) {
@@ -29,75 +35,102 @@ public class NotificationService {
         String trackingNumber = payload.trackingNumber();
         ParcelStatus toStatus = payload.toStatus();
 
-        log.info("Processing notifications for eventId: {}, trackingNumber: {}, status: {}",
-                eventId, trackingNumber, toStatus);
+        // Resolve user reference (actorId or parcelId as fallback)
+        UUID recipientRef = payload.actorId() != null ? payload.actorId() : payload.parcelId();
 
-        // Recipient details (derived from tracking for demo)
-        String customerEmail = "customer-" + trackingNumber.toLowerCase() + "@example.com";
-        String customerPhone = "+94771234567";
+        log.info("Processing notifications for eventId: {}, trackingNumber: {}, recipientRef: {}, status: {}",
+                eventId, trackingNumber, recipientRef, toStatus);
 
-        // 1. Process EMAIL Notification (with Idempotency Check)
-        if (!logRepository.existsByEventIdAndChannel(eventId, NotificationChannel.EMAIL)) {
-            sendEmail(eventId, payload, customerEmail, toStatus);
+        // 1. Resolve user details via Identity Service lookup (or resilient fallback)
+        IdentityClient.UserLookupDto user = identityClient.lookupUser(recipientRef);
+
+        // 2. Process EMAIL Notification (Idempotency: event_id + channel + recipient_ref)
+        if (!logRepository.existsByEventIdAndChannelAndRecipientRef(eventId, NotificationChannel.EMAIL, recipientRef)) {
+            sendEmail(eventId, payload, recipientRef, user.email(), toStatus);
         } else {
             log.info("Email already sent for eventId: {}, skipping.", eventId);
         }
 
-        // 2. Process SMS Notification (with Idempotency Check)
-        if (!logRepository.existsByEventIdAndChannel(eventId, NotificationChannel.SMS)) {
-            sendSms(eventId, payload, customerPhone, toStatus);
+        // 3. Process SMS Notification (Check user/system preferences)
+        if (!logRepository.existsByEventIdAndChannelAndRecipientRef(eventId, NotificationChannel.SMS, recipientRef)) {
+            if (smsEnabled) {
+                sendSms(eventId, payload, recipientRef, user.phone(), toStatus);
+            } else {
+                // If preferences stop SMS, record as SKIPPED
+                log.info("SMS disabled by preferences, recording as SKIPPED for eventId: {}", eventId);
+                logRepository.save(NotificationLog.builder()
+                        .eventId(eventId)
+                        .parcelId(payload.parcelId())
+                        .trackingNumber(trackingNumber)
+                        .channel(NotificationChannel.SMS)
+                        .recipientRef(recipientRef)
+                        .recipient(smsProvider.maskPhoneNumber(user.phone()))
+                        .template(toStatus.name())
+                        .status(NotificationStatus.SKIPPED)
+                        .content("SMS skipped due to preferences")
+                        .attempts(0)
+                        .build());
+            }
         } else {
             log.info("SMS already sent for eventId: {}, skipping.", eventId);
         }
     }
 
-    private void sendEmail(UUID eventId, ParcelStatusChangedV1 payload, String email, ParcelStatus status) {
+    private void sendEmail(UUID eventId, ParcelStatusChangedV1 payload, UUID recipientRef, String email, ParcelStatus status) {
         String subject = emailService.buildSubject(payload.trackingNumber(), status);
         String body = emailService.buildBody(payload.trackingNumber(), status);
 
-        NotificationLog.NotificationLogBuilder logBuilder = NotificationLog.builder()
+        NotificationLog notification = NotificationLog.builder()
                 .eventId(eventId)
                 .parcelId(payload.parcelId())
                 .trackingNumber(payload.trackingNumber())
                 .channel(NotificationChannel.EMAIL)
+                .recipientRef(recipientRef)
                 .recipient(email)
                 .template(status.name())
                 .subject(subject)
-                .content(body);
+                .content(body)
+                .attempts(1)
+                .build();
 
         try {
             emailService.sendEmail(email, subject, body);
-            logRepository.save(logBuilder.status(NotificationStatus.SENT).build());
+            notification.setStatus(NotificationStatus.SENT);
+            notification.setSentAt(Instant.now());
         } catch (Exception e) {
             log.error("Failed to send email to {}", email, e);
-            logRepository.save(logBuilder
-                    .status(NotificationStatus.FAILED)
-                    .errorMessage(e.getMessage())
-                    .build());
+            notification.setStatus(NotificationStatus.FAILED);
+            notification.setErrorMessage(e.getMessage());
         }
+
+        logRepository.save(notification);
     }
 
-    private void sendSms(UUID eventId, ParcelStatusChangedV1 payload, String phone, ParcelStatus status) {
-        String message = smsService.buildMessage(payload.trackingNumber(), status);
+    private void sendSms(UUID eventId, ParcelStatusChangedV1 payload, UUID recipientRef, String phone, ParcelStatus status) {
+        String message = smsProvider.buildMessage(payload.trackingNumber(), status);
 
-        NotificationLog.NotificationLogBuilder logBuilder = NotificationLog.builder()
+        NotificationLog notification = NotificationLog.builder()
                 .eventId(eventId)
                 .parcelId(payload.parcelId())
                 .trackingNumber(payload.trackingNumber())
                 .channel(NotificationChannel.SMS)
-                .recipient(smsService.maskPhoneNumber(phone))
+                .recipientRef(recipientRef)
+                .recipient(smsProvider.maskPhoneNumber(phone))
                 .template(status.name())
-                .content(message);
+                .content(message)
+                .attempts(1)
+                .build();
 
         try {
-            smsService.sendSms(phone, message);
-            logRepository.save(logBuilder.status(NotificationStatus.SENT).build());
+            smsProvider.sendSms(phone, message);
+            notification.setStatus(NotificationStatus.SENT);
+            notification.setSentAt(Instant.now());
         } catch (Exception e) {
-            log.error("Failed to send SMS to {}", smsService.maskPhoneNumber(phone), e);
-            logRepository.save(logBuilder
-                    .status(NotificationStatus.FAILED)
-                    .errorMessage(e.getMessage())
-                    .build());
+            log.error("Failed to send SMS to {}", smsProvider.maskPhoneNumber(phone), e);
+            notification.setStatus(NotificationStatus.FAILED);
+            notification.setErrorMessage(e.getMessage());
         }
+
+        logRepository.save(notification);
     }
 }

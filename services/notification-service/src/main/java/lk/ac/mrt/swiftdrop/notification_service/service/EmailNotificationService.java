@@ -18,6 +18,9 @@ public class EmailNotificationService {
     @Value("${app.notification.mail.from:no-reply@swiftdrop.lk}")
     private String fromEmail;
 
+    @Value("${app.web.base-url:http://localhost:8080}")
+    private String baseUrl;
+
     public void sendEmail(String to, String subject, String body) {
         log.info("Sending email to: {} | Subject: {}", to, subject);
 
@@ -43,6 +46,19 @@ public class EmailNotificationService {
     }
 
     public String buildBody(String trackingNumber, ParcelStatus status) {
+        if (status == ParcelStatus.DELIVERED) {
+            return """
+                   Hello Customer,
+
+                   Your parcel (%s) has been successfully delivered!
+
+                   You can download your delivery receipt here:
+                   %s/api/v1/parcels/%s/receipt
+
+                   Thank you for choosing SwiftDrop!
+                   """.formatted(trackingNumber, baseUrl, trackingNumber);
+        }
+
         return """
                Hello Customer,
 
