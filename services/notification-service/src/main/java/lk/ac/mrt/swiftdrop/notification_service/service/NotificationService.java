@@ -46,7 +46,7 @@ public class NotificationService {
 
         // 2. Process EMAIL Notification (Idempotency: event_id + channel + recipient_ref)
         if (!logRepository.existsByEventIdAndChannelAndRecipientRef(eventId, NotificationChannel.EMAIL, recipientRef)) {
-            sendEmail(eventId, payload, recipientRef, user.email(), toStatus);
+            sendEmail(eventId, payload, recipientRef, user.email(), user.name(), toStatus);
         } else {
             log.info("Email already sent for eventId: {}, skipping.", eventId);
         }
@@ -76,7 +76,7 @@ public class NotificationService {
         }
     }
 
-    private void sendEmail(UUID eventId, ParcelStatusChangedV1 payload, UUID recipientRef, String email, ParcelStatus status) {
+    private void sendEmail(UUID eventId, ParcelStatusChangedV1 payload, UUID recipientRef, String email, String recipientName, ParcelStatus status) {
         String subject = emailService.buildSubject(payload.trackingNumber(), status);
         String body = emailService.buildBody(payload.trackingNumber(), status);
 
@@ -94,7 +94,7 @@ public class NotificationService {
                 .build();
 
         try {
-            emailService.sendEmail(email, subject, body);
+            emailService.sendTemplatedEmail(email, payload.trackingNumber(), status, recipientName, null);
             notification.setStatus(NotificationStatus.SENT);
             notification.setSentAt(Instant.now());
         } catch (Exception e) {

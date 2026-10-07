@@ -68,7 +68,7 @@ class NotificationServiceTest {
 
         notificationService.handleParcelStatusChanged(envelope);
 
-        verify(emailService, times(1)).sendEmail(anyString(), eq("Subject"), eq("Body"));
+        verify(emailService, times(1)).sendTemplatedEmail(anyString(), eq("SD-12345678"), eq(ParcelStatus.IN_TRANSIT), eq("Test User"), any());
         verify(smsService, times(1)).sendSms(anyString(), eq("Message"));
         verify(logRepository, times(2)).save(any(NotificationLog.class));
     }
@@ -90,7 +90,7 @@ class NotificationServiceTest {
 
         notificationService.handleParcelStatusChanged(envelope);
 
-        verify(emailService, never()).sendEmail(anyString(), anyString(), anyString());
+        verify(emailService, never()).sendTemplatedEmail(anyString(), anyString(), any(), any(), any());
         verify(smsService, never()).sendSms(anyString(), anyString());
         verify(logRepository, never()).save(any(NotificationLog.class));
     }
@@ -110,7 +110,7 @@ class NotificationServiceTest {
         when(logRepository.existsByEventIdAndChannelAndRecipientRef(any(), eq(NotificationChannel.SMS), any())).thenReturn(true);
         when(emailService.buildSubject(anyString(), any())).thenReturn("Subject");
         when(emailService.buildBody(anyString(), any())).thenReturn("Body");
-        doThrow(new RuntimeException("Mail server down")).when(emailService).sendEmail(anyString(), anyString(), anyString());
+        doThrow(new RuntimeException("Mail server down")).when(emailService).sendTemplatedEmail(anyString(), anyString(), any(), any(), any());
 
         notificationService.handleParcelStatusChanged(envelope);
 
