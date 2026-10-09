@@ -23,8 +23,8 @@ import { WorkloadPanel } from './WorkloadPanel'
 
 const TONE = {
   ok: 'bg-muted text-muted-foreground',
-  warn: 'bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-100',
-  late: 'bg-red-100 text-red-900 dark:bg-red-950 dark:text-red-100',
+  warn: 'bg-amber-100 text-amber-900',
+  late: 'bg-red-100 text-red-900',
 }
 
 interface Target {

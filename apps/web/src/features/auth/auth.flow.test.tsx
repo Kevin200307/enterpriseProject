@@ -33,6 +33,21 @@ describe('route guards', () => {
   })
 })
 
+describe('full-screen auth layout', () => {
+  it.each(['/login', '/signup', '/oauth/callback?code=x&state=y'])(
+    '%s has no sidebar, header or app chrome',
+    async (path) => {
+      mockSession()
+      renderApp(path)
+      await screen.findByRole('heading', { level: 1 })
+      expect(screen.queryByRole('navigation', { name: 'Main' })).not.toBeInTheDocument()
+      expect(screen.queryByRole('banner')).not.toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: 'Open assistant' })).not.toBeInTheDocument()
+      expect(screen.getByRole('main')).toBeInTheDocument()
+    },
+  )
+})
+
 describe('login', () => {
   it('validates before sending a request', async () => {
     mockSession()

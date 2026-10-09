@@ -1,4 +1,4 @@
-import { Menu, Moon, Package, Sun, X } from 'lucide-react'
+import { Menu, Package, X } from 'lucide-react'
 import { lazy, Suspense, useState } from 'react'
 import { Link, NavLink, Outlet } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
@@ -7,7 +7,6 @@ import { useSession } from '@/auth/session'
 import { env } from '@/config/env'
 import { cn } from '@/lib/cn'
 import { navFor } from './nav'
-import { useTheme } from './useTheme'
 
 // The assistant is never needed for first paint, so it ships as its own chunk.
 const ChatWidget = lazy(() =>
@@ -17,7 +16,6 @@ const ChatWidget = lazy(() =>
 export function AppShell() {
   const { roles, email } = useSession()
   const { logout, status } = useAuth()
-  const { theme, toggle } = useTheme()
   const [open, setOpen] = useState(false)
   const items = navFor(roles)
 
@@ -64,9 +62,6 @@ export function AppShell() {
           </Button>
           <span className="font-semibold md:hidden">SwiftDrop</span>
           <div className="ml-auto flex items-center gap-2">
-            <Button variant="ghost" size="icon" aria-label="Toggle dark mode" onClick={toggle}>
-              {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-            </Button>
             {roles.length === 0 ? (
               <Button asChild size="sm">
                 <Link to="/login">Sign in</Link>

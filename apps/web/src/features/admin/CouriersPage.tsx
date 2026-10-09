@@ -176,10 +176,7 @@ function CourierDialog({ courier, onClose }: { courier?: Courier; onClose: () =>
           <input type="checkbox" {...register('active')} /> Active
         </label>
         {conflict && (
-          <p
-            role="alert"
-            className="rounded-md bg-red-50 p-3 text-sm text-red-900 dark:bg-red-950 dark:text-red-100"
-          >
+          <p role="alert" className="rounded-md bg-red-50 p-3 text-sm text-red-900">
             {conflict}
           </p>
         )}

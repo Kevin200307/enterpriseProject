@@ -7,7 +7,6 @@ import { roleLanding, safeReturnTo } from '@/auth/landing'
 import { decodeClaims } from '@/auth/jwt'
 import { oauthPending, oauthRedirectUri } from '@/auth/pkce'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 export function OAuthCallbackPage() {
   const [params] = useSearchParams()
@@ -42,26 +41,24 @@ export function OAuthCallbackPage() {
   }, [params, signInWithToken, navigate])
 
   return (
-    <div className="mx-auto max-w-sm">
-      <Card>
-        <CardHeader>
-          <CardTitle>{error ? 'Sign-in failed' : 'Signing you in…'}</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-4">
-          {error ? (
-            <>
-              <p role="alert" className="text-sm text-destructive">
-                {error}
-              </p>
-              <Button asChild>
-                <Link to="/login">Back to sign in</Link>
-              </Button>
-            </>
-          ) : (
-            <p className="text-sm text-muted-foreground">Completing Google sign-in.</p>
-          )}
-        </CardContent>
-      </Card>
+    <div className="flex flex-col gap-6">
+      <h1 className="text-2xl font-bold tracking-tight">
+        {error ? 'Sign-in failed' : 'Signing you in…'}
+      </h1>
+      <div className="flex flex-col gap-4">
+        {error ? (
+          <>
+            <p role="alert" className="text-sm text-destructive">
+              {error}
+            </p>
+            <Button asChild>
+              <Link to="/login">Back to sign in</Link>
+            </Button>
+          </>
+        ) : (
+          <p className="text-sm text-muted-foreground">Completing Google sign-in.</p>
+        )}
+      </div>
     </div>
   )
 }

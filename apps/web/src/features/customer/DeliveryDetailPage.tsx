@@ -48,7 +48,7 @@ function toTimeline(history: HistoryEntry[]): TimelineItem[] {
       actor: h.actorName,
       note: h.note,
       extra: h.failureReason ? (
-        <p className="mt-1 rounded-md bg-red-50 p-2 text-sm text-red-900 dark:bg-red-950 dark:text-red-100">
+        <p className="mt-1 rounded-md bg-red-50 p-2 text-sm text-red-900">
           Reason: {h.failureReason}
         </p>
       ) : undefined,
@@ -174,7 +174,7 @@ export function DeliveryDetailPage() {
       {p.status === 'FAILED' && p.failureReason && (
         <p
           role="alert"
-          className="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-900 dark:border-red-800 dark:bg-red-950 dark:text-red-100"
+          className="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-900"
         >
           Delivery failed: {p.failureReason}
         </p>

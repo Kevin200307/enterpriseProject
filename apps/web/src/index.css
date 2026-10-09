@@ -3,44 +3,28 @@
 @tailwind utilities;
 
 @layer base {
+  /* Light only, orange + white. Primary is a deep orange (#C25105) so white text on it meets WCAG AA (4.6:1);
+     the brighter ring colour is only ever used for non-text focus outlines. */
   :root {
+    color-scheme: light;
     --background: 0 0% 100%;
-    --foreground: 222 47% 11%;
+    --foreground: 20 14% 12%;
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
-    --primary: 221 83% 53%;
+    --card-foreground: 20 14% 12%;
+    --primary: 24 95% 39%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222 47% 11%;
-    --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 40%;
-    --accent: 210 40% 94%;
-    --accent-foreground: 222 47% 11%;
+    --secondary: 30 40% 96%;
+    --secondary-foreground: 20 14% 12%;
+    --muted: 30 40% 96%;
+    --muted-foreground: 20 8% 38%;
+    --accent: 33 100% 94%;
+    --accent-foreground: 24 80% 24%;
     --destructive: 0 72% 45%;
     --destructive-foreground: 0 0% 100%;
-    --border: 214 32% 88%;
-    --input: 214 32% 88%;
-    --ring: 221 83% 53%;
+    --border: 30 25% 87%;
+    --input: 30 25% 87%;
+    --ring: 25 95% 50%;
     --radius: 0.5rem;
-  }
-  .dark {
-    --background: 222 47% 7%;
-    --foreground: 210 40% 98%;
-    --card: 222 40% 10%;
-    --card-foreground: 210 40% 98%;
-    --primary: 217 91% 65%;
-    --primary-foreground: 222 47% 8%;
-    --secondary: 217 33% 17%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217 33% 17%;
-    --muted-foreground: 215 20% 70%;
-    --accent: 217 33% 20%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 72% 58%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 217 33% 22%;
-    --input: 217 33% 22%;
-    --ring: 217 91% 65%;
   }
   * {
     @apply border-border;

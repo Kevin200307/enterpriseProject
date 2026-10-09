@@ -2,9 +2,9 @@ import type { NotificationStatus } from '@/api/types'
 import { cn } from '@/lib/cn'
 
 const TONE: Record<NotificationStatus, string> = {
-  SENT: 'bg-green-100 text-green-900 dark:bg-green-950 dark:text-green-100',
-  PENDING: 'bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-100',
-  FAILED: 'bg-red-100 text-red-900 dark:bg-red-950 dark:text-red-100',
+  SENT: 'bg-green-100 text-green-900',
+  PENDING: 'bg-amber-100 text-amber-900',
+  FAILED: 'bg-red-100 text-red-900',
   SKIPPED: 'bg-muted text-muted-foreground',
 }
 

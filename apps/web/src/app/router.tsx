@@ -3,6 +3,7 @@ import { RequireAuth } from '@/auth/RequireAuth'
 import { Home } from '@/features/auth/Home'
 import { ComingSoon, ForbiddenPage, NotFoundPage } from '@/features/system/pages'
 import { AppShell, PublicShell } from './AppShell'
+import { AuthShell } from './AuthShell'
 import { RouteError } from './RouteError'
 
 /** Route-level code splitting: each persona/page ships in its own chunk, so /track stays tiny. */
@@ -21,12 +22,7 @@ export const routes = [
     errorElement: <RouteError />,
     children: [
       { index: true, element: <Home /> },
-      { path: 'login', ...page(() => import('@/features/auth/LoginPage'), 'LoginPage') },
-      { path: 'signup', ...page(() => import('@/features/auth/SignupPage'), 'SignupPage') },
-      {
-        path: 'oauth/callback',
-        ...page(() => import('@/features/auth/OAuthCallbackPage'), 'OAuthCallbackPage'),
-      },
+
       {
         path: 'track',
         ...page(() => import('@/features/tracking/TrackLookupPage'), 'TrackLookupPage'),
@@ -167,6 +163,18 @@ export const routes = [
         ],
       },
       { path: '*', element: <NotFoundPage /> },
+    ],
+  },
+  {
+    element: <AuthShell />,
+    errorElement: <RouteError />,
+    children: [
+      { path: 'login', ...page(() => import('@/features/auth/LoginPage'), 'LoginPage') },
+      { path: 'signup', ...page(() => import('@/features/auth/SignupPage'), 'SignupPage') },
+      {
+        path: 'oauth/callback',
+        ...page(() => import('@/features/auth/OAuthCallbackPage'), 'OAuthCallbackPage'),
+      },
     ],
   },
   {

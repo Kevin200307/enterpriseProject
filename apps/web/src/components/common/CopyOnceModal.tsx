@@ -33,7 +33,7 @@ export function CopyOnceModal({
           <CopyField value={secret} label={label} />
           <p
             role="alert"
-            className="flex gap-2 rounded-md bg-red-50 p-3 text-sm font-medium text-red-900 dark:bg-red-950 dark:text-red-100"
+            className="flex gap-2 rounded-md bg-red-50 p-3 text-sm font-medium text-red-900"
           >
             <TriangleAlert className="h-4 w-4 shrink-0" aria-hidden />
             You will not see this {label} again.

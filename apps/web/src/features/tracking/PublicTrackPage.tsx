@@ -171,10 +171,7 @@ export function PublicTrackPage() {
       </section>
 
       {terminalProblem ? (
-        <p
-          role="status"
-          className="rounded-md bg-red-50 p-3 text-center text-sm text-red-900 dark:bg-red-950 dark:text-red-100"
-        >
+        <p role="status" className="rounded-md bg-red-50 p-3 text-center text-sm text-red-900">
           {t.status === 'FAILED'
             ? 'Delivery was unsuccessful. The sender has been notified.'
             : 'This delivery was cancelled.'}

@@ -73,10 +73,7 @@ export function DashboardPage() {
             />
           </div>
           {(!d?.parcels || !d?.dispatch || !d?.merchants) && (
-            <p
-              role="status"
-              className="rounded-md bg-amber-100 p-3 text-sm text-amber-900 dark:bg-amber-950 dark:text-amber-100"
-            >
+            <p role="status" className="rounded-md bg-amber-100 p-3 text-sm text-amber-900">
               Part of SwiftDrop is temporarily unavailable, so some figures are missing.
             </p>
           )}

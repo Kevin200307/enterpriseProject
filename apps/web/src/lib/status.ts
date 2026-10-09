@@ -23,37 +23,37 @@ export const STATUS_META: Record<ParcelStatus, StatusMeta> = {
   CREATED: {
     label: 'Created',
     icon: PackagePlus,
-    className: 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100',
+    className: 'bg-slate-100 text-slate-800',
   },
   PICKED_UP: {
     label: 'Picked up',
     icon: PackageCheck,
-    className: 'bg-blue-100 text-blue-900 dark:bg-blue-950 dark:text-blue-100',
+    className: 'bg-blue-100 text-blue-900',
   },
   IN_TRANSIT: {
     label: 'In transit',
     icon: Truck,
-    className: 'bg-indigo-100 text-indigo-900 dark:bg-indigo-950 dark:text-indigo-100',
+    className: 'bg-indigo-100 text-indigo-900',
   },
   OUT_FOR_DELIVERY: {
     label: 'Out for delivery',
     icon: Bike,
-    className: 'bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-100',
+    className: 'bg-amber-100 text-amber-900',
   },
   DELIVERED: {
     label: 'Delivered',
     icon: CircleCheck,
-    className: 'bg-green-100 text-green-900 dark:bg-green-950 dark:text-green-100',
+    className: 'bg-green-100 text-green-900',
   },
   FAILED: {
     label: 'Failed',
     icon: CircleAlert,
-    className: 'bg-red-100 text-red-900 dark:bg-red-950 dark:text-red-100',
+    className: 'bg-red-100 text-red-900',
   },
   CANCELLED: {
     label: 'Cancelled',
     icon: Ban,
-    className: 'bg-zinc-100 text-zinc-600 line-through dark:bg-zinc-800 dark:text-zinc-300',
+    className: 'bg-zinc-100 text-zinc-600 line-through',
   },
 }
 

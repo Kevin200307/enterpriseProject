@@ -18,9 +18,9 @@ import { formatDateTime } from '@/lib/format'
 import { MerchantGate } from './MerchantGate'
 
 const STATE_TONE: Record<WebhookState, string> = {
-  DELIVERED: 'bg-green-100 text-green-900 dark:bg-green-950 dark:text-green-100',
-  PENDING: 'bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-100',
-  DEAD: 'bg-red-100 text-red-900 dark:bg-red-950 dark:text-red-100',
+  DELIVERED: 'bg-green-100 text-green-900',
+  PENDING: 'bg-amber-100 text-amber-900',
+  DEAD: 'bg-red-100 text-red-900',
 }
 
 export function WebhookDeliveriesPage() {

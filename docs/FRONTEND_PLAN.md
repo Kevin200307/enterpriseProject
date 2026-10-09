@@ -32,7 +32,7 @@ This expands [plan.md §5.10](../plan.md#510-frontend--thanoj-thanojbuddhima) in
 | Concern | Choice | Notes |
 |---|---|---|
 | Build | **Vite 5** + **React 18** + **TypeScript 5 (strict)** | `noUncheckedIndexedAccess`, path alias `@/` → `src/` |
-| Styling | **Tailwind CSS 3** + **shadcn/ui** (Radix) | Dark mode via `class` strategy; tokens in `globals.css` |
+| Styling | **Tailwind CSS 3** + **shadcn/ui** (Radix) | **Light theme only, orange + white.** Colour tokens in `src/index.css`; primary is `#C25105` so white text on it passes WCAG AA |
 | Routing | **React Router 6** (data router, `createBrowserRouter`) | Lazy routes per persona for code-splitting |
 | Server state | **TanStack Query 5** | All fetching goes through it. No ad-hoc `useEffect` fetches |
 | Forms | **react-hook-form** + **zod** | Zod schemas mirror backend Bean Validation rules |
@@ -70,6 +70,7 @@ apps/web/
       providers.tsx          # QueryClient, Theme, Auth, Toaster
       AppShell.tsx           # sidebar/topbar, role-aware nav
       PublicShell.tsx        # no-chrome layout for /track
+      AuthShell.tsx          # full-screen layout for /login, /signup, /oauth/callback
     config/
       env.ts                 # reads window.__SWIFTDROP__, falls back to import.meta.env
     api/
@@ -204,7 +205,7 @@ Polling  GET /api/v1/tracking/{tn}  every 15 s
 - **Money:** `MoneyLKR` uses `Intl.NumberFormat('en-LK', { style: 'currency', currency: 'LKR' })`. Values arrive as strings or decimals. Never do float arithmetic in the UI, only display.
 - **Phone:** inputs enforce `+94XXXXXXXXX`. A display helper masks to the last 3 digits where needed.
 - **Accessibility:** every form field has a label, focus rings stay visible, colour is never the only signal (chips carry an icon and text), touch targets are ≥ 44 px on courier and tracking screens, and `jsx-a11y` lint is clean.
-- **Dark mode:** follows the system preference, with a toggle in the user menu (preference stored in `localStorage`; this is a UI preference, not a secret).
+- **Theme:** light only, orange and white. There is no dark mode and no theme toggle. The brand colour is a single CSS variable (`--primary` in `src/index.css`), so changing it is a one-line edit; keep it dark enough for white text (contrast ≥ 4.5:1).
 
 ---
 
@@ -290,6 +291,8 @@ The frontend touches every service, so book these conversations early. Each row 
 Every screen implements the four states: **loading** (skeleton, not a spinner, for lists), **empty** (illustration, a sentence, and a primary action), **error** (`ErrorState` with retry and `traceId`), and **success**.
 
 ### 7.1 Auth — FE-2
+
+Sign-in, sign-up and the Google callback render **full screen** in `AuthShell`: no sidebar, no top bar, no assistant button. A brand panel sits beside the form on wide screens and collapses to a small logo on phones.
 
 **Login**
 - Fields: email and password, both required. The form shows the same error for a wrong email and a wrong password.
@@ -486,7 +489,7 @@ Aligned to [plan.md §3](../plan.md#3-milestones). Week 1 is assumed to start on
 
 **Fallback if a backend slips:** ship the screen against MSW behind `VITE_USE_MOCKS`, merge it, and switch to the real API when the service lands. The UI acceptance criterion is never blocked; only the end-to-end check is.
 
-**Priority if time runs short** (cut from the bottom): notification log & preferences → pricing matrix view (keep the list) → report chart (keep CSV) → webhook code snippets beyond Node → dark mode polish.
+**Priority if time runs short** (cut from the bottom): notification log & preferences → pricing matrix view (keep the list) → report chart (keep CSV) → webhook code snippets beyond Node → visual polish.
 
 ---
 
@@ -497,7 +500,7 @@ Copy these into the GitHub issues as task lists. Ticked = built, tested against 
 ### FE-1 Scaffold the SPA and wire it into the stack (M1)
 - [x] `npm create vite@latest apps/web -- --template react-ts`; strict `tsconfig`, `@/` alias
 - [x] ESLint (typescript-eslint, react-hooks, jsx-a11y) + Prettier; `lint`, `typecheck`, `test`, `build`, `gen:api` scripts *(no import-order rule)*
-- [x] Tailwind + light/dark tokens + base primitives *(hand-written shadcn-style Button, Input, Card, Label, Skeleton, Dialog; the shadcn CLI was not used)*
+- [x] Tailwind + light-only orange/white tokens + base primitives *(hand-written shadcn-style Button, Input, Card, Label, Skeleton, Dialog; the shadcn CLI was not used)*
 - [x] React Router data router; `AppShell` (role-aware sidebar, top bar, sign-out, mobile drawer) and `PublicShell`
 - [x] TanStack Query provider + `queryKeys.ts`
 - [x] `api/client.ts` + `ApiError` + form violation mapper (`applyViolations`) + `describeError` *(no separate `useApiErrorToast` hook; pages call `toast.error(describeError(e).message)`)*
@@ -521,6 +524,7 @@ Copy these into the GitHub issues as task lists. Ticked = built, tested against 
 - [x] Boot-time refresh + loading state; proactive refresh timer *(a plain "Loading…" message, not a full-screen splash)*
 - [x] `RequireAuth roles` + `returnTo` (relative-path guard) + `/403`
 - [x] Role landing redirects
+- [x] Full-screen auth layout (`AuthShell`): login, signup and callback have no sidebar or header
 - [x] Logout (server + memory + query cache)
 - [x] Google: PKCE helpers, `/authorize` call, `/oauth/callback` page, `state` verification, error states *(request and response shapes are my assumption, C4)*
 - [x] `/account` profile view and edit (`PATCH /users/me`)
