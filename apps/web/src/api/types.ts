@@ -52,6 +52,8 @@ export interface CreateParcelInput {
   size: PackageSize
   weightKg: number
   express: boolean
+  /** Merchant's own order reference (B2B orders only). */
+  merchantRef?: string
 }
 
 export interface EstimateInput {
@@ -235,4 +237,26 @@ export interface CourierInput {
   phone: string
   maxDailyLoad: number
   active?: boolean
+}
+
+export interface MerchantProfile {
+  id: string
+  orgName: string
+  status: MerchantStatus
+  webhookUrl?: string | null
+}
+
+export interface MerchantOrder {
+  merchantRef: string
+  trackingNumber: string
+  status: ParcelStatus
+  destinationCity: string
+  createdAt: string
+}
+
+export interface MerchantApplication {
+  orgName: string
+  businessRegNo: string
+  contactEmail: string
+  contactPhone: string
 }

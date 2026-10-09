@@ -36,6 +36,17 @@ export const routes = [
         element: <RequireAuth />,
         children: [
           {
+            path: 'merchant/register',
+            ...page(
+              () => import('@/features/merchant/MerchantRegisterPage'),
+              'MerchantRegisterPage',
+            ),
+          },
+          {
+            path: 'merchant/pending',
+            ...page(() => import('@/features/merchant/MerchantPendingPage'), 'MerchantPendingPage'),
+          },
+          {
             path: 'account',
             ...page(() => import('@/features/account/ProfilePage'), 'ProfilePage'),
           },
@@ -60,7 +71,20 @@ export const routes = [
       },
       {
         element: <RequireAuth roles={['MERCHANT']} />,
-        children: [{ path: 'merchant/*', element: soon('Merchant console', 'FE-4') }],
+        children: [
+          {
+            path: 'merchant/orders',
+            ...page(() => import('@/features/merchant/MerchantOrdersPage'), 'MerchantOrdersPage'),
+          },
+          {
+            path: 'merchant/orders/new',
+            ...page(
+              () => import('@/features/merchant/MerchantNewOrderPage'),
+              'MerchantNewOrderPage',
+            ),
+          },
+          { path: 'merchant/*', element: soon('Merchant console', 'FE-4') },
+        ],
       },
       {
         element: <RequireAuth roles={['COURIER']} />,

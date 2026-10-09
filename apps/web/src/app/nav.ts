@@ -26,8 +26,10 @@ export interface NavItem {
 
 export const NAV_ITEMS: NavItem[] = [
   { to: '/deliveries/new', label: 'New delivery', icon: PackagePlus, roles: ['CUSTOMER'] },
+  { to: '/merchant/register', label: 'Become a merchant', icon: Store, roles: ['CUSTOMER'] },
   { to: '/deliveries', label: 'My deliveries', icon: Boxes, roles: ['CUSTOMER'] },
   { to: '/merchant/orders', label: 'Orders', icon: ClipboardList, roles: ['MERCHANT'] },
+  { to: '/merchant/orders/new', label: 'New order', icon: PackagePlus, roles: ['MERCHANT'] },
   { to: '/merchant/api-keys', label: 'API keys', icon: KeyRound, roles: ['MERCHANT'] },
   { to: '/courier/today', label: 'Today', icon: Bike, roles: ['COURIER'] },
   { to: '/admin', label: 'Dashboard', icon: LayoutDashboard, roles: ['ADMIN', 'DISPATCHER'] },

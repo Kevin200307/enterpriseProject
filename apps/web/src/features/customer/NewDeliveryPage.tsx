@@ -31,11 +31,14 @@ import {
 } from './bookingSchema'
 import { EstimatePanel } from './EstimatePanel'
 
-export function NewDeliveryPage() {
+/** `merchant` reuses the same form for B2B orders: adds the partner's own reference and merchant wording. */
+export function NewDeliveryPage({ merchant = false }: { merchant?: boolean }) {
   const cityListId = useId()
   const qc = useQueryClient()
   const [created, setCreated] = useState<Parcel>()
   const [formError, setFormError] = useState<string>()
+  const [reference, setReference] = useState('')
+  const [refError, setRefError] = useState<string>()
   const {
     register,
     handleSubmit,
@@ -87,10 +90,12 @@ export function NewDeliveryPage() {
         weightKg: Number(v.weightKg),
         pickup: clean(v.pickup),
         dropoff: clean(v.dropoff),
+        merchantRef: merchant ? reference.trim() : undefined,
       }),
     onSuccess: (parcel) => {
       setCreated(parcel)
       void qc.invalidateQueries({ queryKey: qk.parcels.all })
+      void qc.invalidateQueries({ queryKey: qk.merchant.all })
     },
     onError: (e) => {
       const extra = applyViolations(e, setError, BOOKING_FIELDS)
@@ -111,8 +116,12 @@ export function NewDeliveryPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title="New delivery"
-        description="Tell us where it's going and we'll price it instantly."
+        title={merchant ? 'New order' : 'New delivery'}
+        description={
+          merchant
+            ? 'Create an order for a customer and see the price instantly.'
+            : "Tell us where it's going and we'll price it instantly."
+        }
       />
       <datalist id={cityListId}>
         {cities.map((c) => (
@@ -122,8 +131,10 @@ export function NewDeliveryPage() {
       <form
         onSubmit={(e) => {
           setFormError(undefined)
+          const missingRef = merchant && !reference.trim()
+          setRefError(missingRef ? 'Your reference is required' : undefined)
           void handleSubmit((v) => {
-            if (estimate.data) book.mutate(v)
+            if (estimate.data && !missingRef) book.mutate(v)
           })(e)
         }}
         noValidate
@@ -164,6 +175,22 @@ export function NewDeliveryPage() {
               <CardTitle>Parcel</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
+              {merchant && (
+                <FormField
+                  label="Your reference"
+                  error={refError}
+                  hint="Your own order id; used to find this order later."
+                >
+                  {(p) => (
+                    <Input
+                      value={reference}
+                      onChange={(e) => setReference(e.target.value)}
+                      autoComplete="off"
+                      {...p}
+                    />
+                  )}
+                </FormField>
+              )}
               <fieldset className="grid gap-2 sm:grid-cols-3">
                 <legend className="mb-2 text-sm font-medium">Size</legend>
                 {SIZES.map((s) => (
@@ -226,7 +253,7 @@ export function NewDeliveryPage() {
       <Dialog
         open={!!created}
         onOpenChange={(o) => !o && setCreated(undefined)}
-        title="Delivery booked"
+        title={merchant ? 'Order created' : 'Delivery booked'}
         description="Share this tracking number with the recipient."
       >
         {created && (
@@ -243,16 +270,19 @@ export function NewDeliveryPage() {
                 Share tracking link
               </Button>
               <Button asChild>
-                <Link to={`/deliveries/${created.id}`}>View delivery</Link>
+                <Link to={merchant ? '/merchant/orders' : `/deliveries/${created.id}`}>
+                  {merchant ? 'View orders' : 'View delivery'}
+                </Link>
               </Button>
               <Button
                 variant="ghost"
                 onClick={() => {
                   setCreated(undefined)
                   reset(bookingDefaults)
+                  setReference('')
                 }}
               >
-                Book another
+                {merchant ? 'Create another' : 'Book another'}
               </Button>
             </div>
           </div>

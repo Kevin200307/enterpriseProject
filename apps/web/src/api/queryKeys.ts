@@ -21,6 +21,13 @@ export const qk = {
     merchants: (f: object) => ['admin', 'merchants', f] as const,
     all: ['admin'] as const,
   },
+  merchant: {
+    me: ['merchant', 'me'] as const,
+    orders: (f: object) => ['merchant', 'orders', f] as const,
+    keys: ['merchant', 'keys'] as const,
+    deliveries: (f: object) => ['merchant', 'deliveries', f] as const,
+    all: ['merchant'] as const,
+  },
   courier: { today: ['courier', 'today'] as const },
   tracking: { public: (tn: string) => ['tracking', tn] as const },
   pricing: {
