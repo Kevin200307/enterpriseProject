@@ -298,3 +298,33 @@ export interface ConversationTurn {
   role: 'user' | 'assistant'
   content: string
 }
+
+export type NotificationChannel = 'EMAIL' | 'SMS'
+export type NotificationStatus = 'PENDING' | 'SENT' | 'FAILED' | 'SKIPPED'
+
+/** Which parcel statuses a user wants to hear about, per channel (NTF-3). */
+export type NotificationPrefs = Record<NotificationChannel, ParcelStatus[]>
+
+export interface MyNotification {
+  id: string
+  channel: NotificationChannel
+  templateKey: string
+  status: NotificationStatus
+  trackingNumber?: string
+  createdAt: string
+  sentAt?: string | null
+}
+
+/** Admin delivery-log row (NTF-4). `recipientRef` is a user id, never an address. */
+export interface AdminNotification {
+  id: string
+  eventId: string
+  channel: NotificationChannel
+  recipientRef: string
+  templateKey: string
+  status: NotificationStatus
+  attempts: number
+  lastError?: string | null
+  createdAt: string
+  sentAt?: string | null
+}

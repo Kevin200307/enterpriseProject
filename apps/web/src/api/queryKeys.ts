@@ -28,6 +28,12 @@ export const qk = {
     deliveries: (f: object) => ['merchant', 'deliveries', f] as const,
     all: ['merchant'] as const,
   },
+  notifications: {
+    prefs: ['notifications', 'prefs'] as const,
+    mine: (page: number) => ['notifications', 'mine', page] as const,
+    log: (f: object) => ['notifications', 'log', f] as const,
+    all: ['notifications'] as const,
+  },
   courier: { today: ['courier', 'today'] as const },
   tracking: { public: (tn: string) => ['tracking', tn] as const },
   pricing: {

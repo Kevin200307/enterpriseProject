@@ -35,3 +35,9 @@ export function ageTone(iso: string, now = Date.now()): AgeTone {
   const hours = (now - new Date(iso).getTime()) / 3_600_000
   return hours >= 24 ? 'late' : hours >= 4 ? 'warn' : 'ok'
 }
+
+/** "booking-confirmed" / "OUT_FOR_DELIVERY" -> "Booking confirmed" / "Out for delivery". */
+export function humanize(key: string) {
+  const s = key.replace(/[-_]+/g, ' ').trim().toLowerCase()
+  return s.charAt(0).toUpperCase() + s.slice(1)
+}

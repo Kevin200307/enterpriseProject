@@ -11,6 +11,9 @@ export const server = setupServer(
   http.get('http://localhost:8081/api/v1/dashboard/summary', () =>
     HttpResponse.json({ parcels: null, dispatch: null, merchants: null }),
   ),
+  http.get('http://localhost:8081/api/v1/notifications/preferences', () =>
+    HttpResponse.json({ EMAIL: [], SMS: [] }),
+  ),
   http.get('http://localhost:8081/api/v1/parcels', () =>
     HttpResponse.json({ content: [], totalElements: 0, totalPages: 0, number: 0, size: 20 }),
   ),

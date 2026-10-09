@@ -175,6 +175,25 @@ checker shows every place the UI disagrees.
 
 ---
 
+## 7b. Thiranjaya: notification-service (NTF-3, NTF-4)
+
+| Endpoint | UI sends | UI expects | Status |
+|---|---|---|---|
+| `GET /notifications/preferences` | none | `{ "EMAIL": ["CREATED", ...], "SMS": ["DELIVERED", ...] }`: the parcel statuses to be notified about, per channel | ⚠️ guess (shape) |
+| `PUT /notifications/preferences` | the full new object, same shape | the saved object | ⚠️ guess |
+| `GET /notifications/me` | `page`, `size` | `Page<{ id, channel, templateKey, status, trackingNumber?, createdAt, sentAt? }>` | ✅ plan (fields ⚠️) |
+| `GET /notifications` (ADMIN) | `status`, `channel`, `from`, `to` (`YYYY-MM-DD`), `page`, `size` | `Page<{ id, eventId, channel, recipientRef, templateKey, status, attempts, lastError?, createdAt, sentAt? }>` | ✅ plan (fields ⚠️) |
+| `POST /notifications/{id}/resend` (ADMIN) | none | `202`/`200` | ✅ plan |
+
+**Open questions for Thiranjaya**
+1. Preference shape: is `{ EMAIL: [...statuses], SMS: [...statuses] }` right? The UI offers the 6 `ParcelStatus` values (not `CANCELLED`).
+2. `templateKey` is shown humanised ("booking-confirmed" → "Booking confirmed"). Any stable naming works.
+3. `recipientRef` is displayed truncated to 8 characters, never an address (your PII rule).
+4. The UI offers Resend only for `FAILED` and `SKIPPED` rows. Tell me if `PENDING` should qualify too.
+5. `status` values assumed: `PENDING | SENT | FAILED | SKIPPED` (as in NTF-1).
+
+---
+
 ## 8. Kevin: gateway extras
 
 | Item | Need | Status |
@@ -188,5 +207,4 @@ checker shows every place the UI disagrees.
 ## 9. Not built yet (so nothing to confirm)
 
 - Forced password change screen (needs Amandi's answer above).
-- Notification preferences and the admin notification log (NTF-3/4).
 - Pricing rule matrix view, and a city → zone `resolve` call.

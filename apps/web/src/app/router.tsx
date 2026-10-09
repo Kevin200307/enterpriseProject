@@ -36,6 +36,13 @@ export const routes = [
         element: <RequireAuth />,
         children: [
           {
+            path: 'account/notifications',
+            ...page(
+              () => import('@/features/notifications/NotificationsPage'),
+              'NotificationsPage',
+            ),
+          },
+          {
             path: 'merchant/register',
             ...page(
               () => import('@/features/merchant/MerchantRegisterPage'),
@@ -139,6 +146,10 @@ export const routes = [
       {
         element: <RequireAuth roles={['ADMIN']} />,
         children: [
+          {
+            path: 'admin/notifications',
+            ...page(() => import('@/features/admin/NotificationLogPage'), 'NotificationLogPage'),
+          },
           {
             path: 'admin/reports',
             ...page(() => import('@/features/admin/ReportsPage'), 'ReportsPage'),

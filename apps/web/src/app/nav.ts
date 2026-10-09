@@ -1,5 +1,6 @@
 import {
   BarChart3,
+  Bell,
   Bike,
   Boxes,
   Gauge,
@@ -7,6 +8,7 @@ import {
   ClipboardList,
   KeyRound,
   LayoutDashboard,
+  Mail,
   Map,
   MapPin,
   PackagePlus,
@@ -47,10 +49,17 @@ export const NAV_ITEMS: NavItem[] = [
   { to: '/admin/couriers', label: 'Couriers', icon: Bike, roles: ['ADMIN', 'DISPATCHER'] },
   { to: '/admin/workload', label: 'Workload', icon: Gauge, roles: ['ADMIN', 'DISPATCHER'] },
   { to: '/admin/users', label: 'Users', icon: Users, roles: ['ADMIN'] },
+  { to: '/admin/notifications', label: 'Notification log', icon: Mail, roles: ['ADMIN'] },
   { to: '/admin/reports', label: 'Reports', icon: BarChart3, roles: ['ADMIN'] },
   { to: '/admin/zones', label: 'Zones', icon: Map, roles: ['ADMIN'] },
   { to: '/admin/pricing', label: 'Pricing', icon: Tag, roles: ['ADMIN'] },
   { to: '/admin/merchants', label: 'Merchants', icon: Store, roles: ['ADMIN'] },
+  {
+    to: '/account/notifications',
+    label: 'Notifications',
+    icon: Bell,
+    roles: ['CUSTOMER', 'MERCHANT', 'COURIER', 'DISPATCHER', 'ADMIN'],
+  },
   { to: '/track', label: 'Track a parcel', icon: Search, roles: [] },
 ]
 
