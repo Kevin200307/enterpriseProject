@@ -12,8 +12,8 @@ globalThis.Request = class extends NodeRequest {
   }
 } as typeof Request
 
-// Lazy route chunks are transformed on first use, which can exceed the 1 s default on a cold run.
-configure({ asyncUtilTimeout: 4000 })
+// Lazy route chunks are transformed on first use and workers compete for CPU; the 1 s default is far too tight.
+configure({ asyncUtilTimeout: 10_000 })
 
 // No real sockets in unit tests. Files that exercise live updates mock this module themselves.
 vi.mock('@/realtime/transports', () => ({ defaultTransports: () => [] }))
