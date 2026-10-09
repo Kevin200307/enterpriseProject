@@ -2,13 +2,15 @@ import { Menu, Moon, Package, Sun, X } from 'lucide-react'
 import { useState } from 'react'
 import { Link, NavLink, Outlet } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
+import { useAuth } from '@/auth/authContext'
 import { useSession } from '@/auth/session'
 import { cn } from '@/lib/cn'
 import { navFor } from './nav'
 import { useTheme } from './useTheme'
 
 export function AppShell() {
-  const { roles } = useSession()
+  const { roles, email } = useSession()
+  const { logout } = useAuth()
   const { theme, toggle } = useTheme()
   const [open, setOpen] = useState(false)
   const items = navFor(roles)
@@ -59,10 +61,22 @@ export function AppShell() {
             <Button variant="ghost" size="icon" aria-label="Toggle dark mode" onClick={toggle}>
               {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
             </Button>
-            {roles.length === 0 && (
+            {roles.length === 0 ? (
               <Button asChild size="sm">
                 <Link to="/login">Sign in</Link>
               </Button>
+            ) : (
+              <>
+                <Link
+                  to="/account"
+                  className="hidden text-sm text-muted-foreground hover:underline sm:inline"
+                >
+                  {email}
+                </Link>
+                <Button variant="outline" size="sm" onClick={() => void logout()}>
+                  Sign out
+                </Button>
+              </>
             )}
           </div>
         </header>

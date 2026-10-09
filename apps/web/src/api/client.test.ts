@@ -87,9 +87,18 @@ describe('api client', () => {
     expect(refresh).toHaveBeenCalledTimes(1)
   })
 
-  it('signals session expiry when refresh fails', async () => {
+  it('does not signal expiry for an anonymous 401', async () => {
     const expired = vi.fn()
     setSessionExpiredHandler(expired)
+    server.use(http.get(url('/secure'), () => new HttpResponse(null, { status: 401 })))
+    await expect(api.get('/secure')).rejects.toBeInstanceOf(ApiError)
+    expect(expired).not.toHaveBeenCalled()
+  })
+
+  it('signals session expiry when a signed-in user cannot refresh', async () => {
+    const expired = vi.fn()
+    setSessionExpiredHandler(expired)
+    tokenStore.set('old')
     server.use(http.get(url('/secure'), () => new HttpResponse(null, { status: 401 })))
     await expect(api.get('/secure')).rejects.toBeInstanceOf(ApiError)
     expect(expired).toHaveBeenCalled()

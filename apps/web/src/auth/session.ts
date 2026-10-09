@@ -1,9 +1,8 @@
-/** Placeholder session until AuthProvider lands in FE-2. Anonymous by default. */
-export type Role = 'CUSTOMER' | 'MERCHANT' | 'COURIER' | 'DISPATCHER' | 'ADMIN'
+import { useAuth } from './authContext'
+export type { Role } from './types'
 
-export interface Session {
-  roles: Role[]
-  email?: string
+/** Thin view over the auth context for layout components. */
+export function useSession() {
+  const { claims } = useAuth()
+  return { roles: claims?.roles ?? [], email: claims?.email }
 }
-
-export const useSession = (): Session => ({ roles: [] })

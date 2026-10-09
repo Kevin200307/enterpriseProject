@@ -1,4 +1,10 @@
-import { createBrowserRouter, Navigate } from 'react-router-dom'
+import { createBrowserRouter } from 'react-router-dom'
+import { RequireAuth } from '@/auth/RequireAuth'
+import { ProfilePage } from '@/features/account/ProfilePage'
+import { Home } from '@/features/auth/Home'
+import { LoginPage } from '@/features/auth/LoginPage'
+import { OAuthCallbackPage } from '@/features/auth/OAuthCallbackPage'
+import { SignupPage } from '@/features/auth/SignupPage'
 import { ComingSoon, ForbiddenPage, NotFoundPage } from '@/features/system/pages'
 import { AppShell, PublicShell } from './AppShell'
 import { RouteError } from './RouteError'
@@ -10,17 +16,36 @@ export const routes = [
     element: <AppShell />,
     errorElement: <RouteError />,
     children: [
-      { index: true, element: <Navigate to="/deliveries" replace /> },
-      { path: 'login', element: soon('Sign in', 'FE-2') },
-      { path: 'signup', element: soon('Create account', 'FE-2') },
-      { path: 'deliveries', element: soon('My deliveries', 'FE-3') },
-      { path: 'deliveries/new', element: soon('New delivery', 'FE-3') },
-      { path: 'deliveries/:id', element: soon('Delivery details', 'FE-3') },
+      { index: true, element: <Home /> },
+      { path: 'login', element: <LoginPage /> },
+      { path: 'signup', element: <SignupPage /> },
+      { path: 'oauth/callback', element: <OAuthCallbackPage /> },
       { path: 'track', element: soon('Track a parcel', 'FE-3') },
-      { path: 'merchant/*', element: soon('Merchant console', 'FE-4') },
-      { path: 'courier/*', element: soon('Courier', 'FE-4') },
-      { path: 'admin/*', element: soon('Admin', 'FE-4') },
       { path: '403', element: <ForbiddenPage /> },
+      {
+        element: <RequireAuth />,
+        children: [{ path: 'account', element: <ProfilePage /> }],
+      },
+      {
+        element: <RequireAuth roles={['CUSTOMER']} />,
+        children: [
+          { path: 'deliveries', element: soon('My deliveries', 'FE-3') },
+          { path: 'deliveries/new', element: soon('New delivery', 'FE-3') },
+          { path: 'deliveries/:id', element: soon('Delivery details', 'FE-3') },
+        ],
+      },
+      {
+        element: <RequireAuth roles={['MERCHANT']} />,
+        children: [{ path: 'merchant/*', element: soon('Merchant console', 'FE-4') }],
+      },
+      {
+        element: <RequireAuth roles={['COURIER']} />,
+        children: [{ path: 'courier/*', element: soon('Courier', 'FE-4') }],
+      },
+      {
+        element: <RequireAuth roles={['ADMIN', 'DISPATCHER']} />,
+        children: [{ path: 'admin/*', element: soon('Admin', 'FE-4') }],
+      },
       { path: '*', element: <NotFoundPage /> },
     ],
   },

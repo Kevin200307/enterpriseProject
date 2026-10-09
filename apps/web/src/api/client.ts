@@ -59,9 +59,11 @@ async function send(path: string, opts: RequestOptions, retried: boolean): Promi
   }
 
   if (res.status === 401 && !retried && !opts.skipAuthRetry) {
+    // Captured before refresh: a failed refresh clears the token, and only a user who HAD a session can expire.
+    const hadSession = tokenStore.get() !== null
     const fresh = await tokenStore.refresh()
     if (fresh) return send(path, opts, true)
-    onSessionExpired?.()
+    if (hadSession) onSessionExpired?.()
   }
   if (!res.ok) throw await ApiError.fromResponse(res)
   return res

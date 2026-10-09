@@ -1,33 +1,28 @@
 import { render, screen } from '@testing-library/react'
-import { createMemoryRouter, RouterProvider } from 'react-router-dom'
 import { describe, expect, it } from 'vitest'
 import { ApiError } from '@/api/ApiError'
 import { ErrorState } from '@/components/common/ErrorState'
-import { Providers } from './providers'
+import { mockSession, renderApp } from '@/test/utils'
 import { navFor } from './nav'
-import { routes } from './router'
-
-const renderAt = (path: string) =>
-  render(
-    <Providers>
-      <RouterProvider router={createMemoryRouter(routes, { initialEntries: [path] })} />
-    </Providers>,
-  )
 
 describe('app shell', () => {
-  it('resolves a deep link instead of 404ing', () => {
-    renderAt('/deliveries/new')
-    expect(screen.getByRole('heading', { name: 'New delivery' })).toBeInTheDocument()
+  it('resolves a deep link for a signed-in customer instead of 404ing', async () => {
+    mockSession(['CUSTOMER'])
+    renderApp('/deliveries/new')
+    expect(await screen.findByRole('heading', { name: 'New delivery' })).toBeInTheDocument()
   })
 
-  it('renders the public tracking page without app chrome', () => {
-    renderAt('/track/SD-ABCD2345')
+  it('renders the public tracking page without app chrome', async () => {
+    mockSession()
+    renderApp('/track/SD-ABCD2345')
+    expect(await screen.findByRole('heading', { name: 'Live tracking' })).toBeInTheDocument()
     expect(screen.queryByRole('navigation', { name: 'Main' })).not.toBeInTheDocument()
   })
 
-  it('shows a not-found page for unknown routes', () => {
-    renderAt('/nope')
-    expect(screen.getByRole('heading', { name: 'Page not found' })).toBeInTheDocument()
+  it('shows a not-found page for unknown routes', async () => {
+    mockSession()
+    renderApp('/nope')
+    expect(await screen.findByRole('heading', { name: 'Page not found' })).toBeInTheDocument()
   })
 })
 
