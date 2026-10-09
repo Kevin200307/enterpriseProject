@@ -2,14 +2,19 @@ import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { ApiError } from '@/api/ApiError'
 import { ErrorState } from '@/components/common/ErrorState'
-import { mockSession, renderApp } from '@/test/utils'
+import { http, HttpResponse } from 'msw'
+import { server } from '@/test/server'
+import { API, mockSession, renderApp } from '@/test/utils'
 import { navFor } from './nav'
 
 describe('app shell', () => {
   it('resolves a deep link for a signed-in customer instead of 404ing', async () => {
     mockSession(['CUSTOMER'])
+    server.use(http.get(`${API}/api/v1/pricing/zones`, () => HttpResponse.json([])))
     renderApp('/deliveries/new')
-    expect(await screen.findByRole('heading', { name: 'New delivery' })).toBeInTheDocument()
+    expect(
+      await screen.findByRole('heading', { name: 'New delivery', level: 1 }),
+    ).toBeInTheDocument()
   })
 
   it('renders the public tracking page without app chrome', async () => {

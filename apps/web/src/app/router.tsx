@@ -1,6 +1,7 @@
 import { createBrowserRouter } from 'react-router-dom'
 import { RequireAuth } from '@/auth/RequireAuth'
 import { ProfilePage } from '@/features/account/ProfilePage'
+import { NewDeliveryPage } from '@/features/customer/NewDeliveryPage'
 import { Home } from '@/features/auth/Home'
 import { LoginPage } from '@/features/auth/LoginPage'
 import { OAuthCallbackPage } from '@/features/auth/OAuthCallbackPage'
@@ -30,7 +31,7 @@ export const routes = [
         element: <RequireAuth roles={['CUSTOMER']} />,
         children: [
           { path: 'deliveries', element: soon('My deliveries', 'FE-3') },
-          { path: 'deliveries/new', element: soon('New delivery', 'FE-3') },
+          { path: 'deliveries/new', element: <NewDeliveryPage /> },
           { path: 'deliveries/:id', element: soon('Delivery details', 'FE-3') },
         ],
       },
