@@ -1,16 +1,17 @@
 import { createBrowserRouter } from 'react-router-dom'
 import { RequireAuth } from '@/auth/RequireAuth'
-import { ProfilePage } from '@/features/account/ProfilePage'
-import { NewDeliveryPage } from '@/features/customer/NewDeliveryPage'
-import { DeliveriesPage } from '@/features/customer/DeliveriesPage'
-import { DeliveryDetailPage } from '@/features/customer/DeliveryDetailPage'
 import { Home } from '@/features/auth/Home'
-import { LoginPage } from '@/features/auth/LoginPage'
-import { OAuthCallbackPage } from '@/features/auth/OAuthCallbackPage'
-import { SignupPage } from '@/features/auth/SignupPage'
 import { ComingSoon, ForbiddenPage, NotFoundPage } from '@/features/system/pages'
 import { AppShell, PublicShell } from './AppShell'
 import { RouteError } from './RouteError'
+
+/** Route-level code splitting: each persona/page ships in its own chunk, so /track stays tiny. */
+const page = <T extends Record<string, React.ComponentType>>(
+  load: () => Promise<T>,
+  name: keyof T,
+) => ({
+  lazy: async () => ({ Component: (await load())[name] }),
+})
 
 const soon = (title: string, issue: string) => <ComingSoon title={title} issue={issue} />
 
@@ -20,21 +21,41 @@ export const routes = [
     errorElement: <RouteError />,
     children: [
       { index: true, element: <Home /> },
-      { path: 'login', element: <LoginPage /> },
-      { path: 'signup', element: <SignupPage /> },
-      { path: 'oauth/callback', element: <OAuthCallbackPage /> },
-      { path: 'track', element: soon('Track a parcel', 'FE-3') },
+      { path: 'login', ...page(() => import('@/features/auth/LoginPage'), 'LoginPage') },
+      { path: 'signup', ...page(() => import('@/features/auth/SignupPage'), 'SignupPage') },
+      {
+        path: 'oauth/callback',
+        ...page(() => import('@/features/auth/OAuthCallbackPage'), 'OAuthCallbackPage'),
+      },
+      {
+        path: 'track',
+        ...page(() => import('@/features/tracking/TrackLookupPage'), 'TrackLookupPage'),
+      },
       { path: '403', element: <ForbiddenPage /> },
       {
         element: <RequireAuth />,
-        children: [{ path: 'account', element: <ProfilePage /> }],
+        children: [
+          {
+            path: 'account',
+            ...page(() => import('@/features/account/ProfilePage'), 'ProfilePage'),
+          },
+        ],
       },
       {
         element: <RequireAuth roles={['CUSTOMER']} />,
         children: [
-          { path: 'deliveries', element: <DeliveriesPage /> },
-          { path: 'deliveries/new', element: <NewDeliveryPage /> },
-          { path: 'deliveries/:id', element: <DeliveryDetailPage /> },
+          {
+            path: 'deliveries',
+            ...page(() => import('@/features/customer/DeliveriesPage'), 'DeliveriesPage'),
+          },
+          {
+            path: 'deliveries/new',
+            ...page(() => import('@/features/customer/NewDeliveryPage'), 'NewDeliveryPage'),
+          },
+          {
+            path: 'deliveries/:id',
+            ...page(() => import('@/features/customer/DeliveryDetailPage'), 'DeliveryDetailPage'),
+          },
         ],
       },
       {
@@ -55,7 +76,12 @@ export const routes = [
   {
     element: <PublicShell />,
     errorElement: <RouteError />,
-    children: [{ path: 'track/:trackingNumber', element: soon('Live tracking', 'FE-3') }],
+    children: [
+      {
+        path: 'track/:trackingNumber',
+        ...page(() => import('@/features/tracking/PublicTrackPage'), 'PublicTrackPage'),
+      },
+    ],
   },
 ]
 

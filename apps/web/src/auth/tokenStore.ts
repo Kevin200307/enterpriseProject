@@ -28,14 +28,16 @@ export const tokenStore = {
   },
   refresh(): Promise<string | null> {
     if (!refresher) return Promise.resolve(null)
+    const before = accessToken
     inFlight ??= refresher()
       .then((t) => {
         this.set(t)
         return t
       })
       .catch(() => {
-        this.set(null)
-        return null
+        // A sign-in that completed while this refresh was in flight must not be wiped by its late failure.
+        if (accessToken === before) this.set(null)
+        return accessToken
       })
       .finally(() => {
         inFlight = null

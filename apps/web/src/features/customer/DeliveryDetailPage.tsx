@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Download, Share2 } from 'lucide-react'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { isApiError } from '@/api/ApiError'
@@ -20,6 +20,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog } from '@/components/ui/dialog'
 import { Skeleton } from '@/components/ui/skeleton'
 import { shareLink, trackingUrl } from '@/lib/share'
+import { useParcelLiveStatus } from '@/realtime/useParcelLiveStatus'
 
 const AddressCard = ({ title, a }: { title: string; a: Address }) => (
   <Card>
@@ -69,6 +70,18 @@ export function DeliveryDetailPage() {
     queryKey: [...qk.parcels.detail(id), 'history'],
     queryFn: () => parcelsApi.history(id),
     enabled: parcel.isSuccess,
+  })
+
+  // Live updates: the pushed payload is the masked public shape, so only use it as a "something changed"
+  // signal and refetch the authoritative (owner-scoped) data.
+  const lastStatus = useRef<string>()
+  lastStatus.current ??= parcel.data?.status
+  useParcelLiveStatus(parcel.data?.trackingNumber, {
+    onMessage: (t) => {
+      if (t.status === lastStatus.current) return
+      lastStatus.current = t.status
+      void qc.invalidateQueries({ queryKey: qk.parcels.all })
+    },
   })
 
   const cancel = useMutation({

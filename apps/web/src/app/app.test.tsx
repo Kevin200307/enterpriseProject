@@ -17,11 +17,13 @@ describe('app shell', () => {
     ).toBeInTheDocument()
   })
 
-  it('renders the public tracking page without app chrome', async () => {
+  it('renders the tracking lookup inside the app shell', async () => {
     mockSession()
-    renderApp('/track/SD-ABCD2345')
-    expect(await screen.findByRole('heading', { name: 'Live tracking' })).toBeInTheDocument()
-    expect(screen.queryByRole('navigation', { name: 'Main' })).not.toBeInTheDocument()
+    renderApp('/track')
+    expect(
+      await screen.findByRole('heading', { name: 'Track a parcel', level: 1 }),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('navigation', { name: 'Main' })).toBeInTheDocument()
   })
 
   it('shows a not-found page for unknown routes', async () => {
