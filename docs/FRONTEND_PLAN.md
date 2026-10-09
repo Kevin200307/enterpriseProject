@@ -492,74 +492,81 @@ Aligned to [plan.md §3](../plan.md#3-milestones). Week 1 is assumed to start on
 
 ## 9. Issue checklists
 
-Copy these into the GitHub issues as task lists.
+Copy these into the GitHub issues as task lists. Ticked = built, tested against mocks and pushed to `feat/web-frontend`. A note in *italics* says where the build differs from the plan. Everything still open is either blocked on a teammate or needs the live stack. Status as of 2026-10-09.
 
 ### FE-1 Scaffold the SPA and wire it into the stack (M1)
-- [ ] `npm create vite@latest apps/web -- --template react-ts`; strict `tsconfig`, `@/` alias
-- [ ] ESLint (typescript-eslint, react-hooks, jsx-a11y, import order) + Prettier; `lint`, `typecheck`, `test`, `build`, `gen:api` scripts
-- [ ] Tailwind + shadcn/ui init; base primitives added; light/dark tokens
-- [ ] React Router data router; `AppShell` (role-aware sidebar, top bar, user menu, mobile drawer) and `PublicShell`
-- [ ] TanStack Query provider + `queryKeys.ts`
-- [ ] `api/client.ts` + `ApiError` + `useApiErrorToast` + form violation mapper
-- [ ] `openapi-typescript` script against `http://localhost:8081/v3/api-docs/...`; commit `schema.d.ts`; CI fails if regeneration produces a diff (later, with PLT-2)
-- [ ] MSW: browser worker + node server for tests; handlers for auth, pricing, parcels and tracking
-- [ ] Common components: `StatusChip`, `EmptyState`, `ErrorState`, `PageHeader`, `Pagination`, `DataTable`, `ConfirmDialog`, `CopyField`, `MoneyLKR`
-- [ ] Error boundary + route `errorElement`, `/403`, `*` 404
-- [ ] Runtime `config.js` + `env.ts`
-- [ ] `Dockerfile` (node:20-alpine build → nginx:alpine), `nginx.conf` (`try_files $uri /index.html`, gzip, long cache for `/assets/*`, `no-store` for `index.html` and `config.js`), entrypoint `envsubst`
-- [ ] `web` service in `infra/docker-compose.yml` (host port `${WEB_HOST_PORT:-5174}`, `API_BASE_URL=http://localhost:8081`); new vars in `.env.example`; tell Kevin to add that origin to CORS (C1); tell PLT-4 the port
-- [ ] Vitest + RTL setup with one smoke test (`App renders`)
-- [ ] README section: dev (`npm run dev`), mock mode, Docker
+- [x] `npm create vite@latest apps/web -- --template react-ts`; strict `tsconfig`, `@/` alias
+- [x] ESLint (typescript-eslint, react-hooks, jsx-a11y) + Prettier; `lint`, `typecheck`, `test`, `build`, `gen:api` scripts *(no import-order rule)*
+- [x] Tailwind + light/dark tokens + base primitives *(hand-written shadcn-style Button, Input, Card, Label, Skeleton, Dialog; the shadcn CLI was not used)*
+- [x] React Router data router; `AppShell` (role-aware sidebar, top bar, sign-out, mobile drawer) and `PublicShell`
+- [x] TanStack Query provider + `queryKeys.ts`
+- [x] `api/client.ts` + `ApiError` + form violation mapper (`applyViolations`) + `describeError` *(no separate `useApiErrorToast` hook; pages call `toast.error(describeError(e).message)`)*
+- [ ] `openapi-typescript` generated `schema.d.ts` committed; CI fails on a diff *(the `gen:api` script exists; nothing generated because there is no gateway to read yet; CI is PLT-2)*
+- [ ] MSW: browser worker with handlers for auth, pricing, parcels and tracking *(the node test server is done, but per-service mocks live inside each test file; the browser worker has one demo handler, so `VITE_USE_MOCKS=true` is not yet a usable offline demo)*
+- [x] Common components: `StatusChip`, `EmptyState`, `ErrorState`, `PageHeader`, `Pagination`, `ConfirmDialog`, `CopyField`, `MoneyLKR` *(no shared `DataTable`; each page renders its own table)*
+- [x] Error boundary + route `errorElement`, `/403`, `*` 404
+- [x] Runtime `config.js` + `env.ts`
+- [x] `Dockerfile` (node:20-alpine build → nginx:alpine) and `nginx.conf` (SPA fallback, gzip, immutable `/assets/*`, `no-store` for `index.html` and `config.js`, `/healthz`) *(the entrypoint script writes `config.js` itself and rejects unsafe values, instead of `envsubst`)*
+- [x] `web` service in `infra/docker-compose.yml` (host port `${WEB_HOST_PORT:-5174}`); new vars in `.env.example`
+- [ ] Tell Kevin to add `http://localhost:5174` to `WEB_ORIGIN` (C1) and tell PLT-4 the port *(not yet communicated)*
+- [x] Vitest + RTL setup (now 189 tests)
+- [x] README section: dev, mock mode, Docker
 
-**Acceptance:** `docker compose up web` serves the app, `/deliveries/new` reloads without a 404, and an API error renders as a readable message.
+**Acceptance:** `docker compose up web` serves the app, `/deliveries/new` reloads without a 404, and an API error renders as a readable message. *Verified by building and running the image on its own (deep link, gzip, caching, runtime config, health check) and by tests. Not yet run through `docker compose up web` with the gateway behind it.*
 
 ### FE-2 Authentication, Google sign-in and route guards (M2)
-- [ ] Zod schemas for login and signup mirroring IDN-1 rules
-- [ ] Login and signup pages with error mapping (401, 409, 429 countdown)
-- [ ] `tokenStore` with single-flight `refresh()`; 401 interceptor retries once
-- [ ] Boot-time refresh + splash; proactive refresh timer
-- [ ] `RequireAuth roles` + `returnTo` (relative-path guard) + `/403`
-- [ ] Role landing redirects
-- [ ] Logout (server + memory + query cache)
-- [ ] Google: PKCE helpers, `/authorize` call, `/oauth/callback` page, `state` verification, error states
-- [ ] `/account` profile view and edit (`PATCH /users/me`)
-- [ ] Tests: three parallel 401s → exactly one refresh call (MSW counter); failed refresh → redirect with `reason=expired`; CUSTOMER at `/admin` → 403 page
+- [x] Zod schemas for login and signup mirroring IDN-1 rules
+- [x] Login and signup pages with error mapping (401, 409, 429 countdown)
+- [x] `tokenStore` with single-flight `refresh()`; 401 interceptor retries once
+- [x] Boot-time refresh + loading state; proactive refresh timer *(a plain "Loading…" message, not a full-screen splash)*
+- [x] `RequireAuth roles` + `returnTo` (relative-path guard) + `/403`
+- [x] Role landing redirects
+- [x] Logout (server + memory + query cache)
+- [x] Google: PKCE helpers, `/authorize` call, `/oauth/callback` page, `state` verification, error states *(request and response shapes are my assumption, C4)*
+- [x] `/account` profile view and edit (`PATCH /users/me`)
+- [x] Tests: three parallel 401s → exactly one refresh; failed refresh → redirect with `reason=expired`; CUSTOMER at `/admin` → 403 page; sign-in finishing during the boot refresh is not wiped
+- [ ] Forced password change screen for the bootstrap admin *(blocked on C5: no answer yet on how it is signalled or which endpoint changes the password)*
 
-**Acceptance:** an expired token refreshes with no visible failure; parallel 401s trigger one refresh; a CUSTOMER sees 403 on `/admin`.
+**Acceptance:** an expired token refreshes with no visible failure; parallel 401s trigger one refresh; a CUSTOMER sees 403 on `/admin`. *Met against mocks. The Google flow and the refresh cookie are unverified against identity-service (C3, C4).*
 
 ### FE-3 Customer journey and the public tracking page (M2/M3)
-- [ ] `components/booking/` reusable form (address fields, size, weight, express)
-- [ ] Live estimate panel (debounced, cached, 404/400/503 handling)
-- [ ] Create parcel + success dialog (copy, share)
-- [ ] `/deliveries` list with URL-synced filters + pagination + mobile cards
-- [ ] `/deliveries/:id` timeline, fee, proof image, failure reason, cancel, receipt blob download
-- [ ] `/track` input + `/track/:tn` public page in `PublicShell`
-- [ ] `useParcelLiveStatus` STOMP → SSE → polling, with connection indicator
-- [ ] Share link (`navigator.share`, falling back to clipboard)
-- [ ] Bundle check on `/track` (`vite build --mode analyze` / `rollup-plugin-visualizer`), Lighthouse mobile ≥ 90 report saved to `docs/test-reports/lighthouse-track.html`
-- [ ] RTL: booking form validation + estimate display + submit success
-- [ ] Manual: 360 px viewport; a second tab updates within 1 s after a status PATCH
+- [x] Reusable booking form (address fields, size, weight, express) *(lives in `features/customer/NewDeliveryPage` with a `merchant` prop, not in `components/booking/`)*
+- [x] Live estimate panel (debounced, cached, 404/400/503 handling)
+- [x] Create parcel + success dialog (copy, share)
+- [x] `/deliveries` list with URL-synced filters + pagination *(responsive cards rather than a table)*
+- [x] `/deliveries/:id` timeline, proof image, failure reason, cancel, receipt blob download *(shows the total fee only; a breakdown needs C7)*
+- [x] `/track` input + `/track/:tn` public page in `PublicShell`
+- [x] `useParcelLiveStatus` STOMP → SSE → polling, with connection indicator
+- [x] Share link (`navigator.share`, falling back to clipboard)
+- [ ] Bundle check and Lighthouse mobile ≥ 90 report saved to `docs/test-reports/lighthouse-track.html` *(bundle only measured from build output: main ≈ 109 KB gzip, above the 90 KB budget in §7.3; Lighthouse not run, it needs the live stack)*
+- [x] RTL: booking form validation + estimate display + submit success
+- [ ] Manual: 360 px viewport; a second tab updates within 1 s after a status PATCH *(needs TRK-4 and the gateway)*
 
-**Acceptance:** live status without refresh, usable at 360 px, Lighthouse mobile ≥ 90 on `/track`.
+**Acceptance:** live status without refresh, usable at 360 px, Lighthouse mobile ≥ 90 on `/track`. *Live updates and the fallback ladder are implemented and tested with fake transports. The 360 px and Lighthouse parts are unverified.*
 
 ### FE-4 Merchant, courier and admin consoles plus the AI widget (M4)
-- [ ] Courier: today manifest, transition button table, proof sheet (camera, downscale, ≤ 5 MB), fail sheet, optimistic update + rollback
-- [ ] Dispatch: queue, suggest chips, assign/reassign/unassign, workload panel, auto-refresh
-- [ ] Admin: dashboard tiles (partial-tolerant), couriers, parcels, users (lockout guard), merchants approvals, zones, pricing rules (list + matrix), reports (chart + CSV)
-- [ ] Merchant: register, pending, orders + new order, API keys + `CopyOnceModal`, webhook settings + snippets, deliveries log + replay
-- [ ] AI widget: streaming, stop, tool chips, safe markdown, conversation persist/clear, hidden when disabled
-- [ ] Stretch: notification preferences + my notifications + admin notification log
-- [ ] RTL: booking form (from FE-3), `CopyOnceModal` (key gone after close; Done disabled until ticked), courier status flow (CREATED → … → DELIVERED with proof; FAILED requires a reason)
-- [ ] Unit: CSV builder (quoting, header, dates)
-- [ ] Manual: courier flow on a real phone via `http://<laptop-LAN-IP>:<web-port>` (needs CORS for that origin, or run the SPA dev server with `--host` and a gateway proxy)
+- [x] Courier: today manifest, transition button table, proof sheet (camera, downscale, ≤ 5 MB), fail sheet, optimistic update + rollback
+- [x] Dispatch: queue, suggest chips, assign and reassign, workload panel, auto-refresh
+- [ ] Dispatch: unassign (`DELETE /dispatch/assignments/{id}`) *(not built)*
+- [x] Admin: dashboard tiles (partial-tolerant), couriers, parcels, users (lockout guard), merchant approvals, zones, pricing rules (list view), reports (chart + CSV) *(the chart is plain CSS bars with a data table, not Recharts)*
+- [ ] Admin: pricing rule matrix view *(not built; the list view covers the same edits)*
+- [x] Merchant: register, pending, orders + new order, API keys + `CopyOnceModal`, webhook settings + snippets, deliveries log + replay
+- [x] AI widget: streaming, stop, tool chips, safe markdown, conversation persist/clear, hidden when disabled
+- [x] Stretch: notification preferences + my notifications + admin notification log
+- [x] RTL: booking form (FE-3), `CopyOnceModal` (key gone after close; Done disabled until ticked; nothing left in the query or mutation cache), courier status flow (FAILED requires a reason)
+- [x] Unit: CSV builder (quoting, header, dates)
+- [ ] Manual: courier flow on a real phone via `http://<laptop-LAN-IP>:<web-port>` *(needs CORS for that origin and the live stack)*
 
-**Acceptance:** every persona's core journey completes with no console errors; the courier flow works on a real phone; CSV export is correct.
+**Acceptance:** every persona's core journey completes with no console errors; the courier flow works on a real phone; CSV export is correct. *Every journey is built and tested against mocks, and CSV output is tested. The phone test and "no console errors" need the live stack. Many request and response shapes are assumptions; see [FRONTEND_CONTRACTS.md](FRONTEND_CONTRACTS.md).*
 
 ### PLT-1 (co-lead with Amandi) — my share
 - [ ] Week 1: create `docs/SWIFTDROP.md` with every heading + `TODO (@owner)`; `docs/diagrams/`
 - [ ] Write the frontend sections: SPA architecture, auth/token flow sequence diagram, realtime ladder, route/role matrix, UI screenshots per persona
 - [ ] Use-case diagrams for the four personas (shared with Amandi)
 - [ ] Week 8: consistency pass, every class reference checked, diagrams render, PDF export, contribution sheet generated from issue and PR history
+
+### PLT-5 (frontend part)
+- [ ] Playwright smoke suite: signup → login → estimate → book → public track → courier delivers → receipt downloads *(no `playwright.config.ts` or `e2e/` yet)*
 
 ---
 
@@ -579,16 +586,16 @@ Coverage reporting comes from `vitest --coverage` (v8). Aim for ≥ 70 % on `src
 
 ## 11. Frontend security checklist
 
-- [ ] Access token in memory only; no tokens in `localStorage`, URLs or logs
-- [ ] `credentials: 'include'` only toward the gateway origin
-- [ ] `returnTo` accepts relative paths only
-- [ ] OAuth `state` verified; the PKCE verifier is removed from `sessionStorage` after use
-- [ ] API keys and webhook secrets never cached, logged or persisted; wiped on modal close
-- [ ] No `dangerouslySetInnerHTML`; AI output goes through safe markdown with raw HTML disabled
-- [ ] No inline scripts (CSP-compatible); runtime config served as a file
-- [ ] File upload: type and size checked client-side (the server re-validates)
-- [ ] PII: the public page shows cities and courier first name only; the courier view masks phones before pickup (rendered as the server sends it)
-- [ ] Dependencies: `npm audit` in CI (with PLT-2); exact versions pinned via the lockfile
+- [x] Access token in memory only; no tokens in `localStorage`, URLs or logs *(browser storage holds only the theme, the OAuth round-trip state, the assistant conversation id and the assistant-off flag)*
+- [x] `credentials: 'include'` only toward the gateway origin *(every request goes to `apiBaseUrl`)*
+- [x] `returnTo` accepts relative paths only *(unit-tested against `https://`, `//`, backslash and `javascript:` values)*
+- [x] OAuth `state` verified; the PKCE verifier is removed from `sessionStorage` after use
+- [x] API keys and webhook secrets never cached, logged or persisted; wiped on modal close *(tested against both the query cache and the mutation cache)*
+- [x] No `dangerouslySetInnerHTML`; AI output goes through safe markdown with raw HTML disabled *(tested with an `<img onerror>` and a `javascript:` link)*
+- [x] No inline scripts (CSP-compatible); runtime config served as a file
+- [x] File upload: type and size checked client-side (the server re-validates)
+- [x] PII: the public page shows cities and courier first name only; the courier view masks phones before pickup *(rendered as the server sends it; a test asserts no phone or UUID appears on the public page)*
+- [ ] Dependencies: `npm audit` in CI (with PLT-2) *(`npm audit --omit=dev` currently reports 2 moderate vulnerabilities, not yet triaged; the lockfile is committed)*
 
 ---
 
