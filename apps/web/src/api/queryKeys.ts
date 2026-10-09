@@ -6,6 +6,7 @@ export const qk = {
     list: (filters: object) => ['parcels', 'list', filters] as const,
     detail: (id: string) => ['parcels', 'detail', id] as const,
   },
+  courier: { today: ['courier', 'today'] as const },
   tracking: { public: (tn: string) => ['tracking', tn] as const },
   pricing: {
     zones: ['pricing', 'zones'] as const,

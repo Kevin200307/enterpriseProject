@@ -93,3 +93,23 @@ export interface PublicTracking {
   updatedAt: string
   timeline: { status: ParcelStatus; occurredAt: string; note?: string }[]
 }
+
+/** One parcel on a courier's manifest (DSP-3/4). Phone arrives masked from the server before pickup. */
+export interface Assignment {
+  id: string
+  parcelId: string
+  trackingNumber: string
+  status: ParcelStatus
+  pickup: Address
+  dropoff: Address
+  size: PackageSize
+  weightKg: number
+  assignedAt: string
+}
+
+export interface StatusChange {
+  toStatus: ParcelStatus
+  note?: string
+  failureReason?: string
+  proofUrl?: string
+}

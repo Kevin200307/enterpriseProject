@@ -64,7 +64,12 @@ export const routes = [
       },
       {
         element: <RequireAuth roles={['COURIER']} />,
-        children: [{ path: 'courier/*', element: soon('Courier', 'FE-4') }],
+        children: [
+          {
+            path: 'courier/today',
+            ...page(() => import('@/features/courier/CourierTodayPage'), 'CourierTodayPage'),
+          },
+        ],
       },
       {
         element: <RequireAuth roles={['ADMIN', 'DISPATCHER']} />,

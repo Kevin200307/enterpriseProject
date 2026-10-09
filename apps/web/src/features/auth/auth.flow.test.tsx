@@ -29,7 +29,7 @@ describe('route guards', () => {
   it('restores a session from the refresh cookie on load', async () => {
     mockSession(['COURIER'])
     renderApp('/')
-    expect(await screen.findByRole('heading', { name: 'Courier' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Today', level: 1 })).toBeInTheDocument()
   })
 })
 
