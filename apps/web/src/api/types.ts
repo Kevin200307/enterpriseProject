@@ -176,3 +176,34 @@ export interface DashboardSummary {
   dispatch: { unassigned: number } | null
   merchants: { pending: number } | null
 }
+
+export interface ZoneInput {
+  name: string
+  code: string
+  cities: string[]
+  active: boolean
+}
+
+export interface PricingRule {
+  id: string
+  zoneFromId: string
+  zoneToId: string
+  sizeBand: PackageSize
+  baseFee: number | string
+  perKg: number | string
+  minFee: number | string
+  maxWeightKg: number | string
+  active: boolean
+  effectiveFrom: string
+  effectiveTo?: string | null
+}
+
+export type PricingRuleInput = Omit<
+  PricingRule,
+  'id' | 'baseFee' | 'perKg' | 'minFee' | 'maxWeightKg'
+> & {
+  baseFee: number
+  perKg: number
+  minFee: number
+  maxWeightKg: number
+}

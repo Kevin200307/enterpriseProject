@@ -5,10 +5,12 @@ import {
   ClipboardList,
   KeyRound,
   LayoutDashboard,
+  Map,
   MapPin,
   PackagePlus,
   Search,
   Store,
+  Tag,
   Users,
   type LucideIcon,
 } from 'lucide-react'
@@ -31,6 +33,8 @@ export const NAV_ITEMS: NavItem[] = [
   { to: '/admin/dispatch', label: 'Dispatch', icon: MapPin, roles: ['ADMIN', 'DISPATCHER'] },
   { to: '/admin/workload', label: 'Workload', icon: Gauge, roles: ['ADMIN', 'DISPATCHER'] },
   { to: '/admin/users', label: 'Users', icon: Users, roles: ['ADMIN'] },
+  { to: '/admin/zones', label: 'Zones', icon: Map, roles: ['ADMIN'] },
+  { to: '/admin/pricing', label: 'Pricing', icon: Tag, roles: ['ADMIN'] },
   { to: '/admin/merchants', label: 'Merchants', icon: Store, roles: ['ADMIN'] },
   { to: '/track', label: 'Track a parcel', icon: Search, roles: [] },
 ]

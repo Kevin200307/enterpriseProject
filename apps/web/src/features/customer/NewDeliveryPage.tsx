@@ -48,7 +48,7 @@ export function NewDeliveryPage() {
 
   const zones = useQuery({
     queryKey: qk.pricing.zones,
-    queryFn: pricingApi.zones,
+    queryFn: () => pricingApi.zones(),
     staleTime: 5 * 60_000,
   })
   const cities = [...new Set((zones.data ?? []).flatMap((z) => z.cities))].sort()

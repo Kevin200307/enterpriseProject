@@ -92,6 +92,11 @@ export const routes = [
       {
         element: <RequireAuth roles={['ADMIN']} />,
         children: [
+          { path: 'admin/zones', ...page(() => import('@/features/admin/ZonesPage'), 'ZonesPage') },
+          {
+            path: 'admin/pricing',
+            ...page(() => import('@/features/admin/PricingPage'), 'PricingPage'),
+          },
           { path: 'admin/users', ...page(() => import('@/features/admin/UsersPage'), 'UsersPage') },
           {
             path: 'admin/merchants',

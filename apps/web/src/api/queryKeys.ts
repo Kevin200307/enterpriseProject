@@ -22,6 +22,9 @@ export const qk = {
   tracking: { public: (tn: string) => ['tracking', tn] as const },
   pricing: {
     zones: ['pricing', 'zones'] as const,
+    zonesAdmin: ['pricing', 'zones', 'admin'] as const,
+    rules: ['pricing', 'rules'] as const,
+    all: ['pricing'] as const,
     estimate: (input: object) => ['pricing', 'estimate', input] as const,
   },
 }

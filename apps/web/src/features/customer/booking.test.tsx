@@ -39,6 +39,20 @@ async function fillAddress(group: 0 | 1, city: string) {
 }
 
 describe('booking form', () => {
+  it('asks only for active zones (regression: query context must not leak into includeInactive)', async () => {
+    const seen: URL[] = []
+    server.use(
+      http.get(
+        `${API}/api/v1/pricing/zones`,
+        ({ request }) => (seen.push(new URL(request.url)), HttpResponse.json([])),
+      ),
+    )
+    renderApp('/deliveries/new')
+    await screen.findByRole('heading', { name: 'New delivery', level: 1 })
+    await waitFor(() => expect(seen.length).toBeGreaterThan(0))
+    expect(seen[0]?.searchParams.has('includeInactive')).toBe(false)
+  })
+
   it('shows validation errors when submitted empty, without calling the API', async () => {
     const created = vi.fn()
     server.use(http.post(`${API}/api/v1/parcels`, () => (created(), HttpResponse.json({}))))
