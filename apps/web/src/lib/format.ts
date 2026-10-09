@@ -27,3 +27,11 @@ export function timeAgo(iso: string, now = Date.now()) {
   if (s < 86400) return `${Math.round(s / 3600)} h ago`
   return `${Math.round(s / 86400)} d ago`
 }
+
+export type AgeTone = 'ok' | 'warn' | 'late'
+
+/** Dispatch urgency: amber after 4 h, red after 24 h waiting for a courier. */
+export function ageTone(iso: string, now = Date.now()): AgeTone {
+  const hours = (now - new Date(iso).getTime()) / 3_600_000
+  return hours >= 24 ? 'late' : hours >= 4 ? 'warn' : 'ok'
+}

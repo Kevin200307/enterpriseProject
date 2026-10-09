@@ -12,5 +12,7 @@ export default defineConfig({
     globals: true,
     setupFiles: ['./src/test/setup.ts'],
     css: false,
+    // Form tests type into many fields and lazy chunks transform on first use; 5 s is too tight on a cold run.
+    testTimeout: 15_000,
   },
 })

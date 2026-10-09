@@ -73,7 +73,17 @@ export const routes = [
       },
       {
         element: <RequireAuth roles={['ADMIN', 'DISPATCHER']} />,
-        children: [{ path: 'admin/*', element: soon('Admin', 'FE-4') }],
+        children: [
+          {
+            path: 'admin/dispatch',
+            ...page(() => import('@/features/admin/DispatchBoardPage'), 'DispatchBoardPage'),
+          },
+          {
+            path: 'admin/workload',
+            ...page(() => import('@/features/admin/WorkloadPage'), 'WorkloadPage'),
+          },
+          { path: 'admin/*', element: soon('Admin', 'FE-4') },
+        ],
       },
       { path: '*', element: <NotFoundPage /> },
     ],

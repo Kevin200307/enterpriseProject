@@ -1,6 +1,7 @@
 import {
   Bike,
   Boxes,
+  Gauge,
   ClipboardList,
   KeyRound,
   LayoutDashboard,
@@ -27,6 +28,7 @@ export const NAV_ITEMS: NavItem[] = [
   { to: '/courier/today', label: 'Today', icon: Bike, roles: ['COURIER'] },
   { to: '/admin', label: 'Dashboard', icon: LayoutDashboard, roles: ['ADMIN', 'DISPATCHER'] },
   { to: '/admin/dispatch', label: 'Dispatch', icon: MapPin, roles: ['ADMIN', 'DISPATCHER'] },
+  { to: '/admin/workload', label: 'Workload', icon: Gauge, roles: ['ADMIN', 'DISPATCHER'] },
   { to: '/admin/users', label: 'Users', icon: Users, roles: ['ADMIN'] },
   { to: '/track', label: 'Track a parcel', icon: Search, roles: [] },
 ]

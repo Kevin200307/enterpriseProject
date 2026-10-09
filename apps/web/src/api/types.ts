@@ -113,3 +113,30 @@ export interface StatusChange {
   failureReason?: string
   proofUrl?: string
 }
+
+/** A parcel waiting for a courier (DSP-2). */
+export interface QueueItem {
+  parcelId: string
+  trackingNumber: string
+  pickupCity: string
+  size: PackageSize
+  weightKg: number
+  createdAt: string
+}
+
+export interface Suggestion {
+  courierId: string
+  name: string
+  reason: string
+  remainingCapacity: number
+}
+
+export interface WorkloadRow {
+  courierId: string
+  name: string
+  active: boolean
+  activeAssignments: number
+  deliveredToday: number
+  failedToday: number
+  remainingCapacity: number
+}
