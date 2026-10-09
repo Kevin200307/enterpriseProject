@@ -140,3 +140,39 @@ export interface WorkloadRow {
   failedToday: number
   remainingCapacity: number
 }
+
+export type UserStatus = 'ACTIVE' | 'SUSPENDED'
+
+export interface AdminUser {
+  id: string
+  email: string
+  fullName: string
+  phone: string
+  roles: string[]
+  status: UserStatus
+}
+
+export type MerchantStatus = 'PENDING' | 'APPROVED' | 'SUSPENDED' | 'REJECTED'
+
+export interface Merchant {
+  id: string
+  orgName: string
+  businessRegNo: string
+  contactEmail: string
+  contactPhone: string
+  status: MerchantStatus
+  approvedBy?: string
+  approvedAt?: string
+}
+
+/** BFF payload (GW-4). Each section is null when its upstream was down — the rest still renders. */
+export interface DashboardSummary {
+  parcels: {
+    today: number
+    outForDelivery: number
+    deliveredToday: number
+    failedToday: number
+  } | null
+  dispatch: { unassigned: number } | null
+  merchants: { pending: number } | null
+}

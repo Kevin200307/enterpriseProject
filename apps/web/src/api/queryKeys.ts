@@ -12,6 +12,12 @@ export const qk = {
     workload: ['dispatch', 'workload'] as const,
     all: ['dispatch'] as const,
   },
+  admin: {
+    dashboard: ['admin', 'dashboard'] as const,
+    users: (f: object) => ['admin', 'users', f] as const,
+    merchants: (f: object) => ['admin', 'merchants', f] as const,
+    all: ['admin'] as const,
+  },
   courier: { today: ['courier', 'today'] as const },
   tracking: { public: (tn: string) => ['tracking', tn] as const },
   pricing: {

@@ -23,7 +23,7 @@ describe('route guards', () => {
   it('lets an ADMIN into /admin', async () => {
     mockSession(['ADMIN'])
     renderApp('/admin')
-    expect(await screen.findByRole('heading', { name: 'Admin' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Dashboard', level: 1 })).toBeInTheDocument()
   })
 
   it('restores a session from the refresh cookie on load', async () => {
