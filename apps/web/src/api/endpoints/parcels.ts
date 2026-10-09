@@ -19,6 +19,8 @@ export const parcelsApi = {
       size: f.size ?? 20,
       sort: 'createdAt,desc',
     }),
+  byTracking: (tn: string) =>
+    api.get<Parcel>(`/api/v1/parcels/by-tracking/${encodeURIComponent(tn)}`),
   get: (id: string) => api.get<Parcel>(`/api/v1/parcels/${id}`),
   history: (id: string) => api.get<HistoryEntry[]>(`/api/v1/parcels/${id}/history`),
   create: (input: CreateParcelInput) => api.post<Parcel>('/api/v1/parcels', input),

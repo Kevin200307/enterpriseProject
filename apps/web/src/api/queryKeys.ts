@@ -13,6 +13,9 @@ export const qk = {
     all: ['dispatch'] as const,
   },
   admin: {
+    stats: (f: object) => ['admin', 'stats', f] as const,
+    couriers: (f: object) => ['admin', 'couriers', f] as const,
+    parcels: (f: object) => ['admin', 'parcels', f] as const,
     dashboard: ['admin', 'dashboard'] as const,
     users: (f: object) => ['admin', 'users', f] as const,
     merchants: (f: object) => ['admin', 'merchants', f] as const,

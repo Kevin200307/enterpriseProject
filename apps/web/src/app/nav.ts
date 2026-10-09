@@ -1,4 +1,5 @@
 import {
+  BarChart3,
   Bike,
   Boxes,
   Gauge,
@@ -31,8 +32,11 @@ export const NAV_ITEMS: NavItem[] = [
   { to: '/courier/today', label: 'Today', icon: Bike, roles: ['COURIER'] },
   { to: '/admin', label: 'Dashboard', icon: LayoutDashboard, roles: ['ADMIN', 'DISPATCHER'] },
   { to: '/admin/dispatch', label: 'Dispatch', icon: MapPin, roles: ['ADMIN', 'DISPATCHER'] },
+  { to: '/admin/parcels', label: 'Parcels', icon: Boxes, roles: ['ADMIN', 'DISPATCHER'] },
+  { to: '/admin/couriers', label: 'Couriers', icon: Bike, roles: ['ADMIN', 'DISPATCHER'] },
   { to: '/admin/workload', label: 'Workload', icon: Gauge, roles: ['ADMIN', 'DISPATCHER'] },
   { to: '/admin/users', label: 'Users', icon: Users, roles: ['ADMIN'] },
+  { to: '/admin/reports', label: 'Reports', icon: BarChart3, roles: ['ADMIN'] },
   { to: '/admin/zones', label: 'Zones', icon: Map, roles: ['ADMIN'] },
   { to: '/admin/pricing', label: 'Pricing', icon: Tag, roles: ['ADMIN'] },
   { to: '/admin/merchants', label: 'Merchants', icon: Store, roles: ['ADMIN'] },

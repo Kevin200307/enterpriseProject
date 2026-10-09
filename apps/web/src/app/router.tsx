@@ -86,12 +86,24 @@ export const routes = [
             path: 'admin/workload',
             ...page(() => import('@/features/admin/WorkloadPage'), 'WorkloadPage'),
           },
+          {
+            path: 'admin/couriers',
+            ...page(() => import('@/features/admin/CouriersPage'), 'CouriersPage'),
+          },
+          {
+            path: 'admin/parcels',
+            ...page(() => import('@/features/admin/AdminParcelsPage'), 'AdminParcelsPage'),
+          },
           { path: 'admin/*', element: soon('Admin', 'FE-4') },
         ],
       },
       {
         element: <RequireAuth roles={['ADMIN']} />,
         children: [
+          {
+            path: 'admin/reports',
+            ...page(() => import('@/features/admin/ReportsPage'), 'ReportsPage'),
+          },
           { path: 'admin/zones', ...page(() => import('@/features/admin/ZonesPage'), 'ZonesPage') },
           {
             path: 'admin/pricing',

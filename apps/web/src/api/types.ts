@@ -207,3 +207,32 @@ export type PricingRuleInput = Omit<
   minFee: number
   maxWeightKg: number
 }
+
+export interface DailyStat {
+  date: string
+  created: number
+  completed: number
+  failed: number
+}
+
+export type VehicleType = 'BIKE' | 'THREEWHEEL' | 'VAN'
+
+export interface Courier {
+  id: string
+  userId: string
+  name: string
+  vehicleType: VehicleType
+  homeZoneCode: string
+  phone: string
+  maxDailyLoad: number
+  active: boolean
+}
+
+export interface CourierInput {
+  userId?: string
+  vehicleType: VehicleType
+  homeZoneCode: string
+  phone: string
+  maxDailyLoad: number
+  active?: boolean
+}
