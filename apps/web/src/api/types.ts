@@ -260,3 +260,31 @@ export interface MerchantApplication {
   contactEmail: string
   contactPhone: string
 }
+
+export interface ApiKey {
+  id: string
+  prefix: string
+  label: string
+  scopes: string[]
+  lastUsedAt?: string | null
+  expiresAt?: string | null
+}
+
+/** Returned exactly once, at creation. `key` must never be cached or logged. */
+export interface CreatedApiKey extends ApiKey {
+  key: string
+}
+
+export type WebhookState = 'PENDING' | 'DELIVERED' | 'DEAD'
+
+export interface WebhookDelivery {
+  id: string
+  eventId: string
+  trackingNumber: string
+  url: string
+  attempts: number
+  lastStatus?: number | null
+  state: WebhookState
+  nextRetryAt?: string | null
+  history?: { at: string; status?: number | null; error?: string | null }[]
+}

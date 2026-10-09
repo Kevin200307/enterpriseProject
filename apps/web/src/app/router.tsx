@@ -83,6 +83,21 @@ export const routes = [
               'MerchantNewOrderPage',
             ),
           },
+          {
+            path: 'merchant/api-keys',
+            ...page(() => import('@/features/merchant/ApiKeysPage'), 'ApiKeysPage'),
+          },
+          {
+            path: 'merchant/webhook',
+            ...page(() => import('@/features/merchant/WebhookPage'), 'WebhookPage'),
+          },
+          {
+            path: 'merchant/webhook/deliveries',
+            ...page(
+              () => import('@/features/merchant/WebhookDeliveriesPage'),
+              'WebhookDeliveriesPage',
+            ),
+          },
           { path: 'merchant/*', element: soon('Merchant console', 'FE-4') },
         ],
       },

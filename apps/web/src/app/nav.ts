@@ -3,6 +3,7 @@ import {
   Bike,
   Boxes,
   Gauge,
+  History,
   ClipboardList,
   KeyRound,
   LayoutDashboard,
@@ -13,6 +14,7 @@ import {
   Store,
   Tag,
   Users,
+  Webhook,
   type LucideIcon,
 } from 'lucide-react'
 import type { Role } from '@/auth/session'
@@ -31,6 +33,13 @@ export const NAV_ITEMS: NavItem[] = [
   { to: '/merchant/orders', label: 'Orders', icon: ClipboardList, roles: ['MERCHANT'] },
   { to: '/merchant/orders/new', label: 'New order', icon: PackagePlus, roles: ['MERCHANT'] },
   { to: '/merchant/api-keys', label: 'API keys', icon: KeyRound, roles: ['MERCHANT'] },
+  { to: '/merchant/webhook', label: 'Webhook', icon: Webhook, roles: ['MERCHANT'] },
+  {
+    to: '/merchant/webhook/deliveries',
+    label: 'Deliveries log',
+    icon: History,
+    roles: ['MERCHANT'],
+  },
   { to: '/courier/today', label: 'Today', icon: Bike, roles: ['COURIER'] },
   { to: '/admin', label: 'Dashboard', icon: LayoutDashboard, roles: ['ADMIN', 'DISPATCHER'] },
   { to: '/admin/dispatch', label: 'Dispatch', icon: MapPin, roles: ['ADMIN', 'DISPATCHER'] },

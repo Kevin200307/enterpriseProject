@@ -1,5 +1,13 @@
 import { api } from '../client'
-import type { MerchantApplication, MerchantOrder, MerchantProfile, Page } from '../types'
+import type {
+  ApiKey,
+  CreatedApiKey,
+  MerchantApplication,
+  WebhookDelivery,
+  MerchantOrder,
+  MerchantProfile,
+  Page,
+} from '../types'
 
 export const merchantApi = {
   /** 404 means "no application yet". */
@@ -11,4 +19,13 @@ export const merchantApi = {
       page: f.page ?? 0,
       size: 20,
     }),
+  apiKeys: () => api.get<ApiKey[]>('/api/v1/merchants/me/api-keys'),
+  createApiKey: (label: string, scopes: string[]) =>
+    api.post<CreatedApiKey>('/api/v1/merchants/me/api-keys', { label, scopes }),
+  revokeApiKey: (id: string) => api.delete<void>(`/api/v1/merchants/me/api-keys/${id}`),
+  /** Saving generates a NEW signing secret, returned once. */
+  setWebhook: (url: string) => api.put<{ secret: string }>('/api/v1/merchants/me/webhook', { url }),
+  deliveries: (page: number) =>
+    api.get<Page<WebhookDelivery>>('/api/v1/merchants/me/webhook/deliveries', { page, size: 20 }),
+  replay: (id: string) => api.post<void>(`/api/v1/merchants/me/webhook/deliveries/${id}/replay`),
 }
