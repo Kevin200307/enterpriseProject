@@ -76,6 +76,11 @@ export async function request<T>(path: string, opts: RequestOptions = {}): Promi
   return (text ? JSON.parse(text) : undefined) as T
 }
 
+/** Same auth, refresh and error handling as `request`, but hands back the raw Response for streaming bodies. */
+export async function requestRaw(path: string, opts: RequestOptions = {}): Promise<Response> {
+  return send(path, opts, false)
+}
+
 export async function requestBlob(path: string, opts: RequestOptions = {}): Promise<Blob> {
   const res = await send(path, opts, false)
   return res.blob()

@@ -1,16 +1,22 @@
 import { Menu, Moon, Package, Sun, X } from 'lucide-react'
-import { useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import { Link, NavLink, Outlet } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/auth/authContext'
 import { useSession } from '@/auth/session'
+import { env } from '@/config/env'
 import { cn } from '@/lib/cn'
 import { navFor } from './nav'
 import { useTheme } from './useTheme'
 
+// The assistant is never needed for first paint, so it ships as its own chunk.
+const ChatWidget = lazy(() =>
+  import('@/features/assistant/ChatWidget').then((m) => ({ default: m.ChatWidget })),
+)
+
 export function AppShell() {
   const { roles, email } = useSession()
-  const { logout } = useAuth()
+  const { logout, status } = useAuth()
   const { theme, toggle } = useTheme()
   const [open, setOpen] = useState(false)
   const items = navFor(roles)
@@ -84,6 +90,11 @@ export function AppShell() {
           <Outlet />
         </main>
       </div>
+      {status === 'authenticated' && env.assistantEnabled && (
+        <Suspense fallback={null}>
+          <ChatWidget />
+        </Suspense>
+      )}
       {open && (
         <div
           className="fixed inset-0 z-40 md:hidden"

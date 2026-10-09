@@ -288,3 +288,13 @@ export interface WebhookDelivery {
   nextRetryAt?: string | null
   history?: { at: string; status?: number | null; error?: string | null }[]
 }
+
+export interface ToolCall {
+  name: string
+  arguments?: Record<string, unknown>
+}
+
+export interface ConversationTurn {
+  role: 'user' | 'assistant'
+  content: string
+}
