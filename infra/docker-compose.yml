@@ -183,6 +183,23 @@ services:
       rabbitmq:
         condition: service_healthy
 
+  # Static SPA served by nginx. API_BASE_URL is the gateway URL as the *browser* sees it
+  # (host port), not the Compose DNS name. Add http://localhost:${WEB_HOST_PORT} to the
+  # gateway's WEB_ORIGIN (CORS) allow-list.
+  web:
+    <<: *defaults
+    mem_limit: 64m
+    build:
+      context: ../apps/web
+      dockerfile: Dockerfile
+    ports:
+      - "${WEB_HOST_PORT:-5174}:80"
+    environment:
+      API_BASE_URL: ${WEB_API_BASE_URL:-http://localhost:8081}
+      ASSISTANT_ENABLED: ${ASSISTANT_ENABLED:-true}
+    depends_on:
+      - gateway
+
 networks:
   swiftdrop:
 
