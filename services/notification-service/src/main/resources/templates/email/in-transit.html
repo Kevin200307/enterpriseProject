@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+</head>
+<body style="margin: 0; padding: 0; background-color: #f4f6f9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #333333;">
+    <div style="max-width: 600px; margin: 30px auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+        <div style="background-color: #0f172a; padding: 24px; text-align: center;">
+            <h1 style="color: #38bdf8; margin: 0; font-size: 26px; letter-spacing: 0.5px;">SwiftDrop</h1>
+        </div>
+        <div style="padding: 32px 24px; line-height: 1.6;">
+            <span style="display: inline-block; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 20px; margin-bottom: 20px; text-transform: uppercase; background-color: #e0f2fe; color: #0369a1;">
+                In Transit
+            </span>
+            <h2 style="margin-top: 0; color: #1e293b;">Your parcel is on its way!</h2>
+            <p>Hello <span th:text="${recipientName}">Customer</span>,</p>
+            <p>Your package is currently in transit between distribution hubs heading towards your destination area.</p>
+            
+            <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 16px; margin: 20px 0;">
+                <p style="margin: 4px 0;"><strong>Tracking Number:</strong> <span th:text="${trackingNumber}">SD-12345678</span></p>
+                <p style="margin: 4px 0;"><strong>Status:</strong> IN_TRANSIT</p>
+            </div>
+
+            <div style="text-align: center; margin: 30px 0;">
+                <a th:href="${trackingUrl}" style="display: inline-block; background-color: #0284c7; color: #ffffff !important; text-decoration: none; padding: 12px 28px; border-radius: 6px; font-weight: 600;">
+                    Live Tracking
+                </a>
+            </div>
+
+            <p style="color: #64748b; font-size: 14px;">You can view updated milestones on the tracking page at any time.</p>
+        </div>
+        <div style="background-color: #f8fafc; border-top: 1px solid #e2e8f0; padding: 20px; text-align: center; font-size: 13px; color: #64748b;">
+            <p style="margin: 4px 0;">&copy; 2026 SwiftDrop Logistics Network. All rights reserved.</p>
+            <p style="margin: 4px 0;">This is an automated notification. Please do not reply directly to this email.</p>
+        </div>
+    </div>
+</body>
+</html>

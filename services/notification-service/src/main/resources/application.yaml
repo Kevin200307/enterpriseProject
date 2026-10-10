@@ -65,11 +65,14 @@ spring:
 # Custom App Configurations
 # -----------------------------------------------------------------------------
 app:
+  web:
+    base-url: ${WEB_BASE_URL:http://localhost:5173}
   notification:
     mail:
       from: ${MAIL_FROM:no-reply@swiftdrop.lk}
     sms:
       mock-enabled: true
+
 
 # -----------------------------------------------------------------------------
 # Actuator Health Checks

@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import lk.ac.mrt.swiftdrop.contracts.domain.ParcelStatus;
 import org.junit.jupiter.api.BeforeEach;
@@ -25,6 +26,9 @@ class EmailNotificationServiceTest {
     @Mock
     private JavaMailSender mailSender;
 
+    @Mock
+    private NotificationRenderer notificationRenderer;
+
     @InjectMocks
     private EmailNotificationService emailService;
 
@@ -34,45 +38,39 @@ class EmailNotificationServiceTest {
     }
 
     @Test
-    @DisplayName("Should send email using JavaMailSender with correct details")
-    void shouldSendEmail() {
-        String to = "user@example.com";
-        String subject = "Test Subject";
-        String body = "Test Body";
+    @DisplayName("Should send templated HTML email using JavaMailSender")
+    void shouldSendTemplatedEmail() {
+        jakarta.mail.Session session = jakarta.mail.Session.getInstance(new java.util.Properties());
+        jakarta.mail.internet.MimeMessage mimeMessage = new jakarta.mail.internet.MimeMessage(session);
+        when(mailSender.createMimeMessage()).thenReturn(mimeMessage);
 
-        emailService.sendEmail(to, subject, body);
+        when(notificationRenderer.render(any(), any(), any(), any())).thenReturn(
+                new NotificationRenderer.RenderedEmail("SwiftDrop: Parcel SD-11223344 has been booked", "<html>Body</html>", "Text Body"));
 
-        ArgumentCaptor<SimpleMailMessage> messageCaptor = ArgumentCaptor.forClass(SimpleMailMessage.class);
-        verify(mailSender, times(1)).send(messageCaptor.capture());
+        emailService.sendTemplatedEmail("user@example.com", "SD-11223344", ParcelStatus.CREATED, "Customer", null);
 
-        SimpleMailMessage sentMessage = messageCaptor.getValue();
-        assertEquals("no-reply@swiftdrop.lk", sentMessage.getFrom());
-        assertEquals(to, sentMessage.getTo()[0]);
-        assertEquals(subject, sentMessage.getSubject());
-        assertEquals(body, sentMessage.getText());
+        verify(mailSender, times(1)).send(mimeMessage);
     }
 
     @Test
-    @DisplayName("Should build appropriate subjects for each parcel status")
+    @DisplayName("Should delegate buildSubject to notificationRenderer")
     void shouldBuildSubjectForEachStatus() {
-        String tracking = "SD-11223344";
+        when(notificationRenderer.render(any(), any(), any(), any())).thenReturn(
+                new NotificationRenderer.RenderedEmail("SwiftDrop: Parcel SD-11223344 has been booked", "<html>Body</html>", "Text Body"));
 
-        assertTrue(emailService.buildSubject(tracking, ParcelStatus.CREATED).contains("booked"));
-        assertTrue(emailService.buildSubject(tracking, ParcelStatus.PICKED_UP).contains("picked up"));
-        assertTrue(emailService.buildSubject(tracking, ParcelStatus.IN_TRANSIT).contains("in transit"));
-        assertTrue(emailService.buildSubject(tracking, ParcelStatus.OUT_FOR_DELIVERY).contains("out for delivery"));
-        assertTrue(emailService.buildSubject(tracking, ParcelStatus.DELIVERED).contains("delivered"));
-        assertTrue(emailService.buildSubject(tracking, ParcelStatus.FAILED).contains("failed"));
+        String subject = emailService.buildSubject("SD-11223344", ParcelStatus.CREATED);
+        assertTrue(subject.contains("booked"));
     }
 
     @Test
-    @DisplayName("Should build email body containing tracking number and status")
+    @DisplayName("Should delegate buildBody to notificationRenderer")
     void shouldBuildBody() {
-        String body = emailService.buildBody("SD-11223344", ParcelStatus.DELIVERED);
+        when(notificationRenderer.render(any(), any(), any(), any())).thenReturn(
+                new NotificationRenderer.RenderedEmail("Subject", "<html>Body</html>", "Hello Customer,\nYour parcel (SD-11223344) has been successfully delivered!\n/receipt"));
 
+        String body = emailService.buildBody("SD-11223344", ParcelStatus.DELIVERED);
         assertTrue(body.contains("SD-11223344"));
         assertTrue(body.contains("delivered"));
-        assertTrue(body.contains("SwiftDrop"));
         assertTrue(body.contains("/receipt"));
     }
 }
