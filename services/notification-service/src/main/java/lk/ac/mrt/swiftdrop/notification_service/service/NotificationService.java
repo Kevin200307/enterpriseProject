@@ -1,6 +1,7 @@
 package lk.ac.mrt.swiftdrop.notification_service.service;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 import lk.ac.mrt.swiftdrop.contracts.domain.ParcelStatus;
 import lk.ac.mrt.swiftdrop.contracts.events.EventEnvelope;
@@ -11,12 +12,19 @@ import lk.ac.mrt.swiftdrop.notification_service.domain.NotificationChannel;
 import lk.ac.mrt.swiftdrop.notification_service.domain.NotificationLog;
 import lk.ac.mrt.swiftdrop.notification_service.domain.NotificationPreference;
 import lk.ac.mrt.swiftdrop.notification_service.domain.NotificationStatus;
+import lk.ac.mrt.swiftdrop.notification_service.logging.PiiMaskingConverter;
 import lk.ac.mrt.swiftdrop.notification_service.repository.NotificationLogRepository;
+import lk.ac.mrt.swiftdrop.notification_service.repository.NotificationLogSpecifications;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 @Slf4j
 @Service
@@ -63,7 +71,7 @@ public class NotificationService {
                 sendEmail(eventId, payload, recipientRef, user.email(), user.name(), toStatus);
             } else {
                 log.info("Email disabled by user preferences for recipientRef: {}, recording as SKIPPED", recipientRef);
-                recordSkipped(eventId, payload, recipientRef, user.email(), NotificationChannel.EMAIL, toStatus, "Email disabled in preferences");
+                recordSkipped(eventId, payload, recipientRef, PiiMaskingConverter.maskEmail(user.email()), NotificationChannel.EMAIL, toStatus, "Email disabled in preferences");
             }
         } else {
             log.info("Email already sent for eventId: {}, skipping.", eventId);
@@ -94,7 +102,7 @@ public class NotificationService {
                 .trackingNumber(payload.trackingNumber())
                 .channel(NotificationChannel.EMAIL)
                 .recipientRef(recipientRef)
-                .recipient(email)
+                .recipient(PiiMaskingConverter.maskEmail(email))
                 .template(status.name())
                 .subject(subject)
                 .content(body)
@@ -158,5 +166,73 @@ public class NotificationService {
                 .content(reason)
                 .attempts(0)
                 .build());
+    }
+
+    /**
+     * Query paginated notification delivery logs with dynamic filters for status, channel, and date range.
+     */
+    @Transactional(readOnly = true)
+    public Page<NotificationLog> getNotificationLogs(
+            NotificationStatus status,
+            NotificationChannel channel,
+            Instant from,
+            Instant to,
+            Pageable pageable) {
+        Specification<NotificationLog> spec = NotificationLogSpecifications.withFilters(status, channel, from, to);
+        return logRepository.findAll(spec, pageable);
+    }
+
+    /**
+     * Immediately resends an existing notification by ID.
+     * Resolves live unmasked recipient details via IdentityClient and routes through ChannelRouter.
+     */
+    @Transactional
+    public NotificationLog resendNotification(UUID id) {
+        NotificationLog notification = logRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Notification not found with id: " + id));
+
+        notification.setAttempts(notification.getAttempts() + 1);
+
+        IdentityClient.UserLookupDto user = identityClient.lookupUser(notification.getRecipientRef());
+        String target = notification.getChannel() == NotificationChannel.EMAIL ? user.email() : user.phone();
+
+        ParcelStatus status;
+        try {
+            status = ParcelStatus.valueOf(notification.getTemplate());
+        } catch (Exception e) {
+            status = ParcelStatus.CREATED;
+        }
+
+        NotificationChannelHandler.NotificationRequest request = new NotificationChannelHandler.NotificationRequest(
+                notification.getEventId(),
+                notification.getParcelId(),
+                notification.getTrackingNumber(),
+                notification.getRecipientRef(),
+                target,
+                user.name(),
+                status
+        );
+
+        try {
+            channelRouter.route(notification.getChannel(), request);
+            notification.setStatus(NotificationStatus.SENT);
+            notification.setSentAt(Instant.now());
+            notification.setErrorMessage(null);
+            log.info("Successfully resent notification id={} to channel={}", id, notification.getChannel());
+        } catch (Exception e) {
+            log.error("Failed to resend notification id={}", id, e);
+            notification.setStatus(NotificationStatus.FAILED);
+            notification.setErrorMessage("Resend failed: " + e.getMessage());
+        }
+
+        return logRepository.save(notification);
+    }
+
+    /**
+     * Retrieves all notifications sent to a specific user (recipientRef), ordered newest first.
+     */
+    @Transactional(readOnly = true)
+    public List<NotificationLog> getUserNotifications(UUID userId) {
+        return logRepository.findByRecipientRefOrderByCreatedAtDesc(userId);
     }
 }

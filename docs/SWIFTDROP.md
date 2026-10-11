@@ -77,7 +77,42 @@ The notification delivery architecture adheres strictly to the **Strategy Patter
 
 ---
 
-### 1.6 PII Hygiene & Security (NTF-4 preview)
-- Phone numbers in logs and database are masked (e.g., `+947****567`).
-- Recipient email address local parts are redacted in operational logging.
-- Passwords, keys, and raw personal identifiers are strictly excluded from git and container logs.
+### 1.6 PII Hygiene & Security (NTF-4)
+- **Zero-Raw-PII in Database (`notifications.recipient`):**
+  - Raw email addresses and phone numbers are **never stored plaintext** in PostgreSQL.
+  - The `recipient_ref` (UUID) references the user in Identity Service.
+  - The `recipient` column stores masked identifiers for audit/admin tracking:
+    - Emails: `thiran@gmail.com` $\rightarrow$ `th****@gmail.com` via `PiiMaskingConverter.maskEmail(...)`.
+    - Phone Numbers: `+94771234567` $\rightarrow$ `+947****4567` via `smsProvider.maskPhoneNumber(...)`.
+  - At delivery and retry time, raw contacts are securely resolved just-in-time via `IdentityClient.lookupUser(recipientRef)`.
+- **Logback PII Redaction Filter (`logback-spring.xml` + `PiiMaskingConverter`):**
+  - Custom Logback `CompositeConverter<ILoggingEvent>` registered as `%maskPii`.
+  - Console and container stdout automatically sanitize regex patterns for RFC 5322 emails and international/local phone numbers across all logger statements.
+- **Credential Hygiene:**
+  - Passwords, API secrets, and raw personal identifiers are strictly excluded from git tracking, logs, and database tables.
+
+---
+
+### 1.7 Delivery Logs & Admin Query API (NTF-4)
+- **Admin Paginated Delivery Log Endpoint:**
+  - `GET /api/v1/notifications`
+  - **Query Parameters:**
+    - `status` (`Optional<NotificationStatus>`): e.g. `SENT`, `FAILED`, `SKIPPED`, `PENDING`
+    - `channel` (`Optional<NotificationChannel>`): e.g. `EMAIL`, `SMS`
+    - `from` (`Optional<Instant>`): ISO-8601 start timestamp
+    - `to` (`Optional<Instant>`): ISO-8601 end timestamp
+    - `page`, `size`, `sort`: Standard Spring Data pagination (defaults to `size=20, sort=createdAt,desc`)
+  - **Filtering Engine:** Powered by dynamic criteria queries in `NotificationLogSpecifications` combined with `JpaSpecificationExecutor`.
+- **Parcel Notification History:**
+  - `GET /api/v1/notifications/{trackingNumber}`: Chronological delivery audit trail for a specific tracking number.
+- **Manual Resend Trigger:**
+  - `POST /api/v1/notifications/{id}/resend`: Triggers immediate re-dispatch of a notification by ID.
+  - Resolves live unmasked recipient details just-in-time via `IdentityClient` and routes dynamically through `ChannelRouter`.
+  - Increments `attempts`, updates `status` (`SENT` or `FAILED`), and sets `sentAt` timestamp upon successful transmission.
+- **User Notification History:**
+  - `GET /api/v1/notifications/me`: Retrieves notification delivery history for the currently authenticated user (`recipientRef`).
+  - Supports resolution via `X-User-Id` gateway header or `userId` query parameter.
+
+
+
+

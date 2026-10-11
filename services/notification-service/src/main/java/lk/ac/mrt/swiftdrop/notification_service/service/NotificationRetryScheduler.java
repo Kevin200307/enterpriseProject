@@ -21,6 +21,7 @@ public class NotificationRetryScheduler {
     private final NotificationLogRepository logRepository;
     private final EmailNotificationService emailService;
     private final MockSmsNotificationService smsService;
+    private final IdentityClient identityClient;
 
     /**
      * Periodically retries FAILED notifications with exponential backoff (up to 5 attempts).
@@ -52,10 +53,11 @@ public class NotificationRetryScheduler {
                     notification.getId(), notification.getAttempts(), MAX_RETRY_ATTEMPTS);
 
             try {
+                IdentityClient.UserLookupDto user = identityClient.lookupUser(notification.getRecipientRef());
                 if (notification.getChannel() == NotificationChannel.EMAIL) {
-                    emailService.sendEmail(notification.getRecipient(), notification.getSubject(), notification.getContent());
+                    emailService.sendEmail(user.email(), notification.getSubject(), notification.getContent());
                 } else if (notification.getChannel() == NotificationChannel.SMS) {
-                    smsService.sendSms(notification.getRecipient(), notification.getContent());
+                    smsService.sendSms(user.phone(), notification.getContent());
                 }
 
                 // If succeeded:

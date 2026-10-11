@@ -33,20 +33,24 @@ class NotificationRetrySchedulerTest {
     @Mock
     private MockSmsNotificationService smsService;
 
+    @Mock
+    private IdentityClient identityClient;
+
     @InjectMocks
     private NotificationRetryScheduler retryScheduler;
 
     @Test
-    @DisplayName("Should retry failed notification and mark as SENT upon success")
+    @DisplayName("Should retry failed notification, resolve recipient via IdentityClient, and mark as SENT upon success")
     void shouldRetryFailedNotificationAndMarkSent() {
+        UUID recipientRef = UUID.randomUUID();
         NotificationLog failedLog = NotificationLog.builder()
                 .id(UUID.randomUUID())
                 .eventId(UUID.randomUUID())
                 .parcelId(UUID.randomUUID())
                 .trackingNumber("SD-12345678")
                 .channel(NotificationChannel.EMAIL)
-                .recipientRef(UUID.randomUUID())
-                .recipient("test@example.com")
+                .recipientRef(recipientRef)
+                .recipient("te****@example.com") // Masked recipient in DB
                 .subject("Test Subject")
                 .content("Test Content")
                 .status(NotificationStatus.FAILED)
@@ -56,9 +60,12 @@ class NotificationRetrySchedulerTest {
 
         when(logRepository.findByStatusAndAttemptsLessThan(NotificationStatus.FAILED, 5))
                 .thenReturn(List.of(failedLog));
+        when(identityClient.lookupUser(recipientRef))
+                .thenReturn(new IdentityClient.UserLookupDto(recipientRef, "test@example.com", "+94771234567", "Test User"));
 
         retryScheduler.retryFailedNotifications();
 
+        verify(identityClient, times(1)).lookupUser(recipientRef);
         verify(emailService, times(1)).sendEmail("test@example.com", "Test Subject", "Test Content");
         assertEquals(NotificationStatus.SENT, failedLog.getStatus());
         assertEquals(2, failedLog.getAttempts());
