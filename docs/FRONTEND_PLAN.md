@@ -505,7 +505,7 @@ Copy these into the GitHub issues as task lists. Ticked = built, tested against 
 - [x] TanStack Query provider + `queryKeys.ts`
 - [x] `api/client.ts` + `ApiError` + form violation mapper (`applyViolations`) + `describeError` *(no separate `useApiErrorToast` hook; pages call `toast.error(describeError(e).message)`)*
 - [ ] `openapi-typescript` generated `schema.d.ts` committed; CI fails on a diff *(the `gen:api` script exists; nothing generated because there is no gateway to read yet; CI is PLT-2)*
-- [ ] MSW: browser worker with handlers for auth, pricing, parcels and tracking *(the node test server is done, but per-service mocks live inside each test file; the browser worker has one demo handler, so `VITE_USE_MOCKS=true` is not yet a usable offline demo)*
+- [x] MSW: node test server, plus a full in-browser mock backend (`src/mocks/`) behind `VITE_USE_MOCKS`, which `npm run dev` enables by default. It has five demo accounts (one per role, shared password) and one-click demo login buttons on `/login`. *(Per-test mocks still live in the test files.)*
 - [x] Common components: `StatusChip`, `EmptyState`, `ErrorState`, `PageHeader`, `Pagination`, `ConfirmDialog`, `CopyField`, `MoneyLKR` *(no shared `DataTable`; each page renders its own table)*
 - [x] Error boundary + route `errorElement`, `/403`, `*` 404
 - [x] Runtime `config.js` + `env.ts`
@@ -524,6 +524,7 @@ Copy these into the GitHub issues as task lists. Ticked = built, tested against 
 - [x] Boot-time refresh + loading state; proactive refresh timer *(a plain "Loading…" message, not a full-screen splash)*
 - [x] `RequireAuth roles` + `returnTo` (relative-path guard) + `/403`
 - [x] Role landing redirects
+- [x] Demo login: five one-click role buttons on `/login` (offline demo only; lazy chunk never shipped in production)
 - [x] Full-screen auth layout (`AuthShell`): login, signup and callback have no sidebar or header
 - [x] Logout (server + memory + query cache)
 - [x] Google: PKCE helpers, `/authorize` call, `/oauth/callback` page, `state` verification, error states *(request and response shapes are my assumption, C4)*

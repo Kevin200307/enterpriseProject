@@ -12,6 +12,18 @@ globalThis.Request = class extends NodeRequest {
   }
 } as typeof Request
 
+// jsdom does not implement matchMedia. Report "no match" so responsive hooks resolve to the desktop layout.
+window.matchMedia ??= ((query: string) => ({
+  matches: false,
+  media: query,
+  onchange: null,
+  addEventListener: () => {},
+  removeEventListener: () => {},
+  addListener: () => {},
+  removeListener: () => {},
+  dispatchEvent: () => false,
+})) as typeof window.matchMedia
+
 // Lazy route chunks are transformed on first use and workers compete for CPU; the 1 s default is far too tight.
 configure({ asyncUtilTimeout: 10_000 })
 

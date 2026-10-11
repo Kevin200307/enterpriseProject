@@ -1,5 +1,5 @@
 import { screen, waitFor, within } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
+import userEvent from '@/test/userEvent'
 import { http, HttpResponse } from 'msw'
 import { beforeEach, describe, expect, it } from 'vitest'
 import type { Assignment } from '@/api/types'
@@ -154,11 +154,13 @@ describe('courier today', () => {
     renderApp('/courier/today')
     await userEvent.click(await screen.findByRole('button', { name: 'Delivered' }))
     const sheet = await screen.findByRole('dialog')
-    await userEvent.upload(
-      within(sheet).getByLabelText(/Proof photo/),
-      new File(['x'], 'run.exe', { type: 'application/x-msdownload' }),
-      { applyAccept: false },
-    )
+    // applyAccept: false so the browser's `accept` filter doesn't hide the wrong file type from our own validation
+    await userEvent
+      .setup({ applyAccept: false })
+      .upload(
+        within(sheet).getByLabelText(/Proof photo/),
+        new File(['x'], 'run.exe', { type: 'application/x-msdownload' }),
+      )
     expect(await within(sheet).findByRole('alert')).toHaveTextContent('JPEG or PNG')
     expect(within(sheet).queryByAltText('Proof preview')).not.toBeInTheDocument()
   })

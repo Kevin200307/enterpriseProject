@@ -12,10 +12,12 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
+import { useMobile } from '@/hooks/useMobile'
 import { formatDate } from '@/lib/format'
 import { MerchantGate } from './MerchantGate'
 
 export function MerchantOrdersPage() {
+  const isMobile = useMobile()
   const [params, setParams] = useSearchParams()
   const term = params.get('q') ?? ''
   const page = Math.max(0, Number(params.get('page')) || 0)
@@ -44,14 +46,14 @@ export function MerchantOrdersPage() {
             </Button>
           }
         />
-        <form onSubmit={search} className="flex items-end gap-2">
-          <div className="flex flex-col gap-1">
+        <form onSubmit={search} className="flex flex-col gap-2 sm:flex-row sm:items-end">
+          <div className="flex flex-1 flex-col gap-1 sm:max-w-xs">
             <Label htmlFor="o-ref" className="text-xs">
               Search by reference
             </Label>
             <Input id="o-ref" value={draft} onChange={(e) => setDraft(e.target.value)} />
           </div>
-          <Button type="submit" variant="secondary">
+          <Button type="submit" variant="secondary" className="h-11 sm:h-10">
             Search
           </Button>
         </form>
@@ -67,6 +69,36 @@ export function MerchantOrdersPage() {
           />
         ) : (
           <>
+            {/* Phones get a card per order; the table needs more width than they have.
+                Branching in JS rather than CSS keeps one copy of each order in the DOM. */}
+            {isMobile ? (
+            <ul className="flex flex-col gap-3">
+              {q.data.content.map((o) => (
+                <li key={o.trackingNumber} className="rounded-2xl border bg-card p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <p className="font-semibold">{o.merchantRef}</p>
+                    <StatusChip status={o.status} />
+                  </div>
+                  <Link
+                    className="mt-1 inline-block font-mono text-sm underline-offset-4 hover:underline"
+                    to={`/track/${o.trackingNumber}`}
+                  >
+                    {o.trackingNumber}
+                  </Link>
+                  <dl className="mt-3 flex justify-between text-sm">
+                    <div>
+                      <dt className="text-xs text-muted-foreground">Destination</dt>
+                      <dd>{o.destinationCity}</dd>
+                    </div>
+                    <div className="text-right">
+                      <dt className="text-xs text-muted-foreground">Created</dt>
+                      <dd>{formatDate(o.createdAt)}</dd>
+                    </div>
+                  </dl>
+                </li>
+              ))}
+            </ul>
+            ) : (
             <div className="overflow-x-auto rounded-lg border">
               <table className="w-full text-sm">
                 <thead className="bg-muted text-left">
@@ -102,6 +134,7 @@ export function MerchantOrdersPage() {
                 </tbody>
               </table>
             </div>
+            )}
             <Pagination
               page={q.data.number}
               totalPages={q.data.totalPages}

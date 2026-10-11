@@ -114,7 +114,8 @@ export function NewDeliveryPage({ merchant = false }: { merchant?: boolean }) {
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    // Clears the docked submit bar on phones so the last field is never hidden behind it.
+    <div className="flex flex-col gap-6 pb-28 lg:pb-0">
       <PageHeader
         title={merchant ? 'New order' : 'New delivery'}
         description={
@@ -244,9 +245,21 @@ export function NewDeliveryPage({ merchant = false }: { merchant?: boolean }) {
               {formError}
             </p>
           )}
-          <Button type="submit" size="lg" disabled={blocked || book.isPending}>
-            {book.isPending ? 'Booking…' : 'Book delivery'}
-          </Button>
+          {/* On phones the submit docks above the bottom nav so it is reachable without
+              scrolling past the whole form; from lg up it sits in the sticky side column. */}
+          <div
+            className="fixed inset-x-0 bottom-[68px] z-20 border-t bg-background/95 p-4 backdrop-blur-md lg:static lg:border-0 lg:bg-transparent lg:p-0 lg:backdrop-blur-none"
+            style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
+          >
+            <Button
+              type="submit"
+              size="lg"
+              className="w-full"
+              disabled={blocked || book.isPending}
+            >
+              {book.isPending ? 'Booking…' : 'Book delivery'}
+            </Button>
+          </div>
         </div>
       </form>
 

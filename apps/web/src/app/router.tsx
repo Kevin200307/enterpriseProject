@@ -166,6 +166,11 @@ export const routes = [
     ],
   },
   {
+    path: 'ui',
+    errorElement: <RouteError />,
+    ...page(() => import('@/features/furniture/ShowcasePage'), 'ShowcasePage'),
+  },
+  {
     element: <AuthShell />,
     errorElement: <RouteError />,
     children: [

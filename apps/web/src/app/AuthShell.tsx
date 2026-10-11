@@ -1,32 +1,37 @@
-import { Package } from 'lucide-react'
-import { Outlet } from 'react-router-dom'
+import { Link, Outlet } from 'react-router-dom'
+import { LogoLockup } from '@/components/brand/Logo'
 
-/** Full-screen layout for sign-in, sign-up and the Google callback: no sidebar, no header, nothing else. */
+/** Full-screen auth layout — mobile-first card style matching the app's visual design system. */
 export function AuthShell() {
   return (
-    <div className="grid min-h-screen bg-background lg:grid-cols-2">
-      <aside className="hidden flex-col justify-between bg-primary p-12 text-primary-foreground lg:flex">
-        <div className="flex items-center gap-2 text-xl font-bold">
-          <Package className="h-7 w-7" aria-hidden /> SwiftDrop
-        </div>
-        <div className="flex flex-col gap-3">
-          <p className="text-4xl font-bold leading-tight">Send it. Track it. Done.</p>
-          <p className="max-w-sm text-lg text-primary-foreground/85">
-            Book a delivery, follow it live, and get proof when it arrives.
-          </p>
-        </div>
-        <p className="text-sm text-primary-foreground/70">
-          University of Moratuwa · Enterprise Application Development
-        </p>
-      </aside>
-      <main className="flex items-center justify-center p-6 sm:p-10">
-        <div className="w-full max-w-sm">
-          <div className="mb-8 flex items-center gap-2 text-xl font-bold text-primary lg:hidden">
-            <Package className="h-6 w-6" aria-hidden /> SwiftDrop
-          </div>
-          <Outlet />
-        </div>
+    <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-surface px-5 py-10">
+      {/* Lime accent glow, the one spot of colour on an otherwise monochrome screen */}
+      <div
+        aria-hidden
+        className="absolute -right-24 -top-24 h-80 w-80 rounded-full bg-accent opacity-40 blur-3xl"
+      />
+      <div
+        aria-hidden
+        className="absolute -bottom-28 -left-16 h-72 w-72 rounded-full bg-foreground opacity-[0.04] blur-3xl"
+      />
+
+      {/* Logo */}
+      <Link
+        to="/"
+        aria-label="SwiftDrop home"
+        className="relative mb-8 flex items-center rounded-2xl bg-sidebar px-5 py-3"
+      >
+        <LogoLockup className="h-8 w-[106px] text-white" />
+      </Link>
+
+      {/* Card */}
+      <main className="relative w-full max-w-sm rounded-3xl border border-border bg-card p-8 shadow-[0_18px_50px_-24px_rgba(0,0,0,0.25)]">
+        <Outlet />
       </main>
+
+      <p className="relative mt-6 text-xs text-muted-foreground">
+        University of Moratuwa · Enterprise Application Development
+      </p>
     </div>
   )
 }

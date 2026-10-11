@@ -1,5 +1,5 @@
 import { screen, waitFor } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
+import userEvent from '@/test/userEvent'
 import { http, HttpResponse } from 'msw'
 import { describe, expect, it, vi } from 'vitest'
 import { oauthPending } from '@/auth/pkce'

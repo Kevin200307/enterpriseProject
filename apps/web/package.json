@@ -12,7 +12,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "format": "prettier --write src",
-    "gen:api": "openapi-typescript ${OPENAPI_URL:-http://localhost:8081/v3/api-docs} -o src/api/schema.d.ts"
+    "gen:api": "openapi-typescript ${OPENAPI_URL:-http://localhost:8081/v3/api-docs} -o src/api/schema.d.ts",
+    "dev:live": "VITE_USE_MOCKS=false vite",
+    "verify:dist": "node scripts/verify-dist.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",
