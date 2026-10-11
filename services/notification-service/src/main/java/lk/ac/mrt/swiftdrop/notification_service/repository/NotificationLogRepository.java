@@ -6,10 +6,11 @@ import lk.ac.mrt.swiftdrop.notification_service.domain.NotificationChannel;
 import lk.ac.mrt.swiftdrop.notification_service.domain.NotificationLog;
 import lk.ac.mrt.swiftdrop.notification_service.domain.NotificationStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface NotificationLogRepository extends JpaRepository<NotificationLog, UUID> {
+public interface NotificationLogRepository extends JpaRepository<NotificationLog, UUID>, JpaSpecificationExecutor<NotificationLog> {
 
     /**
      * Idempotency Check: (event_id, channel, recipient_ref) අනුව

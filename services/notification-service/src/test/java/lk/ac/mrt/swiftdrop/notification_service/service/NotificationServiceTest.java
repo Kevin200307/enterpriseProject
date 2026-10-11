@@ -1,5 +1,10 @@
 package lk.ac.mrt.swiftdrop.notification_service.service;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -9,6 +14,9 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import lk.ac.mrt.swiftdrop.contracts.domain.ParcelStatus;
@@ -24,10 +32,17 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.web.server.ResponseStatusException;
 
 @ExtendWith(MockitoExtension.class)
 class NotificationServiceTest {
@@ -83,7 +98,21 @@ class NotificationServiceTest {
 
         verify(channelRouter, times(1)).route(eq(NotificationChannel.EMAIL), any());
         verify(channelRouter, times(1)).route(eq(NotificationChannel.SMS), any());
-        verify(logRepository, times(2)).save(any(NotificationLog.class));
+
+        ArgumentCaptor<NotificationLog> captor = ArgumentCaptor.forClass(NotificationLog.class);
+        verify(logRepository, times(2)).save(captor.capture());
+
+        List<NotificationLog> saved = captor.getAllValues();
+        NotificationLog emailLog = saved.stream()
+                .filter(l -> l.getChannel() == NotificationChannel.EMAIL)
+                .findFirst().orElseThrow();
+        assertEquals("te****@swiftdrop.lk", emailLog.getRecipient(), "Email recipient in DB must be masked");
+        assertFalse(emailLog.getRecipient().contains("test@swiftdrop.lk"), "Raw email must never be stored in DB");
+
+        NotificationLog smsLog = saved.stream()
+                .filter(l -> l.getChannel() == NotificationChannel.SMS)
+                .findFirst().orElseThrow();
+        assertEquals("+947****567", smsLog.getRecipient(), "SMS recipient in DB must be masked");
     }
 
     @Test
@@ -181,5 +210,95 @@ class NotificationServiceTest {
         notificationService.handleParcelStatusChanged(envelope);
 
         verify(logRepository, times(1)).save(any(NotificationLog.class));
+    }
+
+    @Test
+    @DisplayName("Should query logRepository using Specification and Pageable")
+    void shouldReturnPaginatedLogsUsingSpecification() {
+        Pageable pageable = PageRequest.of(0, 10);
+        Page<NotificationLog> mockPage = new PageImpl<>(List.of());
+        when(logRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(mockPage);
+
+        Page<NotificationLog> result = notificationService.getNotificationLogs(
+                NotificationStatus.SENT, NotificationChannel.EMAIL, null, null, pageable);
+
+        assertEquals(mockPage, result);
+        verify(logRepository, times(1)).findAll(any(Specification.class), eq(pageable));
+    }
+
+    @Test
+    @DisplayName("Should resend notification successfully and update attempts and sentAt")
+    void shouldResendNotificationSuccessfully() {
+        UUID id = UUID.randomUUID();
+        UUID recipientRef = UUID.randomUUID();
+        NotificationLog existing = NotificationLog.builder()
+                .id(id)
+                .eventId(UUID.randomUUID())
+                .parcelId(UUID.randomUUID())
+                .trackingNumber("SD-11223344")
+                .channel(NotificationChannel.EMAIL)
+                .recipientRef(recipientRef)
+                .recipient("te****@example.com")
+                .template("DELIVERED")
+                .status(NotificationStatus.FAILED)
+                .attempts(1)
+                .build();
+
+        when(logRepository.findById(id)).thenReturn(Optional.of(existing));
+        when(identityClient.lookupUser(recipientRef)).thenReturn(
+                new IdentityClient.UserLookupDto(recipientRef, "test@example.com", "+94771234567", "Test Customer"));
+        when(logRepository.save(any(NotificationLog.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        NotificationLog resent = notificationService.resendNotification(id);
+
+        assertNotNull(resent);
+        assertEquals(NotificationStatus.SENT, resent.getStatus());
+        assertEquals(2, resent.getAttempts());
+        assertNotNull(resent.getSentAt());
+        verify(channelRouter, times(1)).route(eq(NotificationChannel.EMAIL), any());
+        verify(logRepository, times(1)).save(existing);
+    }
+
+    @Test
+    @DisplayName("Should mark FAILED when channel routing throws exception during resend")
+    void shouldHandleResendFailure() {
+        UUID id = UUID.randomUUID();
+        UUID recipientRef = UUID.randomUUID();
+        NotificationLog existing = NotificationLog.builder()
+                .id(id)
+                .eventId(UUID.randomUUID())
+                .parcelId(UUID.randomUUID())
+                .trackingNumber("SD-11223344")
+                .channel(NotificationChannel.SMS)
+                .recipientRef(recipientRef)
+                .recipient("+947****567")
+                .template("DELIVERED")
+                .status(NotificationStatus.FAILED)
+                .attempts(2)
+                .build();
+
+        when(logRepository.findById(id)).thenReturn(Optional.of(existing));
+        when(identityClient.lookupUser(recipientRef)).thenReturn(
+                new IdentityClient.UserLookupDto(recipientRef, "test@example.com", "+94771234567", "Test Customer"));
+        doThrow(new RuntimeException("SMS gateway down")).when(channelRouter).route(eq(NotificationChannel.SMS), any());
+        when(logRepository.save(any(NotificationLog.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        NotificationLog resent = notificationService.resendNotification(id);
+
+        assertNotNull(resent);
+        assertEquals(NotificationStatus.FAILED, resent.getStatus());
+        assertEquals(3, resent.getAttempts());
+        assertTrue(resent.getErrorMessage().contains("SMS gateway down"));
+        verify(logRepository, times(1)).save(existing);
+    }
+
+    @Test
+    @DisplayName("Should throw 404 NOT_FOUND when resending non-existent notification ID")
+    void shouldThrowNotFoundWhenResendingNonExistentId() {
+        UUID nonExistentId = UUID.randomUUID();
+        when(logRepository.findById(nonExistentId)).thenReturn(Optional.empty());
+
+        assertThrows(ResponseStatusException.class, () -> notificationService.resendNotification(nonExistentId));
+        verify(channelRouter, never()).route(any(), any());
     }
 }
