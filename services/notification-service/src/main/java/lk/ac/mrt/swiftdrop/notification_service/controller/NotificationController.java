@@ -16,13 +16,16 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 @Slf4j
 @RestController
@@ -49,6 +52,26 @@ public class NotificationController {
                 status, channel, from, to, pageable);
         Page<NotificationLog> page = notificationService.getNotificationLogs(status, channel, from, to, pageable);
         return ResponseEntity.ok(page);
+    }
+
+    /**
+     * User Notification History Endpoint:
+     * Retrieve notification history for the authenticated user.
+     * Identity resolved via X-User-Id header (gateway) or userId query param.
+     * GET /api/v1/notifications/me
+     */
+    @GetMapping("/me")
+    public ResponseEntity<List<NotificationLog>> getMyNotifications(
+            @RequestHeader(value = "X-User-Id", required = false) UUID headerUserId,
+            @RequestParam(value = "userId", required = false) UUID paramUserId) {
+        UUID userId = headerUserId != null ? headerUserId : paramUserId;
+        if (userId == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Missing user identification: provide X-User-Id header or userId query parameter");
+        }
+        log.info("Fetching notification history for current user: userId={}", userId);
+        List<NotificationLog> history = notificationService.getUserNotifications(userId);
+        return ResponseEntity.ok(history);
     }
 
     /**

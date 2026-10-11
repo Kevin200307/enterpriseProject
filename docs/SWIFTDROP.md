@@ -109,6 +109,10 @@ The notification delivery architecture adheres strictly to the **Strategy Patter
   - `POST /api/v1/notifications/{id}/resend`: Triggers immediate re-dispatch of a notification by ID.
   - Resolves live unmasked recipient details just-in-time via `IdentityClient` and routes dynamically through `ChannelRouter`.
   - Increments `attempts`, updates `status` (`SENT` or `FAILED`), and sets `sentAt` timestamp upon successful transmission.
+- **User Notification History:**
+  - `GET /api/v1/notifications/me`: Retrieves notification delivery history for the currently authenticated user (`recipientRef`).
+  - Supports resolution via `X-User-Id` gateway header or `userId` query parameter.
+
 
 
 

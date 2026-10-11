@@ -2,9 +2,12 @@ package lk.ac.mrt.swiftdrop.notification_service.controller;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 import java.util.List;
@@ -148,6 +151,53 @@ class NotificationControllerTest {
         assertEquals(NotificationStatus.SENT, response.getBody().getStatus());
         assertEquals(2, response.getBody().getAttempts());
         verify(notificationService, times(1)).resendNotification(id);
+    }
+
+    @Test
+    @DisplayName("Should return user notifications using X-User-Id header")
+    void shouldReturnUserNotificationsUsingHeader() {
+        UUID userId = UUID.randomUUID();
+        NotificationLog mockLog = NotificationLog.builder()
+                .id(UUID.randomUUID())
+                .recipientRef(userId)
+                .trackingNumber("SD-11223344")
+                .channel(NotificationChannel.EMAIL)
+                .status(NotificationStatus.SENT)
+                .template("CREATED")
+                .createdAt(Instant.now())
+                .build();
+
+        when(notificationService.getUserNotifications(userId)).thenReturn(List.of(mockLog));
+
+        ResponseEntity<List<NotificationLog>> response = notificationController.getMyNotifications(userId, null);
+
+        assertNotNull(response);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals(1, response.getBody().size());
+        assertEquals(userId, response.getBody().get(0).getRecipientRef());
+        verify(notificationService, times(1)).getUserNotifications(userId);
+    }
+
+    @Test
+    @DisplayName("Should return user notifications using userId query param fallback")
+    void shouldReturnUserNotificationsUsingQueryParam() {
+        UUID userId = UUID.randomUUID();
+        when(notificationService.getUserNotifications(userId)).thenReturn(List.of());
+
+        ResponseEntity<List<NotificationLog>> response = notificationController.getMyNotifications(null, userId);
+
+        assertNotNull(response);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals(0, response.getBody().size());
+        verify(notificationService, times(1)).getUserNotifications(userId);
+    }
+
+    @Test
+    @DisplayName("Should throw 400 BAD_REQUEST when neither header nor query param userId provided")
+    void shouldThrowBadRequestWhenUserIdMissing() {
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+                () -> notificationController.getMyNotifications(null, null));
+        assertEquals(HttpStatus.BAD_REQUEST, ex.getStatusCode());
     }
 
     @Test

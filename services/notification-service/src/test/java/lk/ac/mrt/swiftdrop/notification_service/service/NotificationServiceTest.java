@@ -301,4 +301,26 @@ class NotificationServiceTest {
         assertThrows(ResponseStatusException.class, () -> notificationService.resendNotification(nonExistentId));
         verify(channelRouter, never()).route(any(), any());
     }
+
+    @Test
+    @DisplayName("Should retrieve user notifications ordered by createdAt desc")
+    void shouldGetUserNotifications() {
+        UUID userId = UUID.randomUUID();
+        NotificationLog mockLog = NotificationLog.builder()
+                .id(UUID.randomUUID())
+                .recipientRef(userId)
+                .trackingNumber("SD-11223344")
+                .channel(NotificationChannel.EMAIL)
+                .status(NotificationStatus.SENT)
+                .build();
+
+        when(logRepository.findByRecipientRefOrderByCreatedAtDesc(userId)).thenReturn(List.of(mockLog));
+
+        List<NotificationLog> results = notificationService.getUserNotifications(userId);
+
+        assertNotNull(results);
+        assertEquals(1, results.size());
+        assertEquals(userId, results.get(0).getRecipientRef());
+        verify(logRepository, times(1)).findByRecipientRefOrderByCreatedAtDesc(userId);
+    }
 }

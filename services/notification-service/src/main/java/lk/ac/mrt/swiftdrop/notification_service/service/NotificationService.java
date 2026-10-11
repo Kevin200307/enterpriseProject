@@ -1,6 +1,7 @@
 package lk.ac.mrt.swiftdrop.notification_service.service;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 import lk.ac.mrt.swiftdrop.contracts.domain.ParcelStatus;
 import lk.ac.mrt.swiftdrop.contracts.events.EventEnvelope;
@@ -225,5 +226,13 @@ public class NotificationService {
         }
 
         return logRepository.save(notification);
+    }
+
+    /**
+     * Retrieves all notifications sent to a specific user (recipientRef), ordered newest first.
+     */
+    @Transactional(readOnly = true)
+    public List<NotificationLog> getUserNotifications(UUID userId) {
+        return logRepository.findByRecipientRefOrderByCreatedAtDesc(userId);
     }
 }
