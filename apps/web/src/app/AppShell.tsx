@@ -383,7 +383,7 @@ export function AppShell() {
             <button
               type="button"
               onClick={() => void logout()}
-              className="mt-2 flex items-center gap-3 rounded-2xl px-3 py-3.5 text-sm font-medium text-destructive transition-colors hover:bg-destructive/10 active:bg-destructive active:text-destructive-foreground"
+              className="mt-2 flex items-center gap-3 rounded-2xl px-3 py-3.5 text-sm font-medium text-destructive transition-colors hover:bg-destructive/10 active:!bg-destructive active:!text-destructive-foreground"
             >
               <LogOut className="h-4 w-4 shrink-0" aria-hidden />
               Sign out

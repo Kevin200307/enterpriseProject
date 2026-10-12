@@ -200,7 +200,7 @@ export function ProfilePage() {
 
       <Button
         variant="outline"
-        className="h-12 w-full justify-center gap-2 rounded-2xl text-destructive hover:bg-destructive/5 hover:text-destructive"
+        className="h-12 w-full justify-center gap-2 rounded-2xl text-destructive hover:bg-destructive/5 hover:text-destructive active:!border-destructive active:!bg-destructive active:!text-destructive-foreground"
         onClick={() => void logout()}
       >
         <LogOut className="h-4 w-4" aria-hidden />
