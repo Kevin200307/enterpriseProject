@@ -95,7 +95,7 @@ export function CustomerHomePage() {
               <li key={p.id}>
                 <Link
                   to={`/deliveries/${p.id}`}
-                  className="relative flex items-center justify-between gap-3 rounded-2xl border bg-card p-4 pr-32 transition-colors hover:bg-secondary"
+                  className="relative flex items-start justify-between gap-3 rounded-2xl border bg-card p-4 pr-32 transition-colors hover:bg-secondary"
                 >
                   <div className="min-w-0">
                     <p className="truncate font-mono text-sm font-medium">{p.trackingNumber}</p>
