@@ -90,17 +90,6 @@ export function CourierTodayPage() {
       <PageHeader
         title="Today"
         description={formatDate(new Date().toISOString())}
-        actions={
-          <Button
-            variant="outline"
-            size="lg"
-            onClick={() => void list.refetch()}
-            disabled={list.isFetching}
-            aria-label="Refresh"
-          >
-            <RefreshCw className={`h-4 w-4 ${list.isFetching ? 'animate-spin' : ''}`} aria-hidden />
-          </Button>
-        }
       />
 
       {list.isPending ? (
@@ -117,9 +106,27 @@ export function CourierTodayPage() {
         />
       ) : (
         <>
-          <p role="status" className="rounded-lg bg-muted p-3 text-center text-sm font-medium">
-            {counts.todo} to deliver · {counts.done} done · {counts.failed} failed
-          </p>
+          <div className="flex items-center gap-3">
+            <p
+              role="status"
+              className="min-w-0 flex-1 rounded-lg bg-muted p-3 text-center text-sm font-medium"
+            >
+              {counts.todo} to deliver · {counts.done} done · {counts.failed} failed
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              className="shrink-0"
+              onClick={() => void list.refetch()}
+              disabled={list.isFetching}
+              aria-label="Refresh"
+            >
+              <RefreshCw
+                className={`h-4 w-4 ${list.isFetching ? 'animate-spin' : ''}`}
+                aria-hidden
+              />
+            </Button>
+          </div>
           {groups.map(([city, items]) => (
             <section key={city} aria-label={`Pickup in ${city}`} className="flex flex-col gap-3">
               <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
