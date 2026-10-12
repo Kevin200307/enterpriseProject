@@ -182,12 +182,16 @@ export function ProfilePage() {
               onClick={() => setPreference(value as ThemePreference)}
               className={cn(
                 'relative flex min-w-0 flex-col items-center justify-center gap-1 rounded-xl border p-3 text-center transition-colors',
+                value === 'light' && 'bg-white text-gray-900 hover:bg-gray-50',
+                value === 'dark' && 'bg-black text-white hover:bg-gray-900',
+                value === 'system' &&
+                  'bg-[linear-gradient(to_right,#fff_0%,#fff_50%,#000_50%,#000_100%)] text-gray-900 hover:opacity-90',
                 preference === value
-                  ? 'border-primary bg-secondary'
-                  : 'border-border hover:bg-secondary',
+                  ? 'border-primary'
+                  : 'border-border',
               )}
             >
-              <Icon className="h-5 w-5 shrink-0 text-muted-foreground" aria-hidden />
+              <Icon className="h-5 w-5 shrink-0 text-current opacity-70" aria-hidden />
               <span className="min-w-0 flex-1">
                 <span className="block text-sm font-medium">{label}</span>
               </span>
