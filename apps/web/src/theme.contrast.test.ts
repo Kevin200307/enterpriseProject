@@ -71,8 +71,10 @@ describe('theme', () => {
     expect(token('primary-hover')[2]).toBeLessThan(token('primary')[2])
   })
 
-  it('is light only: no dark colour scheme or .dark token block', () => {
+  it('defines a soft near-black dark colour scheme', () => {
     expect(css).toContain('color-scheme: light')
-    expect(css).not.toMatch(/\.dark\b/)
+    expect(css).toContain('.dark')
+    expect(css).toContain('color-scheme: dark')
+    expect(token('background')[2]).toBeGreaterThan(0)
   })
 })

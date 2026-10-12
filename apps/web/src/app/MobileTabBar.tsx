@@ -224,7 +224,7 @@ export function MobileTabBar({
       <div
         className={cn(
           'pointer-events-auto relative max-w-full overflow-hidden rounded-full',
-          'border border-border/60 bg-white/80 shadow-lg shadow-foreground/10 backdrop-blur-xl',
+          'border border-border/60 bg-card/80 shadow-lg shadow-foreground/10 backdrop-blur-xl',
         )}
       >
         {/* Resting layer: the real links, always in the resting colour. */}

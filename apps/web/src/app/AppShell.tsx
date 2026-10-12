@@ -1,4 +1,4 @@
-import { ArrowLeft, Bell, LogOut, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
+import { ArrowLeft, Bell, LogOut, Moon, PanelLeftClose, PanelLeftOpen, Sun } from 'lucide-react'
 import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { LogoLockup, LogoMark, LogoTile } from '@/components/brand/Logo'
@@ -9,6 +9,7 @@ import { useSession } from '@/auth/session'
 import { useMobile } from '@/hooks/useMobile'
 import { env } from '@/config/env'
 import { cn } from '@/lib/cn'
+import { useTheme } from '@/theme/ThemeProvider'
 import { MobileTabBar } from './MobileTabBar'
 import { mobileNavFor, navFor, navMatchFor } from './nav'
 
@@ -61,6 +62,7 @@ function Avatar({ email }: { email?: string }) {
 export function AppShell() {
   const { roles, email } = useSession()
   const { logout, status } = useAuth()
+  const { theme, toggleTheme } = useTheme()
   const [open, setOpen] = useState(false)
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem(COLLAPSE_KEY) === '1')
   const { pathname } = useLocation()
@@ -141,6 +143,18 @@ export function AppShell() {
       ) : (
         <PanelLeftClose key="close" className="h-[18px] w-[18px] animate-scale-in" />
       )}
+    </Button>
+  )
+  const themeToggle = (
+    <Button
+      variant="ghost"
+      size="icon"
+      className="shrink-0 rounded-xl text-muted-foreground hover:bg-secondary hover:text-foreground"
+      aria-label={theme === 'dark' ? 'Use light mode' : 'Use dark mode'}
+      title={theme === 'dark' ? 'Use light mode' : 'Use dark mode'}
+      onClick={toggleTheme}
+    >
+      {theme === 'dark' ? <Sun className="h-[18px] w-[18px]" /> : <Moon className="h-[18px] w-[18px]" />}
     </Button>
   )
 
@@ -239,18 +253,24 @@ export function AppShell() {
           {/* The account row lives at the foot of the rail — the desktop layout has no top bar. */}
           <div className="border-t border-white/10 p-3">
             {roles.length === 0 ? (
-              <Button asChild size="sm" className="w-full rounded-xl">
-                <Link to="/login">{collapsed ? 'In' : 'Sign in'}</Link>
-              </Button>
+              <div className="flex items-center gap-1">
+                <Button asChild size="sm" className="min-w-0 flex-1 rounded-xl">
+                  <Link to="/login">{collapsed ? 'In' : 'Sign in'}</Link>
+                </Button>
+                {themeToggle}
+              </div>
             ) : collapsed ? (
-              <Link
-                to="/account"
-                title={email}
-                aria-label="Account"
-                className="flex h-10 w-full items-center justify-center rounded-xl hover:bg-white/10"
-              >
-                <Avatar email={email} />
-              </Link>
+              <div className="flex items-center gap-1">
+                <Link
+                  to="/account"
+                  title={email}
+                  aria-label="Account"
+                  className="flex h-10 min-w-0 flex-1 items-center justify-center rounded-xl hover:bg-white/10"
+                >
+                  <Avatar email={email} />
+                </Link>
+                {themeToggle}
+              </div>
             ) : (
               <div className="flex items-center gap-1">
                 <Link
@@ -271,6 +291,7 @@ export function AppShell() {
                 >
                   <LogOut className="h-[18px] w-[18px]" />
                 </Button>
+                {themeToggle}
               </div>
             )}
           </div>
@@ -310,17 +331,20 @@ export function AppShell() {
                 <span className="truncate font-semibold">{title}</span>
               </span>
             )}
-            {roles.length === 0 ? (
-              <Button asChild size="sm" className="rounded-xl">
-                <Link to="/login">Sign in</Link>
-              </Button>
-            ) : (
-              <Button variant="ghost" size="icon" asChild className="rounded-xl">
-                <Link to="/account/notifications" aria-label="Notifications">
-                  <Bell className="h-5 w-5" />
-                </Link>
-              </Button>
-            )}
+            <span className="flex items-center gap-1">
+              {themeToggle}
+              {roles.length === 0 ? (
+                <Button asChild size="sm" className="rounded-xl">
+                  <Link to="/login">Sign in</Link>
+                </Button>
+              ) : (
+                <Button variant="ghost" size="icon" asChild className="rounded-xl">
+                  <Link to="/account/notifications" aria-label="Notifications">
+                    <Bell className="h-5 w-5" />
+                  </Link>
+                </Button>
+              )}
+            </span>
           </header>
         )}
 

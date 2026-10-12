@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 @layer base {
-  /* Light-only monochrome theme: near-black actions on white, with a lime accent.
+  /* Light monochrome theme: near-black actions on white, with a lime accent.
      --primary is #1F1F1F, so white text on it clears WCAG AA by a wide margin.
      --accent is lime #D7F94F and always carries near-black text, never white. */
   :root {
@@ -31,6 +31,29 @@
     --surface: 0 0% 97%;
     /* the black nav rail; the active tab is --background so it reads as one piece with the page */
     --sidebar: 0 0% 8%;
+  }
+  .dark {
+    color-scheme: dark;
+    --background: 220 14% 10%;
+    --foreground: 210 20% 96%;
+    --card: 220 13% 14%;
+    --card-foreground: 210 20% 96%;
+    --primary: 72 93% 64%;
+    --primary-foreground: 220 14% 10%;
+    --primary-hover: 72 93% 56%;
+    --secondary: 220 12% 20%;
+    --secondary-foreground: 210 20% 96%;
+    --muted: 220 12% 18%;
+    --muted-foreground: 215 12% 70%;
+    --accent: 72 93% 64%;
+    --accent-foreground: 220 14% 10%;
+    --destructive: 0 72% 56%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 10% 25%;
+    --input: 220 10% 28%;
+    --ring: 72 93% 64%;
+    --surface: 220 13% 12%;
+    --sidebar: 220 16% 7%;
   }
   * {
     @apply border-border;
@@ -113,9 +136,9 @@
 
 @layer utilities {
   .glass {
-    @apply bg-white/70 backdrop-blur-md;
+    @apply bg-card/70 backdrop-blur-md;
   }
   .glass-card {
-    @apply rounded-3xl bg-white/80 shadow-xl shadow-foreground/5 backdrop-blur-md;
+    @apply rounded-3xl bg-card/80 shadow-xl shadow-foreground/5 backdrop-blur-md;
   }
 }
