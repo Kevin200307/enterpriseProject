@@ -30,11 +30,18 @@ export function CustomerHomePage() {
       </div>
 
       <div
-        className="relative flex min-h-48 overflow-hidden rounded-3xl bg-card p-6 text-foreground sm:min-h-56"
+        className="relative flex min-h-48 overflow-hidden rounded-3xl bg-card p-6 text-white sm:min-h-56"
       >
+        <img
+          src="/active-deliveries-card.webp"
+          alt=""
+          aria-hidden
+          className="absolute inset-0 h-full w-full object-cover object-center"
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/25 to-transparent" />
         <div className="absolute inset-0 z-10 p-6">
           <div className="absolute left-6 top-1/2 -translate-y-1/2">
-            <p className="text-sm text-muted-foreground">Active deliveries</p>
+            <p className="text-sm text-white/75">Active deliveries</p>
             <p className="mt-1 text-5xl font-bold leading-none tracking-tight">
               {recent.isPending ? '—' : active}
             </p>
@@ -45,15 +52,6 @@ export function CustomerHomePage() {
           >
             View all <ArrowRight className="h-4 w-4" aria-hidden />
           </Link>
-        </div>
-        <div className="absolute inset-y-0 right-0 w-[48%]">
-          <img
-            src="/active-deliveries-card.webp"
-            alt=""
-            aria-hidden
-            className="h-full w-full object-cover object-center"
-          />
-          <div className="absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-card to-transparent" />
         </div>
       </div>
 
