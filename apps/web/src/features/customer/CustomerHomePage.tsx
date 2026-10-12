@@ -31,7 +31,7 @@ export function CustomerHomePage() {
 
       <div
         className="relative flex min-h-48 overflow-hidden rounded-3xl bg-sidebar bg-cover bg-center p-6 text-white sm:min-h-56"
-        style={{ backgroundImage: "url('/active-deliveries-background.webp')" }}
+        style={{ backgroundImage: "url('/active-deliveries-card.webp')" }}
       >
         <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/35 to-transparent" />
         <div className="relative z-10 flex flex-1 flex-col items-start justify-between gap-4">
