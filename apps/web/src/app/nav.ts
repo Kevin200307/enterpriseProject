@@ -31,6 +31,11 @@ export interface NavItem {
   /** Compact label for the bottom bar, where the full one would not fit. */
   short?: string
   /**
+   * The persona's primary create action. The bottom bar gives it a filled accent circle instead
+   * of a plain glyph, so it reads as the one button on the bar rather than another destination.
+   */
+  action?: boolean
+  /**
    * Reachable from the app chrome on mobile (the header bell, the profile page), so it does not
    * need a slot of its own and never pushes a persona's real tabs into the overflow sheet.
    */
@@ -45,6 +50,7 @@ export const NAV_ITEMS: NavItem[] = [
     short: 'New',
     icon: PackagePlus,
     roles: ['CUSTOMER'],
+    action: true,
   },
   {
     to: '/merchant/register',
@@ -67,6 +73,7 @@ export const NAV_ITEMS: NavItem[] = [
     short: 'New',
     icon: PackagePlus,
     roles: ['MERCHANT'],
+    action: true,
   },
   { to: '/merchant/api-keys', label: 'API keys', icon: KeyRound, roles: ['MERCHANT'] },
   { to: '/merchant/webhook', label: 'Webhook', icon: Webhook, roles: ['MERCHANT'] },
@@ -150,4 +157,19 @@ export function mobileNavFor(roles: Role[]): { tabs: NavItem[]; overflow: NavIte
   // something else does, they are listed in it too rather than being hidden away.
   if (rest.every((i) => i.secondary)) return { tabs: preferred.slice(0, 5), overflow: [] }
   return { tabs: preferred.slice(0, 4), overflow: [...preferred.slice(4), ...rest] }
+}
+
+/**
+ * The deepest nav entry a path falls under, so detail routes (/deliveries/abc) still know which
+ * section they belong to — for the mobile header's title and for where its back button lands.
+ */
+export function navMatchFor(pathname: string, roles: Role[]): NavItem | undefined {
+  return navFor(roles)
+    .filter((i) => pathname === i.to || pathname.startsWith(`${i.to}/`))
+    .sort((a, b) => b.to.length - a.to.length)[0]
+}
+
+/** Title for the mobile header. */
+export function navTitleFor(pathname: string, roles: Role[]): string | undefined {
+  return navMatchFor(pathname, roles)?.label
 }

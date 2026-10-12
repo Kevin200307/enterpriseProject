@@ -1,6 +1,6 @@
-import { Bell, LogOut, MoreHorizontal, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
+import { ArrowLeft, Bell, LogOut, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { LogoLockup, LogoTile } from '@/components/brand/Logo'
 import { Button } from '@/components/ui/button'
 import { Dialog } from '@/components/ui/dialog'
@@ -9,7 +9,8 @@ import { useSession } from '@/auth/session'
 import { useMobile } from '@/hooks/useMobile'
 import { env } from '@/config/env'
 import { cn } from '@/lib/cn'
-import { mobileNavFor, navFor } from './nav'
+import { MobileTabBar } from './MobileTabBar'
+import { mobileNavFor, navFor, navMatchFor } from './nav'
 
 const ChatWidget = lazy(() =>
   import('@/features/assistant/ChatWidget').then((m) => ({ default: m.ChatWidget })),
@@ -41,6 +42,18 @@ function ActiveTabNotch() {
   )
 }
 
+/** Initial-bearing stand-in for a profile picture, for the rail's account row. */
+function Avatar({ email }: { email?: string }) {
+  return (
+    <span
+      aria-hidden
+      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/10 text-xs font-semibold uppercase text-white"
+    >
+      {email?.[0] ?? '?'}
+    </span>
+  )
+}
+
 export function AppShell() {
   const { roles, email } = useSession()
   const { logout, status } = useAuth()
@@ -49,12 +62,32 @@ export function AppShell() {
     () => localStorage.getItem(COLLAPSE_KEY) === '1',
   )
   const { pathname } = useLocation()
+  const navigate = useNavigate()
   const isMobile = useMobile()
   const navRef = useRef<HTMLElement>(null)
   const [indicator, setIndicator] = useState<{ top: number; height: number } | null>(null)
   const [indicatorReady, setIndicatorReady] = useState(false)
   const items = navFor(roles)
   const { tabs, overflow } = mobileNavFor(roles)
+  // The persona's first bottom-bar tab is their home; only there does the header carry the
+  // full lockup — every other screen trades it for the mark plus that screen's name.
+  const homePath = tabs[0]?.to
+  const onHome = pathname === homePath
+  const section = navMatchFor(pathname, roles)
+  const title = section?.label ?? 'SwiftDrop'
+  // "Inside" means a route that is not a nav destination itself — a detail screen reached by
+  // tapping something, which gets a way back instead of a section badge.
+  const inside = !onHome && pathname !== section?.to
+
+  /**
+   * Prefer real history so back undoes the tap that got here, but a deep link has nothing behind
+   * it in this app — then fall back to the section the route belongs to.
+   */
+  const goBack = () => {
+    const idx = (window.history.state as { idx?: number } | null)?.idx ?? 0
+    if (idx > 0) navigate(-1)
+    else navigate(section?.to ?? homePath ?? '/')
+  }
 
   useEffect(() => {
     localStorage.setItem(COLLAPSE_KEY, collapsed ? '1' : '0')
@@ -166,7 +199,7 @@ export function AppShell() {
       {!isMobile && (
         <aside
           className={cn(
-            'hidden overflow-y-auto bg-sidebar text-white md:block',
+            'sticky top-0 hidden h-screen flex-col bg-sidebar text-white md:flex',
             'transition-[width] duration-300 ease-smooth will-change-[width]',
             collapsed ? 'md:w-[68px]' : 'md:w-[240px]',
           )}
@@ -188,53 +221,93 @@ export function AppShell() {
           {/* Collapsed, the toggle tucks under the logo — the header row has no space beside it. */}
           {collapsed && <div className="flex px-3 pb-1">{sidebarToggle}</div>}
 
-          {sidebarNav(collapsed)}
+          <div className="flex-1 overflow-y-auto">{sidebarNav(collapsed)}</div>
+
+          {/* The account row lives at the foot of the rail — the desktop layout has no top bar. */}
+          <div className="border-t border-white/10 p-3">
+            {roles.length === 0 ? (
+              <Button asChild size="sm" className="w-full rounded-xl">
+                <Link to="/login">{collapsed ? 'In' : 'Sign in'}</Link>
+              </Button>
+            ) : collapsed ? (
+              <Link
+                to="/account"
+                title={email}
+                aria-label="Account"
+                className="flex h-10 w-full items-center justify-center rounded-xl hover:bg-white/10"
+              >
+                <Avatar email={email} />
+              </Link>
+            ) : (
+              <div className="flex items-center gap-1">
+                <Link
+                  to="/account"
+                  title={email}
+                  className="flex min-w-0 flex-1 items-center gap-2 rounded-xl p-1.5 hover:bg-white/10"
+                >
+                  <Avatar email={email} />
+                  <span className="truncate text-xs text-white/60">{email}</span>
+                </Link>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="shrink-0 rounded-xl text-white/70 hover:bg-white/10 hover:text-white active:scale-90"
+                  aria-label="Sign out"
+                  title="Sign out"
+                  onClick={() => void logout()}
+                >
+                  <LogOut className="h-[18px] w-[18px]" />
+                </Button>
+              </div>
+            )}
+          </div>
         </aside>
       )}
 
       <div className="flex min-w-0 flex-col">
-        {/* Top header */}
-        <header className="flex h-14 items-center justify-between border-b border-border/40 bg-white/80 px-4 backdrop-blur-md">
-          {/* No hamburger on mobile — everything routes through the bottom bar. */}
-          {isMobile ? (
-            <Link to="/" aria-label="SwiftDrop home" className="flex items-center gap-2">
-              <LogoTile />
-              <span className="font-semibold">SwiftDrop</span>
-            </Link>
-          ) : (
-            <span />
-          )}
-          <div className="flex items-center gap-2">
+        {/* Top header — mobile only; on desktop the rail carries the account row. */}
+        {isMobile && (
+          <header className="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-border/40 bg-white/80 px-4 backdrop-blur-md">
+            {/* No hamburger — everything routes through the bottom bar. */}
+            {onHome ? (
+              <img
+                src="/swiftdrop-logo.svg"
+                alt="SwiftDrop"
+                className="h-8 w-auto"
+                width={824}
+                height={250}
+              />
+            ) : (
+              <span className="flex min-w-0 items-center gap-2">
+                {inside ? (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="-ml-2 shrink-0 rounded-xl"
+                    aria-label={section ? `Back to ${section.label}` : 'Back'}
+                    onClick={goBack}
+                  >
+                    <ArrowLeft className="h-5 w-5" />
+                  </Button>
+                ) : (
+                  <img src="/swiftdrop-icon.svg" alt="" aria-hidden className="h-7 w-7 shrink-0" />
+                )}
+                <span className="truncate font-semibold">{title}</span>
+              </span>
+            )}
             {roles.length === 0 ? (
               <Button asChild size="sm" className="rounded-xl">
                 <Link to="/login">Sign in</Link>
               </Button>
-            ) : isMobile ? (
+            ) : (
               <Button variant="ghost" size="icon" asChild className="rounded-xl">
                 <Link to="/account/notifications" aria-label="Notifications">
                   <Bell className="h-5 w-5" />
                 </Link>
               </Button>
-            ) : (
-              <>
-                <Link
-                  to="/account"
-                  className="hidden text-sm text-muted-foreground hover:underline sm:inline"
-                >
-                  {email}
-                </Link>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="rounded-xl"
-                  onClick={() => void logout()}
-                >
-                  Sign out
-                </Button>
-              </>
             )}
-          </div>
-        </header>
+          </header>
+        )}
 
         {/* Page content */}
         <main
@@ -252,65 +325,7 @@ export function AppShell() {
 
       {/* Mobile bottom nav */}
       {isMobile && (
-        <nav
-          aria-label="Main"
-          className="fixed bottom-0 left-0 right-0 z-30 flex items-center justify-around border-t border-border/40 bg-white/90 px-2 pt-2 backdrop-blur-md"
-          style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}
-        >
-          {tabs.map(({ to, label, short, icon: Icon }) => (
-            <NavLink
-              key={to}
-              to={to}
-              end
-              className={({ isActive }) =>
-                cn(
-                  'flex flex-1 flex-col items-center gap-0.5 rounded-xl py-1 text-[10px] font-medium text-muted-foreground',
-                  'duration-300 ease-smooth active:scale-90',
-                  isActive && 'text-foreground',
-                )
-              }
-            >
-              {({ isActive }) => (
-                <>
-                  <span
-                    className={cn(
-                      'flex h-9 w-9 items-center justify-center rounded-full duration-300 ease-smooth',
-                      isActive ? 'bg-foreground text-background' : 'scale-95',
-                    )}
-                  >
-                    <Icon className="h-4 w-4" aria-hidden />
-                  </span>
-                  <span className="max-w-full truncate px-0.5">{short ?? label}</span>
-                </>
-              )}
-            </NavLink>
-          ))}
-
-          {/* Anything that does not fit becomes the fifth slot. */}
-          {overflow.length > 0 && (
-            <button
-              type="button"
-              onClick={() => setOpen(true)}
-              aria-haspopup="dialog"
-              aria-expanded={open}
-              className={cn(
-                'flex flex-1 flex-col items-center gap-0.5 rounded-xl py-1 text-[10px] font-medium text-muted-foreground',
-                'duration-300 ease-smooth active:scale-90',
-                open && 'text-foreground',
-              )}
-            >
-              <span
-                className={cn(
-                  'flex h-9 w-9 items-center justify-center rounded-full duration-300 ease-smooth',
-                  open ? 'bg-foreground text-background' : 'scale-95',
-                )}
-              >
-                <MoreHorizontal className="h-4 w-4" aria-hidden />
-              </span>
-              <span className="max-w-full truncate px-0.5">More</span>
-            </button>
-          )}
-        </nav>
+        <MobileTabBar tabs={tabs} overflow={overflow} moreOpen={open} onMore={() => setOpen(true)} />
       )}
 
       {/* Overflow sheet */}
