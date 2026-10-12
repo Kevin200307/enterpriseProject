@@ -187,7 +187,7 @@ export function ProfilePage() {
                 value === 'system' &&
                   'bg-[linear-gradient(to_right,#fff_0%,#fff_50%,#000_50%,#000_100%)] text-gray-900 hover:opacity-90',
                 preference === value
-                  ? 'border-primary'
+                  ? 'border-accent'
                   : 'border-border',
               )}
             >
