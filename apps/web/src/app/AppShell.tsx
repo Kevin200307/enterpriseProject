@@ -183,16 +183,28 @@ export function AppShell() {
             )
           }
         >
-          <Icon className="h-4 w-4 shrink-0" aria-hidden />
-          <span
-            className={cn(
-              'overflow-hidden whitespace-nowrap',
-              'transition-[max-width,opacity,transform] duration-300 ease-smooth',
-              rail ? 'max-w-0 -translate-x-1 opacity-0' : 'max-w-[160px] translate-x-0 opacity-100',
-            )}
-          >
-            {label}
-          </span>
+          {({ isActive }) => (
+            <>
+              <Icon
+                className={cn(
+                  'h-4 w-4 shrink-0',
+                  to === '/account/notifications' && isActive && 'fill-current',
+                )}
+                aria-hidden
+              />
+              <span
+                className={cn(
+                  'overflow-hidden whitespace-nowrap',
+                  'transition-[max-width,opacity,transform] duration-300 ease-smooth',
+                  rail
+                    ? 'max-w-0 -translate-x-1 opacity-0'
+                    : 'max-w-[160px] translate-x-0 opacity-100',
+                )}
+              >
+                {label}
+              </span>
+            </>
+          )}
         </NavLink>
       ))}
     </nav>
@@ -316,7 +328,7 @@ export function AppShell() {
             ) : (
               <Button variant="ghost" size="icon" asChild className="rounded-xl">
                 <Link to="/account/notifications" aria-label="Notifications">
-                  <Bell className="h-5 w-5" />
+                  <Bell className={cn('h-5 w-5', pathname === '/account/notifications' && 'fill-current')} />
                 </Link>
               </Button>
             )}
