@@ -43,10 +43,10 @@ export function AssignmentCard({
         {a.size} · {a.weightKg} kg
       </p>
       {actions && (
-        <div className="flex flex-col gap-2">
+        <div className="flex items-center gap-2">
           <Button
             size="lg"
-            className="h-14 text-base"
+            className="h-12 min-w-0 flex-1 text-base"
             disabled={busy}
             onClick={() => onAction(a, actions.primary)}
           >
@@ -56,7 +56,7 @@ export function AssignmentCard({
             <Button
               size="lg"
               variant="outline"
-              className="h-12"
+              className="h-12 min-w-0 flex-1"
               disabled={busy}
               onClick={() => onAction(a, actions.secondary!)}
             >
