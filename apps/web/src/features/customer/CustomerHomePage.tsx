@@ -30,18 +30,18 @@ export function CustomerHomePage() {
       </div>
 
       <div
-        className="relative flex min-h-48 overflow-hidden rounded-3xl bg-sidebar p-6 text-white sm:min-h-56"
+        className="relative flex min-h-48 overflow-hidden rounded-3xl bg-card p-6 text-foreground sm:min-h-56"
       >
-        <div className="relative z-10 flex w-[58%] flex-col items-start justify-between gap-4">
-          <div>
-            <p className="text-sm text-white/60">Active deliveries</p>
+        <div className="relative z-10 flex h-full w-[58%] flex-col items-start">
+          <div className="absolute left-0 top-1/2 -translate-y-1/2">
+            <p className="text-sm text-muted-foreground">Active deliveries</p>
             <p className="mt-1 text-5xl font-bold leading-none tracking-tight">
               {recent.isPending ? '—' : active}
             </p>
           </div>
           <Link
             to="/deliveries"
-            className="inline-flex items-center gap-1.5 rounded-full bg-accent px-4 py-2 text-sm font-semibold text-accent-foreground transition-transform active:scale-95"
+            className="absolute bottom-0 left-0 inline-flex items-center gap-1.5 rounded-full bg-accent px-4 py-2 text-sm font-semibold text-accent-foreground transition-transform active:scale-95"
           >
             View all <ArrowRight className="h-4 w-4" aria-hidden />
           </Link>
@@ -53,7 +53,7 @@ export function CustomerHomePage() {
             aria-hidden
             className="h-full w-full object-cover object-center"
           />
-          <div className="absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-sidebar to-transparent" />
+          <div className="absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-card to-transparent" />
         </div>
       </div>
 
