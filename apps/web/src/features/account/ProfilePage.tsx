@@ -171,10 +171,10 @@ export function ProfilePage() {
         </CardHeader>
         <CardContent className="grid grid-cols-3 gap-2">
           {([
-            ['light', 'Light', 'Use the light theme', Sun],
-            ['dark', 'Dark', 'Use the soft dark theme', Moon],
-            ['system', 'System', 'Follow your device theme', Monitor],
-          ] as const).map(([value, label, description, Icon]) => (
+            ['light', 'Light', Sun],
+            ['dark', 'Dark', Moon],
+            ['system', 'System', Monitor],
+          ] as const).map(([value, label, Icon]) => (
             <button
               key={value}
               type="button"
@@ -190,7 +190,6 @@ export function ProfilePage() {
               <Icon className="h-5 w-5 shrink-0 text-muted-foreground" aria-hidden />
               <span className="min-w-0 flex-1">
                 <span className="block text-sm font-medium">{label}</span>
-                <span className="block text-xs leading-tight text-muted-foreground">{description}</span>
               </span>
               {preference === value && (
                 <Check className="absolute right-2 top-2 h-4 w-4 text-primary" aria-hidden />
