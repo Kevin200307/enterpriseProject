@@ -9,7 +9,6 @@ import { qk } from '@/api/queryKeys'
 import type { NotificationChannel, NotificationPrefs } from '@/api/types'
 import { EmptyState } from '@/components/common/EmptyState'
 import { ErrorState } from '@/components/common/ErrorState'
-import { PageHeader } from '@/components/common/PageHeader'
 import { Pagination } from '@/components/common/Pagination'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -191,23 +190,22 @@ export function NotificationsPage() {
   const [prefsOpen, setPrefsOpen] = useState(false)
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-6">
-      {/* What we sent is what the screen is for; how to be told sits behind the button. */}
-      <PageHeader
-        title="Notifications"
-        description="See what we sent you."
-        actions={
-          <Button
-            variant="outline"
-            className="gap-2"
-            aria-haspopup="dialog"
-            aria-expanded={prefsOpen}
-            onClick={() => setPrefsOpen(true)}
-          >
-            <SlidersHorizontal className="h-4 w-4" aria-hidden />
-            Preferences
-          </Button>
-        }
-      />
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">Notifications</h1>
+          <p className="mt-1 text-sm text-muted-foreground">See what we sent you.</p>
+        </div>
+        <Button
+          variant="outline"
+          className="!flex-none gap-2"
+          aria-haspopup="dialog"
+          aria-expanded={prefsOpen}
+          onClick={() => setPrefsOpen(true)}
+        >
+          <SlidersHorizontal className="h-4 w-4" aria-hidden />
+          Preferences
+        </Button>
+      </div>
       <History />
 
       <Dialog
