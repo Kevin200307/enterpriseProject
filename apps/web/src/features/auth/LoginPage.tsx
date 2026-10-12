@@ -19,6 +19,7 @@ import { useAuth } from '@/auth/authContext'
 import { roleLanding, safeReturnTo } from '@/auth/landing'
 import { decodeClaims } from '@/auth/jwt'
 import { FormField } from '@/components/common/FormField'
+import { LoadingScreen } from '@/components/common/LoadingScreen'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { env } from '@/config/env'
@@ -53,6 +54,8 @@ export function LoginPage() {
 
   if (status === 'authenticated' && claims)
     return <Navigate to={safeReturnTo(returnTo, roleLanding(claims.roles))} replace />
+
+  if (isSubmitting) return <LoadingScreen />
 
   async function onSubmit(values: LoginInput) {
     setFormError(undefined)
