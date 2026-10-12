@@ -91,7 +91,7 @@ function ActiveDeliveries() {
             {/* Straight into tracking, which is what the screen is for — not the booking detail. */}
             <Link
               to={`/track/${p.trackingNumber}`}
-              className="flex items-center gap-3 rounded-2xl border bg-card p-4 transition-colors hover:bg-secondary"
+              className="relative flex items-center gap-3 rounded-2xl border bg-card p-4 pr-32 transition-colors hover:bg-secondary"
             >
               <div className="min-w-0 flex-1">
                 <p className="truncate font-mono text-sm font-medium">{p.trackingNumber}</p>
@@ -99,7 +99,7 @@ function ActiveDeliveries() {
                   {p.pickup.city} → {p.dropoff.city} · {formatDate(p.createdAt)}
                 </p>
               </div>
-              <StatusChip status={p.status} />
+              <StatusChip status={p.status} className="absolute right-10 top-4" />
               <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
             </Link>
           </li>

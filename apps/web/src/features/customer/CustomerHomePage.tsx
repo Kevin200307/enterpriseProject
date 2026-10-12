@@ -95,7 +95,7 @@ export function CustomerHomePage() {
               <li key={p.id}>
                 <Link
                   to={`/deliveries/${p.id}`}
-                  className="flex items-center justify-between gap-3 rounded-2xl border bg-card p-4 transition-colors hover:bg-secondary"
+                  className="relative flex items-center justify-between gap-3 rounded-2xl border bg-card p-4 pr-32 transition-colors hover:bg-secondary"
                 >
                   <div className="min-w-0">
                     <p className="truncate font-mono text-sm font-medium">{p.trackingNumber}</p>
@@ -103,7 +103,7 @@ export function CustomerHomePage() {
                       {p.pickup.city} → {p.dropoff.city} · {formatDate(p.createdAt)}
                     </p>
                   </div>
-                  <StatusChip status={p.status} />
+                  <StatusChip status={p.status} className="absolute right-4 top-4" />
                 </Link>
               </li>
             ))}

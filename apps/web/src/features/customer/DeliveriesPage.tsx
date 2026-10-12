@@ -184,7 +184,7 @@ export function DeliveriesPage() {
               <li key={p.id}>
                 <Link
                   to={`/deliveries/${p.id}`}
-                  className="grid gap-2 rounded-lg border p-4 hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:grid-cols-[1.2fr_1.5fr_1fr_auto_auto] md:items-center md:gap-4"
+                  className="relative grid gap-2 rounded-lg border p-4 pr-32 hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:grid-cols-[1.2fr_1.5fr_1fr_auto] md:items-center md:gap-4"
                 >
                   <span className="font-mono text-sm font-semibold">{p.trackingNumber}</span>
                   <span className="text-sm">
@@ -192,7 +192,10 @@ export function DeliveriesPage() {
                   </span>
                   <span className="text-sm text-muted-foreground">{formatDate(p.createdAt)}</span>
                   <MoneyLKR value={p.fee} />
-                  <StatusChip status={p.status} />
+                  <StatusChip
+                    status={p.status}
+                    className="absolute right-4 top-4"
+                  />
                 </Link>
               </li>
             ))}
