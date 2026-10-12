@@ -53,7 +53,7 @@ export function MerchantOrdersPage() {
             </Label>
             <Input id="o-ref" value={draft} onChange={(e) => setDraft(e.target.value)} />
           </div>
-          <Button type="submit" variant="secondary" size="sm" className="shrink-0">
+          <Button type="submit" variant="secondary" size="sm" className="h-11 shrink-0">
             Search
           </Button>
         </form>
