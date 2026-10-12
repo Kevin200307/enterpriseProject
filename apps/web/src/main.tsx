@@ -8,8 +8,9 @@ import { env } from '@/config/env'
 import './index.css'
 
 async function boot() {
-  // `import.meta.env.PROD` is a build constant: the mock backend can never be bundled into a production build.
-  if (!import.meta.env.PROD && env.useMocks) {
+  // `import.meta.env.PROD` is a build constant: the mock backend is never bundled into a
+  // production build unless that build is the standalone demo, which asks for it by name.
+  if (env.useMocks && (!import.meta.env.PROD || env.demo)) {
     const { worker } = await import('@/mocks/browser')
     await worker.start({ onUnhandledRequest: 'bypass' })
   }

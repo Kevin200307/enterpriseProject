@@ -9,4 +9,9 @@ export const env = {
   wsUrl: runtime?.wsUrl ?? import.meta.env.VITE_WS_URL ?? 'http://localhost:8081/ws',
   assistantEnabled: runtime?.assistantEnabled ?? import.meta.env.VITE_ASSISTANT_ENABLED !== 'false',
   useMocks: import.meta.env.VITE_USE_MOCKS === 'true',
+  /**
+   * Ships the mock backend in a production build — for the hosted demo, which has no server
+   * behind it. Off unless the build explicitly asks for it.
+   */
+  demo: import.meta.env.VITE_DEMO_MODE === 'true',
 }

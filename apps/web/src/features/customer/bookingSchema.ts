@@ -22,7 +22,7 @@ export const WEIGHT_RE = /^\d+(\.\d{1,2})?$/
 export const bookingSchema = z.object({
   pickup: address,
   dropoff: address,
-  size: z.enum(['SMALL', 'MEDIUM', 'LARGE'], { required_error: 'Choose a parcel size' }),
+  size: z.enum(['SMALL', 'MEDIUM', 'LARGE'], { error: 'Choose a parcel size' }),
   weightKg: z
     .string()
     .refine(

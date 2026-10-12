@@ -25,7 +25,10 @@ import { env } from '@/config/env'
 import { GoogleButton } from './GoogleButton'
 import { loginSchema, type LoginInput } from './schemas'
 
-const DemoAccounts = import.meta.env.PROD ? null : lazy(() => import('./DemoAccounts'))
+const DemoAccounts =
+  import.meta.env.PROD && import.meta.env.VITE_DEMO_MODE !== 'true'
+    ? null
+    : lazy(() => import('./DemoAccounts'))
 
 export function LoginPage() {
   const { status, claims, signInWithToken } = useAuth()

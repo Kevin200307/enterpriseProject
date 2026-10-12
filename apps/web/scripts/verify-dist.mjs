@@ -8,6 +8,11 @@ const walk = (dir) =>
     statSync(join(dir, f)).isDirectory() ? walk(join(dir, f)) : [join(dir, f)],
   )
 
+if (process.env.DEMO_BUILD === 'true') {
+  console.warn('verify-dist: DEMO_BUILD set — this artefact is MEANT to contain the mock backend')
+  process.exit(0)
+}
+
 if (!existsSync('dist')) {
   console.error('dist/ not found: run `npm run build` first')
   process.exit(2)

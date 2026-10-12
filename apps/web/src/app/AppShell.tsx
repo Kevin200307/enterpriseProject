@@ -278,25 +278,13 @@ export function AppShell() {
       )}
 
       <div className="relative flex min-w-0 flex-col">
-        {/* Home only: the wash runs a quarter of the way down the screen and fades out there. It
-            is pinned to the viewport and sits behind the page's own content. */}
-        {isMobile && onHome && (
-          <div
-            aria-hidden
-            className="pointer-events-none fixed inset-x-0 top-0 -z-10 h-[26vh] bg-gradient-to-b from-accent/45 to-accent/0"
-          />
-        )}
-
         {/* Top header — mobile only; on desktop the rail carries the account row. */}
         {isMobile && (
           <header
             className={cn(
               'sticky top-0 z-20 flex h-14 items-center justify-between px-4',
               'h-[calc(3.5rem+env(safe-area-inset-top))] pt-[env(safe-area-inset-top)]',
-              // On home the bar has no background of its own — it sits inside the lime wash and
-              // dissolves into the content. Everywhere else the page is plain white, so the bar
-              // is too, and it stays opaque as content scrolls under it.
-              onHome ? 'bg-transparent' : 'bg-background',
+              'bg-background',
             )}
           >
             {/* No hamburger — everything routes through the bottom bar. */}

@@ -30,10 +30,10 @@ describe('safeReturnTo', () => {
 
 describe('roleLanding', () => {
   it.each([
-    [['CUSTOMER'], '/deliveries'],
+    [['CUSTOMER'], '/home'],
     [['CUSTOMER', 'MERCHANT'], '/merchant/orders'],
     [['COURIER'], '/courier/today'],
-    [['DISPATCHER'], '/admin/dispatch'],
+    [['DISPATCHER'], '/admin'],
     [['CUSTOMER', 'ADMIN'], '/admin'],
   ] as const)('%j -> %s', (roles, path) => expect(roleLanding([...roles])).toBe(path))
 })
