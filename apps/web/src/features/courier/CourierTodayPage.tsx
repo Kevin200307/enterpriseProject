@@ -111,7 +111,13 @@ export function CourierTodayPage() {
               role="status"
               className="min-w-0 flex-1 rounded-lg bg-muted p-3 text-center text-sm font-medium"
             >
-              {counts.todo} to deliver · {counts.done} done · {counts.failed} failed
+              <span className="text-sky-700 dark:text-sky-300">
+                {counts.todo} to deliver
+              </span>
+              <span className="text-muted-foreground"> · </span>
+              <span className="text-emerald-700 dark:text-emerald-300">{counts.done} done</span>
+              <span className="text-muted-foreground"> · </span>
+              <span className="text-destructive">{counts.failed} failed</span>
             </p>
             <Button
               variant="outline"
