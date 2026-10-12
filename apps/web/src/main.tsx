@@ -6,9 +6,11 @@ import { Providers } from '@/app/providers'
 import { createRouter } from '@/app/router'
 import { LoadingScreen } from '@/components/common/LoadingScreen'
 import { env } from '@/config/env'
+import { MINIMUM_LOADING_MS } from '@/hooks/useMinimumLoading'
 import './index.css'
 
 const root = createRoot(document.getElementById('root')!)
+const bootStartedAt = performance.now()
 
 root.render(<LoadingScreen />)
 
@@ -19,6 +21,8 @@ async function boot() {
     const { worker } = await import('@/mocks/browser')
     await worker.start({ onUnhandledRequest: 'bypass' })
   }
+  const remaining = MINIMUM_LOADING_MS - (performance.now() - bootStartedAt)
+  if (remaining > 0) await new Promise((resolve) => window.setTimeout(resolve, remaining))
   root.render(
     <StrictMode>
       <ErrorBoundary>

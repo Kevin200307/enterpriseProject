@@ -8,6 +8,7 @@ import { Dialog } from '@/components/ui/dialog'
 import { useAuth } from '@/auth/authContext'
 import { useSession } from '@/auth/session'
 import { useMobile } from '@/hooks/useMobile'
+import { useMinimumLoading } from '@/hooks/useMinimumLoading'
 import { env } from '@/config/env'
 import { cn } from '@/lib/cn'
 import { MobileTabBar } from './MobileTabBar'
@@ -67,6 +68,7 @@ export function AppShell() {
   const { pathname } = useLocation()
   const navigate = useNavigate()
   const navigation = useNavigation()
+  const loading = useMinimumLoading(status === 'loading' || navigation.state === 'loading')
   const isMobile = useMobile()
   const navRef = useRef<HTMLElement>(null)
   const [indicator, setIndicator] = useState<{ top: number; height: number } | null>(null)
@@ -126,7 +128,7 @@ export function AppShell() {
     return () => cancelAnimationFrame(id)
   }, [pathname, collapsed, isMobile, open, items.length])
 
-  if (status === 'loading' || navigation.state === 'loading') return <LoadingScreen />
+  if (loading) return <LoadingScreen />
 
   const sidebarToggle = (
     <Button
@@ -412,6 +414,7 @@ export function AppShell() {
 export function PublicShell() {
   const navigate = useNavigate()
   const navigation = useNavigation()
+  const loading = useMinimumLoading(navigation.state === 'loading')
   // Deep-linked from a shared link there is nothing behind this page, so back lands on lookup.
   const goBack = () => {
     const idx = (window.history.state as { idx?: number } | null)?.idx ?? 0
@@ -419,7 +422,7 @@ export function PublicShell() {
     else navigate('/track')
   }
 
-  if (navigation.state === 'loading') return <LoadingScreen />
+  if (loading) return <LoadingScreen />
 
   return (
     <div className="min-h-screen bg-background">

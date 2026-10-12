@@ -1,6 +1,7 @@
 import { Link, Outlet, useNavigation } from 'react-router-dom'
 import { LogoLockup } from '@/components/brand/Logo'
 import { LoadingScreen } from '@/components/common/LoadingScreen'
+import { useMinimumLoading } from '@/hooks/useMinimumLoading'
 
 /**
  * Full-screen auth layout: the courier on one side, the form on the other, both standing on one
@@ -8,8 +9,9 @@ import { LoadingScreen } from '@/components/common/LoadingScreen'
  */
 export function AuthShell() {
   const navigation = useNavigation()
+  const loading = useMinimumLoading(navigation.state === 'loading')
 
-  if (navigation.state === 'loading') return <LoadingScreen />
+  if (loading) return <LoadingScreen />
 
   return (
     <div className="min-h-screen bg-surface lg:grid lg:grid-cols-[1fr_minmax(0,38rem)]">
