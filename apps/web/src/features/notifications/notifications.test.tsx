@@ -52,9 +52,15 @@ describe('notification preferences', () => {
       http.get(`${API}/api/v1/notifications/me`, () => HttpResponse.json(page([mine()]))),
     )
 
+  /** The preference grid moved into a sheet behind the header button. */
+  async function openPrefs() {
+    await userEvent.click(await screen.findByRole('button', { name: /Preferences/ }))
+  }
+
   it('shows the saved choices as a status × channel grid', async () => {
     serve()
     renderApp('/account/notifications')
+    await openPrefs()
     expect(await screen.findByLabelText('Email when created')).toBeChecked()
     expect(screen.getByLabelText('Email when picked up')).not.toBeChecked()
     expect(screen.getByLabelText('SMS when delivered')).toBeChecked()
@@ -74,6 +80,7 @@ describe('notification preferences', () => {
       ),
     )
     renderApp('/account/notifications')
+    await openPrefs()
     const save = await screen.findByRole('button', { name: 'Save preferences' })
     await screen.findByLabelText('Email when created')
     expect(save).toBeDisabled()
@@ -95,6 +102,7 @@ describe('notification preferences', () => {
   it('discards unsaved changes', async () => {
     serve()
     renderApp('/account/notifications')
+    await openPrefs()
     const box = await screen.findByLabelText('Email when picked up')
     await userEvent.click(box)
     expect(box).toBeChecked()

@@ -1,4 +1,5 @@
 import * as DialogPrimitive from '@radix-ui/react-dialog'
+import { X } from 'lucide-react'
 import type { ReactNode } from 'react'
 
 export function Dialog({
@@ -23,12 +24,24 @@ export function Dialog({
         <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/50" />
         <DialogPrimitive.Content
           className={
+            // No `relative` here: it would beat `fixed` in Tailwind's output and drop the sheet
+            // into normal flow. `fixed` is already a containing block for the close button.
             side === 'bottom'
-              ? 'fixed inset-x-0 bottom-0 z-50 max-h-[90vh] overflow-y-auto rounded-t-2xl border bg-background p-6 shadow-lg focus:outline-none sm:inset-x-auto sm:left-1/2 sm:max-w-md sm:-translate-x-1/2'
+              ? 'fixed inset-x-0 bottom-0 z-50 overflow-x-hidden max-h-[90vh] overflow-y-auto rounded-t-2xl border bg-background p-6 shadow-lg focus:outline-none sm:inset-x-auto sm:left-1/2 sm:max-w-md sm:-translate-x-1/2'
               : 'fixed left-1/2 top-1/2 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-lg border bg-background p-6 shadow-lg focus:outline-none'
           }
         >
-          <DialogPrimitive.Title className="text-lg font-semibold">{title}</DialogPrimitive.Title>
+          {/* A way out in the corner — on a sheet the overlay is easy to miss, and Escape is no
+              use on a phone. */}
+          <DialogPrimitive.Close
+            aria-label="Close"
+            className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground active:scale-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <X className="h-[18px] w-[18px]" aria-hidden />
+          </DialogPrimitive.Close>
+          <DialogPrimitive.Title className="pr-10 text-lg font-semibold">
+            {title}
+          </DialogPrimitive.Title>
           <DialogPrimitive.Description
             className={description ? 'mt-1 text-sm text-muted-foreground' : 'sr-only'}
           >

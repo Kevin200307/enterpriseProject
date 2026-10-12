@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { ArrowRight, PackagePlus, Search } from 'lucide-react'
+import { ArrowRight, Boxes, PackagePlus, Search } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { parcelsApi } from '@/api/endpoints/parcels'
 import { qk } from '@/api/queryKeys'
@@ -30,14 +30,24 @@ export function CustomerHomePage() {
       </div>
 
       {/* Headline figure, styled like the dark cards in the design language */}
-      <div className="rounded-3xl bg-sidebar p-6 text-white">
-        <p className="text-sm text-white/60">Active deliveries</p>
-        <p className="mt-1 text-5xl font-bold tracking-tight">
-          {recent.isPending ? '—' : active}
-        </p>
+      <div className="flex flex-col gap-5 rounded-3xl bg-sidebar p-6 text-white">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-sm text-white/60">Active deliveries</p>
+            <p className="mt-1 text-5xl font-bold leading-none tracking-tight">
+              {recent.isPending ? '—' : active}
+            </p>
+          </div>
+          <span
+            aria-hidden
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/10"
+          >
+            <Boxes className="h-5 w-5" />
+          </span>
+        </div>
         <Link
           to="/deliveries"
-          className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-accent"
+          className="inline-flex w-fit self-end items-center gap-1.5 rounded-full bg-accent px-4 py-2 text-sm font-semibold text-accent-foreground transition-transform active:scale-95"
         >
           View all <ArrowRight className="h-4 w-4" aria-hidden />
         </Link>

@@ -134,35 +134,7 @@ export function DeliveryDetailPage() {
   const p = parcel.data
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader
-        title="Delivery details"
-        actions={
-          <div className="flex flex-wrap gap-2">
-            <Button
-              variant="outline"
-              onClick={async () => {
-                if ((await shareLink(trackingUrl(p.trackingNumber))) === 'copied')
-                  toast.success('Tracking link copied')
-              }}
-            >
-              <Share2 className="h-4 w-4" aria-hidden /> Share
-            </Button>
-            <Button
-              variant="outline"
-              disabled={downloading}
-              onClick={() => void downloadReceipt(p)}
-            >
-              <Download className="h-4 w-4" aria-hidden />{' '}
-              {downloading ? 'Preparing…' : 'Download receipt'}
-            </Button>
-            {p.status === 'CREATED' && (
-              <Button variant="destructive" onClick={() => setConfirmCancel(true)}>
-                Cancel delivery
-              </Button>
-            )}
-          </div>
-        }
-      />
+      <PageHeader title="Delivery details" />
 
       <div className="flex flex-wrap items-center gap-3">
         <div className="min-w-[14rem] max-w-sm flex-1">
@@ -243,6 +215,41 @@ export function DeliveryDetailPage() {
           <AddressCard title="Pickup" a={p.pickup} />
           <AddressCard title="Drop-off" a={p.dropoff} />
         </div>
+      </div>
+
+      {/* The actions live at the foot of the page, where the thumb is, and split the width
+          evenly rather than hugging their labels. */}
+      <div className="flex flex-col gap-3">
+        <div className="flex gap-3">
+          <Button
+            variant="outline"
+            className="h-11 flex-1"
+            onClick={async () => {
+              if ((await shareLink(trackingUrl(p.trackingNumber))) === 'copied')
+                toast.success('Tracking link copied')
+            }}
+          >
+            <Share2 className="h-4 w-4" aria-hidden /> Share
+          </Button>
+          <Button
+            variant="outline"
+            className="h-11 flex-1"
+            disabled={downloading}
+            onClick={() => void downloadReceipt(p)}
+          >
+            <Download className="h-4 w-4" aria-hidden />{' '}
+            {downloading ? 'Preparing…' : 'Download receipt'}
+          </Button>
+        </div>
+        {p.status === 'CREATED' && (
+          <Button
+            variant="destructive"
+            className="h-11 w-full"
+            onClick={() => setConfirmCancel(true)}
+          >
+            Cancel delivery
+          </Button>
+        )}
       </div>
 
       <Dialog

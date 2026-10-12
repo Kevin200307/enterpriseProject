@@ -35,8 +35,10 @@ export function ChatWidget() {
       {!open && (
         <Button
           size="lg"
-          // Sits above the mobile bottom bar so it never covers the last tab.
-          className="fixed bottom-24 right-4 z-40 h-14 w-14 rounded-full shadow-lg md:bottom-4"
+          // Sits above the mobile bottom bar so it never covers the last tab. The silhouette is
+          // the speech bubble itself — round but for the squared bottom-left corner, where the
+          // icon's own tail sits — rather than a plain disc.
+          className="fixed bottom-24 right-4 z-40 h-14 w-14 rounded-[28px_28px_28px_8px] shadow-lg md:bottom-4"
           aria-label="Open assistant"
           onClick={() => setOpen(true)}
         >

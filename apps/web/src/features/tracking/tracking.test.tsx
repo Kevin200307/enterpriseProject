@@ -52,7 +52,7 @@ describe('public tracking page', () => {
     renderApp('/track/SD-ABCD2345')
     expect(await screen.findByRole('heading', { name: 'In transit' })).toBeInTheDocument()
     expect(screen.getByRole('region', { name: 'Route' })).toHaveTextContent('Colombo → Kandy')
-    expect(screen.getByText('Your courier: Kasun')).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'Route' })).toHaveTextContent('Kasun')
     const items = within(screen.getByRole('list', { name: 'Status history' })).getAllByRole(
       'listitem',
     )

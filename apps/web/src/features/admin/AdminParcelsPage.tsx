@@ -159,7 +159,7 @@ export function AdminParcelsPage() {
           {tn && (
             <Button
               type="button"
-              variant="ghost"
+              variant="outline"
               onClick={() => {
                 setDraft('')
                 setParams(new URLSearchParams())

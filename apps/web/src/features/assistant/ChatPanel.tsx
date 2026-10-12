@@ -1,4 +1,4 @@
-import { RotateCcw, SendHorizontal, Square, Wrench, X } from 'lucide-react'
+import { ArrowLeft, RotateCcw, SendHorizontal, Square, Wrench, X } from 'lucide-react'
 import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/cn'
@@ -66,6 +66,14 @@ export function ChatPanel({
   const log = useRef<HTMLUListElement>(null)
 
   useEffect(() => input.current?.focus(), [])
+  // One line to start, growing with the message, so the placeholder sits on the send button's
+  // line instead of floating above it.
+  useEffect(() => {
+    const el = input.current
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = `${Math.min(el.scrollHeight, 128)}px`
+  }, [draft])
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
     document.addEventListener('keydown', onKey)
@@ -87,28 +95,51 @@ export function ChatPanel({
     <section
       role="dialog"
       aria-label="SwiftDrop assistant"
-      className="fixed inset-0 z-50 flex flex-col bg-background shadow-2xl sm:inset-auto sm:bottom-20 sm:right-4 sm:h-[34rem] sm:w-96 sm:rounded-xl sm:border"
+      className="fixed inset-0 z-50 flex flex-col overflow-hidden bg-background shadow-2xl sm:inset-auto sm:bottom-20 sm:right-4 sm:h-[34rem] sm:w-96 sm:rounded-3xl sm:border"
     >
-      <header className="flex items-center justify-between border-b px-4 py-3">
-        <h2 className="font-semibold">Assistant</h2>
-        <div className="flex gap-1">
+      {/* The lime rises from the composer and fades out up the conversation. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 bottom-0 z-0 h-2/5 bg-gradient-to-t from-accent/40 to-accent/0"
+      />
+
+      <header className="relative z-10 flex items-center gap-1 px-2 py-2 pt-[calc(0.5rem+env(safe-area-inset-top))] sm:pt-2">
+        {/* Back, as on every other screen; the floating desktop panel keeps a close cross. */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="rounded-xl sm:hidden"
+          aria-label="Back"
+          onClick={onClose}
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+        <h2 className="truncate pl-2 font-semibold sm:pl-2">Assistant</h2>
+        <div className="ml-auto flex gap-1">
           <Button
             variant="ghost"
             size="icon"
+            className="rounded-xl"
             aria-label="New chat"
             disabled={messages.length === 0}
             onClick={() => void reset()}
           >
             <RotateCcw className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" aria-label="Close assistant" onClick={onClose}>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="hidden rounded-xl sm:inline-flex"
+            aria-label="Close assistant"
+            onClick={onClose}
+          >
             <X className="h-4 w-4" />
           </Button>
         </div>
       </header>
 
       {messages.length === 0 ? (
-        <div className="flex flex-1 flex-col justify-center gap-2 p-4">
+        <div className="relative z-10 flex flex-1 flex-col justify-center gap-2 p-4">
           <p className="text-sm text-muted-foreground">
             Ask about a parcel, a price, or your deliveries.
           </p>
@@ -117,7 +148,7 @@ export function ChatPanel({
               key={s}
               type="button"
               onClick={() => void send(s)}
-              className="rounded-lg border p-3 text-left text-sm hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="rounded-2xl border bg-card p-3.5 text-left text-sm transition-colors hover:bg-secondary active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               {s}
             </button>
@@ -129,7 +160,7 @@ export function ChatPanel({
           role="log"
           aria-live="polite"
           aria-label="Conversation"
-          className="flex flex-1 flex-col gap-3 overflow-y-auto p-4"
+          className="relative z-10 flex flex-1 flex-col gap-3 overflow-y-auto p-4"
         >
           {messages.map((m) => (
             <Bubble key={m.id} m={m} />
@@ -142,9 +173,11 @@ export function ChatPanel({
           e.preventDefault()
           submit()
         }}
-        className="flex flex-col gap-1 border-t p-3"
+        className="relative z-10 flex flex-col gap-1 p-3"
+        style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
       >
-        <div className="flex items-end gap-2">
+        {/* The ring belongs to the pill, not the bare textarea inside it. */}
+        <div className="flex items-center gap-2 rounded-[1.75rem] border bg-card py-1.5 pl-4 pr-1.5 shadow-sm focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 ring-offset-background">
           <label htmlFor="chat-input" className="sr-only">
             Message
           </label>
@@ -152,7 +185,7 @@ export function ChatPanel({
             id="chat-input"
             ref={input}
             value={draft}
-            rows={2}
+            rows={1}
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
@@ -160,22 +193,35 @@ export function ChatPanel({
                 submit()
               }
             }}
-            className="min-h-11 flex-1 resize-none rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="max-h-32 min-w-0 flex-1 resize-none bg-transparent py-2 text-sm leading-6 outline-none focus-visible:outline-none focus-visible:ring-0"
             placeholder="Ask SwiftDrop…"
           />
           {busy ? (
-            <Button type="button" variant="outline" size="icon" aria-label="Stop" onClick={stop}>
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              className="shrink-0 rounded-full"
+              aria-label="Stop"
+              onClick={stop}
+            >
               <Square className="h-4 w-4" />
             </Button>
           ) : (
-            <Button type="submit" size="icon" aria-label="Send" disabled={!draft.trim() || tooLong}>
+            <Button
+              type="submit"
+              size="icon"
+              className="shrink-0 rounded-full bg-accent text-accent-foreground hover:brightness-95"
+              aria-label="Send"
+              disabled={!draft.trim() || tooLong}
+            >
               <SendHorizontal className="h-4 w-4" />
             </Button>
           )}
         </div>
         <p
           className={cn(
-            'text-right text-xs',
+            'px-2 text-right text-xs',
             tooLong ? 'text-destructive' : 'text-muted-foreground',
           )}
           aria-live="polite"

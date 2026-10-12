@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { SlidersHorizontal } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -12,6 +13,7 @@ import { PageHeader } from '@/components/common/PageHeader'
 import { Pagination } from '@/components/common/Pagination'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Dialog } from '@/components/ui/dialog'
 import { Skeleton } from '@/components/ui/skeleton'
 import { formatDateTime, humanize } from '@/lib/format'
 import { STATUS_META, type ParcelStatus } from '@/lib/status'
@@ -62,61 +64,61 @@ function Preferences() {
     )
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Notify me when a parcel is…</CardTitle>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-4">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left">
-                <th scope="col" className="py-2 font-medium">
-                  Status
+    <div className="flex flex-col gap-4">
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="text-left">
+              <th scope="col" className="py-2 font-medium">
+                Status
+              </th>
+              {CHANNELS.map((c) => (
+                <th key={c.id} scope="col" className="px-4 py-2 text-center font-medium">
+                  {c.label}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {STATUSES.map((s) => (
+              <tr key={s} className="border-t">
+                <th scope="row" className="py-2 text-left font-normal">
+                  {STATUS_META[s].label}
                 </th>
                 {CHANNELS.map((c) => (
-                  <th key={c.id} scope="col" className="px-4 py-2 text-center font-medium">
-                    {c.label}
-                  </th>
+                  <td key={c.id} className="px-4 py-2 text-center">
+                    <input
+                      type="checkbox"
+                      aria-label={`${c.label} when ${STATUS_META[s].label.toLowerCase()}`}
+                      checked={draft[c.id].includes(s)}
+                      onChange={() => toggle(c.id, s)}
+                    />
+                  </td>
                 ))}
               </tr>
-            </thead>
-            <tbody>
-              {STATUSES.map((s) => (
-                <tr key={s} className="border-t">
-                  <th scope="row" className="py-2 text-left font-normal">
-                    {STATUS_META[s].label}
-                  </th>
-                  {CHANNELS.map((c) => (
-                    <td key={c.id} className="px-4 py-2 text-center">
-                      <input
-                        type="checkbox"
-                        aria-label={`${c.label} when ${STATUS_META[s].label.toLowerCase()}`}
-                        checked={draft[c.id].includes(s)}
-                        onChange={() => toggle(c.id, s)}
-                      />
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <div className="flex items-center gap-3">
-          <Button disabled={!dirty || save.isPending} onClick={() => save.mutate(draft)}>
-            {save.isPending ? 'Saving…' : 'Save preferences'}
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div className="flex gap-3">
+        {dirty && (
+          <Button
+            variant="outline"
+            className="h-11 flex-1"
+            onClick={() => setDraft({ EMAIL: q.data?.EMAIL ?? [], SMS: q.data?.SMS ?? [] })}
+          >
+            Discard changes
           </Button>
-          {dirty && (
-            <Button
-              variant="ghost"
-              onClick={() => setDraft({ EMAIL: q.data?.EMAIL ?? [], SMS: q.data?.SMS ?? [] })}
-            >
-              Discard changes
-            </Button>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+        )}
+        <Button
+          className="h-11 flex-1"
+          disabled={!dirty || save.isPending}
+          onClick={() => save.mutate(draft)}
+        >
+          {save.isPending ? 'Saving…' : 'Save preferences'}
+        </Button>
+      </div>
+    </div>
   )
 }
 
@@ -186,14 +188,36 @@ function History() {
 }
 
 export function NotificationsPage() {
+  const [prefsOpen, setPrefsOpen] = useState(false)
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-6">
+      {/* What we sent is what the screen is for; how to be told sits behind the button. */}
       <PageHeader
         title="Notifications"
-        description="Choose how we keep you posted, and see what we sent."
+        description="See what we sent you."
+        actions={
+          <Button
+            variant="outline"
+            className="gap-2"
+            aria-haspopup="dialog"
+            aria-expanded={prefsOpen}
+            onClick={() => setPrefsOpen(true)}
+          >
+            <SlidersHorizontal className="h-4 w-4" aria-hidden />
+            Preferences
+          </Button>
+        }
       />
-      <Preferences />
       <History />
+
+      <Dialog
+        open={prefsOpen}
+        onOpenChange={setPrefsOpen}
+        title="Notify me when a parcel is…"
+        side="bottom"
+      >
+        <Preferences />
+      </Dialog>
     </div>
   )
 }

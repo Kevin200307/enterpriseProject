@@ -204,6 +204,7 @@ describe('merchant new order', () => {
       await u.type(screen.getAllByLabelText('Postal code')[g]!, '100')
     }
     await u.type(screen.getByLabelText('Weight (kg)'), '2')
+    await u.click(screen.getByRole('radio', { name: /Small/ }))
     await screen.findByText('Total', {}, { timeout: 3000 })
     await u.click(screen.getByRole('button', { name: 'Book delivery' }))
     expect(await screen.findByText('Your reference is required')).toBeInTheDocument()

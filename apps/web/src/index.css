@@ -61,6 +61,39 @@
       transform 180ms cubic-bezier(0.32, 0.72, 0, 1);
   }
 
+  /* Scrollbars are hidden everywhere — scrolling itself is untouched, by wheel, drag, keyboard
+     or scrollIntoView; only the bar is not drawn. */
+  * {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* old Edge */
+  }
+  *::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+    display: none;
+  }
+
+  /* iOS Safari zooms the whole page in when a focused field's text is under 16px, which looks
+     like the screen enlarging and pushes the right-hand side out of view. Phones therefore get
+     16px fields; from the tablet breakpoint up the designed sizes apply. */
+  @media (max-width: 767px) {
+    input,
+    textarea,
+    select {
+      font-size: 16px;
+    }
+  }
+
+  /* Native controls follow the theme instead of the browser's blue; lime renders the dot and
+     the tick, which the browser then draws in a dark colour against it. */
+  input[type='radio'],
+  input[type='checkbox'] {
+    accent-color: hsl(var(--accent));
+    /* The default 13px control looks undersized beside our 44px rows. */
+    width: 1.05rem;
+    height: 1.05rem;
+  }
+
   :focus-visible {
     @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
   }

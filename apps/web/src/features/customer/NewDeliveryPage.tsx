@@ -69,7 +69,11 @@ export function NewDeliveryPage({ merchant = false }: { merchant?: boolean }) {
     express,
   }
   const isReady =
-    !!wanted.fromCity && !!wanted.toCity && WEIGHT_RE.test(weight.trim()) && wanted.weightKg > 0
+    !!wanted.fromCity &&
+    !!wanted.toCity &&
+    !!wanted.size &&
+    WEIGHT_RE.test(weight.trim()) &&
+    wanted.weightKg > 0
   const input = useDebounced(wanted, 400)
   const settled = JSON.stringify(input) === JSON.stringify(wanted)
   const estimate = useQuery({
@@ -114,8 +118,9 @@ export function NewDeliveryPage({ merchant = false }: { merchant?: boolean }) {
   }
 
   return (
-    // Clears the docked submit bar on phones so the last field is never hidden behind it.
-    <div className="flex flex-col gap-6 pb-28 lg:pb-0">
+    // Clears the docked submit bar on phones so the last card is never hidden behind it: the bar
+    // sits 68px up (above the tab island) and is itself ~76px tall.
+    <div className="flex flex-col gap-6 pb-40 lg:pb-0">
       <PageHeader
         title={merchant ? 'New order' : 'New delivery'}
         description={
@@ -145,7 +150,7 @@ export function NewDeliveryPage({ merchant = false }: { merchant?: boolean }) {
           <Card>
             <CardHeader className="flex-row items-center justify-between">
               <CardTitle>Pickup</CardTitle>
-              <Button type="button" variant="ghost" size="sm" onClick={() => void fillMyDetails()}>
+              <Button type="button" variant="outline" size="sm" onClick={() => void fillMyDetails()}>
                 Use my details
               </Button>
             </CardHeader>
@@ -197,7 +202,7 @@ export function NewDeliveryPage({ merchant = false }: { merchant?: boolean }) {
                 {SIZES.map((s) => (
                   <label
                     key={s.value}
-                    className="flex cursor-pointer flex-col gap-0.5 rounded-md border p-3 text-sm has-[:checked]:border-primary has-[:checked]:bg-primary/5 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring"
+                    className="flex cursor-pointer flex-col gap-0.5 rounded-md border p-3 text-sm has-[:checked]:border-accent has-[:checked]:bg-accent/15 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring"
                   >
                     <span className="flex items-center gap-2 font-medium">
                       <input type="radio" value={s.value} {...register('size')} />
@@ -206,6 +211,11 @@ export function NewDeliveryPage({ merchant = false }: { merchant?: boolean }) {
                     <span className="text-xs text-muted-foreground">{s.hint}</span>
                   </label>
                 ))}
+                {errors.size && (
+                  <p className="text-xs text-destructive sm:col-span-3" role="alert">
+                    {errors.size.message}
+                  </p>
+                )}
               </fieldset>
               <FormField label="Weight (kg)" error={errors.weightKg?.message}>
                 {(p) => (

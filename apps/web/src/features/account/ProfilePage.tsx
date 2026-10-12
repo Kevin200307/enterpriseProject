@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Bell, ChevronRight, LogOut, Search } from 'lucide-react'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -17,13 +17,22 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
+import { cn } from '@/lib/cn'
 import { profileSchema, type ProfileInput } from '@/features/auth/schemas'
+
+/** Reads as text rather than an empty box while the form is locked. */
+const readOnlyLook = cn(
+  'read-only:border-transparent read-only:bg-muted read-only:text-muted-foreground',
+)
 
 export function ProfilePage() {
   const qc = useQueryClient()
   const { logout } = useAuth()
   const { roles } = useSession()
   const me = useQuery({ queryKey: qk.me, queryFn: usersApi.me })
+  // The details read as a summary until asked for; editing is opt-in so a stray tap on a phone
+  // cannot change a name.
+  const [editing, setEditing] = useState(false)
   const {
     register,
     handleSubmit,
@@ -40,6 +49,7 @@ export function ProfilePage() {
     mutationFn: usersApi.updateMe,
     onSuccess: (data) => {
       qc.setQueryData(qk.me, data)
+      setEditing(false)
       toast.success('Profile updated')
     },
     onError: (e) => {
@@ -77,26 +87,58 @@ export function ProfilePage() {
       </div>
 
       <Card>
-      <CardHeader>
-        <CardTitle>Your details</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <form
-          onSubmit={(e) => void handleSubmit((v) => save.mutate(v))(e)}
-          noValidate
-          className="flex flex-col gap-4"
-        >
-          <FormField label="Full name" error={errors.fullName?.message}>
-            {(p) => <Input {...p} {...register('fullName')} />}
-          </FormField>
-          <FormField label="Phone" error={errors.phone?.message}>
-            {(p) => <Input type="tel" {...p} {...register('phone')} />}
-          </FormField>
-          <Button type="submit" disabled={!isDirty || save.isPending}>
-            {save.isPending ? 'Saving…' : 'Save changes'}
-          </Button>
-        </form>
-      </CardContent>
+        <CardHeader>
+          <CardTitle>Your details</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form
+            onSubmit={(e) => void handleSubmit((v) => save.mutate(v))(e)}
+            noValidate
+            className="flex flex-col gap-4"
+          >
+            <FormField label="Full name" error={errors.fullName?.message}>
+              {(p) => (
+                <Input
+                  readOnly={!editing}
+                  className={readOnlyLook}
+                  {...p}
+                  {...register('fullName')}
+                />
+              )}
+            </FormField>
+            <FormField label="Phone" error={errors.phone?.message}>
+              {(p) => (
+                <Input
+                  type="tel"
+                  readOnly={!editing}
+                  className={readOnlyLook}
+                  {...p}
+                  {...register('phone')}
+                />
+              )}
+            </FormField>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                className="flex-1"
+                onClick={() => {
+                  if (editing) reset({ fullName: me.data.fullName, phone: me.data.phone })
+                  setEditing((e) => !e)
+                }}
+              >
+                {editing ? 'Cancel' : 'Edit profile'}
+              </Button>
+              <Button
+                type="submit"
+                className="flex-1"
+                disabled={!editing || !isDirty || save.isPending}
+              >
+                {save.isPending ? 'Saving…' : 'Save changes'}
+              </Button>
+            </div>
+          </form>
+        </CardContent>
       </Card>
 
       <nav aria-label="Account" className="overflow-hidden rounded-2xl border bg-card">

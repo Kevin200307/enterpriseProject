@@ -115,7 +115,7 @@ export function DeliveriesPage() {
             />
           </div>
           {filtered && (
-            <Button variant="ghost" size="sm" onClick={() => setParams(new URLSearchParams())}>
+            <Button variant="outline" size="sm" onClick={() => setParams(new URLSearchParams())}>
               Clear filters
             </Button>
           )}

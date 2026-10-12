@@ -49,7 +49,7 @@ export function FailSheet({
           {[...FAILURE_REASONS, OTHER].map((r) => (
             <label
               key={r}
-              className="flex min-h-12 cursor-pointer items-center gap-3 rounded-md border p-3 has-[:checked]:border-primary has-[:checked]:bg-primary/5"
+              className="flex min-h-12 cursor-pointer items-center gap-3 rounded-md border p-3 has-[:checked]:border-foreground has-[:checked]:bg-accent/15"
             >
               <input
                 type="radio"

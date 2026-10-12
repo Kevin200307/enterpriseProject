@@ -1,5 +1,9 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+  // `hover:` compiles to a (hover: hover) media query, so hover colours and transforms apply
+  // only where a pointer can actually hover. On a touch screen they would otherwise stick to
+  // whatever was tapped last; the desktop UI is unaffected.
+  future: { hoverOnlyWhenSupported: true },
   darkMode: 'class',
   content: ['./index.html', './src/**/*.{ts,tsx}'],
   theme: {

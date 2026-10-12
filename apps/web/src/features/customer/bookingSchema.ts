@@ -22,7 +22,7 @@ export const WEIGHT_RE = /^\d+(\.\d{1,2})?$/
 export const bookingSchema = z.object({
   pickup: address,
   dropoff: address,
-  size: z.enum(['SMALL', 'MEDIUM', 'LARGE']),
+  size: z.enum(['SMALL', 'MEDIUM', 'LARGE'], { required_error: 'Choose a parcel size' }),
   weightKg: z
     .string()
     .refine(
@@ -43,10 +43,10 @@ export const emptyAddress = {
   postalCode: '',
 }
 
-export const bookingDefaults: BookingForm = {
+/** Size is left unset on purpose — the customer picks it rather than inheriting a guess. */
+export const bookingDefaults: Omit<BookingForm, 'size'> & Partial<Pick<BookingForm, 'size'>> = {
   pickup: emptyAddress,
   dropoff: emptyAddress,
-  size: 'SMALL',
   weightKg: '',
   express: false,
 }

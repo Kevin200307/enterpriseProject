@@ -164,7 +164,7 @@ export function LoginPage() {
           <div className="absolute inset-0 flex items-center">
             <div className="w-full border-t border-border/70" />
           </div>
-          <span className="relative bg-card px-3 text-[11px] uppercase tracking-wider text-muted-foreground">
+          <span className="relative bg-surface px-3 text-[11px] uppercase tracking-wider text-muted-foreground">
             or
           </span>
         </div>

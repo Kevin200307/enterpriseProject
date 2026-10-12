@@ -28,6 +28,11 @@ beforeEach(() => {
   )
 })
 
+/** The form no longer preselects a size, so every priced flow has to choose one. */
+async function pickSize(label = 'Small') {
+  await userEvent.click(screen.getByRole('radio', { name: new RegExp(label) }))
+}
+
 async function fillAddress(group: 0 | 1, city: string) {
   const u = userEvent.setup()
   await u.type(screen.getAllByLabelText('Contact name')[group]!, 'Nimal Perera')
@@ -63,6 +68,12 @@ describe('booking form', () => {
     expect(created).not.toHaveBeenCalled()
   })
 
+  it('leaves the size unchosen so nothing is booked on a default', async () => {
+    renderApp('/deliveries/new')
+    await screen.findByRole('heading', { name: 'New delivery', level: 1 })
+    expect(screen.getAllByRole('radio').every((r) => !(r as HTMLInputElement).checked)).toBe(true)
+  })
+
   it('shows the live fee breakdown once the inputs are valid', async () => {
     server.use(http.post(`${API}/api/v1/pricing/estimate`, () => HttpResponse.json(estimate)))
     renderApp('/deliveries/new')
@@ -70,6 +81,7 @@ describe('booking form', () => {
     await fillAddress(0, 'Colombo')
     await fillAddress(1, 'Kandy')
     await userEvent.type(screen.getByLabelText('Weight (kg)'), '1.5')
+    await pickSize()
     expect(await screen.findByText('Total', {}, { timeout: 3000 })).toBeInTheDocument()
     const panel = screen.getByText('Price estimate').closest('[aria-live]') as HTMLElement
     expect(within(panel).getByText(/450/)).toBeInTheDocument()
@@ -86,6 +98,7 @@ describe('booking form', () => {
     await fillAddress(0, 'Colombo')
     await fillAddress(1, 'Atlantis')
     await userEvent.type(screen.getByLabelText('Weight (kg)'), '2')
+    await pickSize()
     expect(
       await screen.findByText(/don't deliver to Atlantis yet/, {}, { timeout: 3000 }),
     ).toBeInTheDocument()
@@ -106,6 +119,7 @@ describe('booking form', () => {
     await fillAddress(0, 'Colombo')
     await fillAddress(1, 'Kandy')
     await userEvent.type(screen.getByLabelText('Weight (kg)'), '1.5')
+    await pickSize()
     await screen.findByText('Total', {}, { timeout: 3000 })
     await userEvent.click(screen.getByRole('button', { name: 'Book delivery' }))
     const dialog = await screen.findByRole('dialog')
@@ -128,6 +142,7 @@ describe('booking form', () => {
     await fillAddress(0, 'Colombo')
     await fillAddress(1, 'Kandy')
     await userEvent.type(screen.getByLabelText('Weight (kg)'), '90')
+    await pickSize()
     await screen.findByText('Total', {}, { timeout: 3000 })
     await userEvent.click(screen.getByRole('button', { name: 'Book delivery' }))
     await waitFor(() =>

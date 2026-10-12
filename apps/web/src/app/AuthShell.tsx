@@ -1,44 +1,52 @@
 import { Link, Outlet } from 'react-router-dom'
 import { LogoLockup } from '@/components/brand/Logo'
 
-/** Full-screen auth layout — modern, clean card style with ambient accents. */
+/**
+ * Full-screen auth layout: the courier on one side, the form on the other, both standing on one
+ * uninterrupted surface — the artwork is a cut-out, so nothing sits behind it.
+ */
 export function AuthShell() {
   return (
-    <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-surface px-4 py-8 sm:py-12">
-      {/* Ambient background glows for modern depth */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -top-40 left-1/2 h-[32rem] w-[40rem] -translate-x-1/2 rounded-full bg-accent/20 blur-[120px]"
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -bottom-32 right-1/4 h-80 w-80 rounded-full bg-primary/5 blur-[100px]"
-      />
+    <div className="min-h-screen bg-surface lg:grid lg:grid-cols-[1fr_minmax(0,38rem)]">
+      {/* Brand panel — wide screens only */}
+      <aside className="relative hidden overflow-hidden p-10 lg:block">
+        <Link to="/" aria-label="SwiftDrop home" className="relative flex w-fit">
+          <LogoLockup className="h-7 w-[100px] text-sidebar" onLight />
+        </Link>
+        <img
+          src="/courier.webp"
+          alt="A SwiftDrop courier holding a parcel"
+          className="pointer-events-none absolute inset-x-0 bottom-0 mx-auto h-[88vh] w-auto max-w-full object-contain object-bottom"
+          width={805}
+          height={1350}
+        />
+      </aside>
 
-      {/* Subtle background tech grid */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:28px_28px]"
-      />
+      {/* Form column */}
+      {/* The extra right padding pulls the card off the screen edge, towards the middle. */}
+      <div className="flex min-h-screen flex-col items-center justify-center px-4 py-8 sm:py-12 lg:pr-16">
+        {/* Narrow screens get the logo and the courier above the card */}
+        <div className="mb-4 flex w-full max-w-[440px] shrink-0 flex-col items-center lg:hidden">
+          <Link to="/" aria-label="SwiftDrop home" className="flex">
+            <LogoLockup className="h-7 w-[100px] text-sidebar" onLight />
+          </Link>
+          <img
+            src="/courier.webp"
+            alt=""
+            aria-hidden
+            className="pointer-events-none mt-1 h-48 w-auto object-contain sm:h-56"
+          />
+        </div>
 
-      {/* Brand logo header */}
-      <Link
-        to="/"
-        aria-label="SwiftDrop home"
-        className="group relative mb-6 flex items-center rounded-2xl bg-sidebar px-5 py-2.5 shadow-md transition-all hover:bg-black hover:shadow-lg active:scale-[0.98]"
-      >
-        <LogoLockup className="h-7 w-[100px] text-white transition-opacity group-hover:opacity-95" />
-      </Link>
+        {/* No card — the form sits straight on the page surface. */}
+        <main className="w-full max-w-[400px]">
+          <Outlet />
+        </main>
 
-      {/* Auth card container */}
-      <main className="relative w-full max-w-[440px] rounded-3xl border border-border/80 bg-card p-6 sm:p-8 shadow-[0_20px_50px_-15px_rgba(0,0,0,0.08),0_1px_3px_rgba(0,0,0,0.04)] backdrop-blur-sm">
-        <Outlet />
-      </main>
-
-      {/* Footer */}
-      <p className="relative mt-6 text-center text-xs text-muted-foreground">
-        University of Moratuwa · Enterprise Application Development
-      </p>
+        <p className="mt-6 text-center text-xs text-muted-foreground">
+          University of Moratuwa · Enterprise Application Development
+        </p>
+      </div>
     </div>
   )
 }
