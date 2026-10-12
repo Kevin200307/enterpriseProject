@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 
-export const LOADING_THRESHOLD_MS = 600
+export const LOADING_THRESHOLD_MS = 400
 
 export function useMinimumLoading(active: boolean) {
   const [visible, setVisible] = useState(false)
