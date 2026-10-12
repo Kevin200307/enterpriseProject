@@ -43,7 +43,7 @@ export const STATUS_META: Record<ParcelStatus, StatusMeta> = {
   DELIVERED: {
     label: 'Delivered',
     icon: CircleCheck,
-    className: 'bg-green-100 text-green-900',
+    className: 'bg-accent text-accent-foreground',
   },
   FAILED: {
     label: 'Failed',
