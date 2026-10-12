@@ -48,7 +48,7 @@ export function CustomerHomePage() {
           </div>
           <Link
             to="/deliveries"
-            className="absolute bottom-6 left-6 inline-flex items-center gap-1.5 rounded-full bg-accent px-4 py-2 text-sm font-semibold text-accent-foreground transition-transform active:scale-95"
+            className="absolute bottom-6 right-6 inline-flex items-center gap-1.5 rounded-full bg-accent px-4 py-2 text-sm font-semibold text-accent-foreground transition-transform active:scale-95"
           >
             View all <ArrowRight className="h-4 w-4" aria-hidden />
           </Link>
