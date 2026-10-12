@@ -1,11 +1,14 @@
-import { Link, Outlet } from 'react-router-dom'
+import { Link, Outlet, useNavigation } from 'react-router-dom'
 import { LogoLockup } from '@/components/brand/Logo'
+import { LoadingScreen } from '@/components/common/LoadingScreen'
 
 /**
  * Full-screen auth layout: the courier on one side, the form on the other, both standing on one
  * uninterrupted surface — the artwork is a cut-out, so nothing sits behind it.
  */
 export function AuthShell() {
+  const navigation = useNavigation()
+
   return (
     <div className="min-h-screen bg-surface lg:grid lg:grid-cols-[1fr_minmax(0,38rem)]">
       {/* Brand panel — wide screens only */}
@@ -40,7 +43,7 @@ export function AuthShell() {
 
         {/* No card — the form sits straight on the page surface. */}
         <main className="w-full max-w-[400px]">
-          <Outlet />
+          {navigation.state === 'loading' ? <LoadingScreen /> : <Outlet />}
         </main>
 
         <p className="mt-6 text-center text-xs text-muted-foreground">

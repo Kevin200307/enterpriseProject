@@ -1,4 +1,5 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
+import { LoadingScreen } from '@/components/common/LoadingScreen'
 import { useAuth } from './authContext'
 import type { Role } from './types'
 
@@ -6,7 +7,7 @@ export function RequireAuth({ roles }: { roles?: Role[] }) {
   const { status, hasAnyRole, expired } = useAuth()
   const location = useLocation()
 
-  if (status === 'loading') return <p className="p-8 text-center text-muted-foreground">Loading…</p>
+  if (status === 'loading') return <LoadingScreen />
   if (status === 'anonymous') {
     const returnTo = encodeURIComponent(location.pathname + location.search)
     return (

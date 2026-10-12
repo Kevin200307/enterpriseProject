@@ -1,7 +1,8 @@
 import { ArrowLeft, Bell, LogOut, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { Link, NavLink, Outlet, useLocation, useNavigate, useNavigation } from 'react-router-dom'
 import { LogoLockup, LogoMark, LogoTile } from '@/components/brand/Logo'
+import { LoadingScreen } from '@/components/common/LoadingScreen'
 import { Button } from '@/components/ui/button'
 import { Dialog } from '@/components/ui/dialog'
 import { useAuth } from '@/auth/authContext'
@@ -65,6 +66,7 @@ export function AppShell() {
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem(COLLAPSE_KEY) === '1')
   const { pathname } = useLocation()
   const navigate = useNavigate()
+  const navigation = useNavigation()
   const isMobile = useMobile()
   const navRef = useRef<HTMLElement>(null)
   const [indicator, setIndicator] = useState<{ top: number; height: number } | null>(null)
@@ -345,7 +347,7 @@ export function AppShell() {
         >
           {/* Keyed on the path so each navigation replays the entrance animation. */}
           <div key={pathname} className="animate-fade-in-up">
-            <Outlet />
+          {navigation.state === 'loading' ? <LoadingScreen /> : <Outlet />}
           </div>
         </main>
       </div>
@@ -407,6 +409,7 @@ export function AppShell() {
 /** Chrome-free layout for the public tracking page. */
 export function PublicShell() {
   const navigate = useNavigate()
+  const navigation = useNavigation()
   // Deep-linked from a shared link there is nothing behind this page, so back lands on lookup.
   const goBack = () => {
     const idx = (window.history.state as { idx?: number } | null)?.idx ?? 0
@@ -430,7 +433,7 @@ export function PublicShell() {
         SwiftDrop
       </header>
       <main className="mx-auto w-full max-w-xl p-4">
-        <Outlet />
+        {navigation.state === 'loading' ? <LoadingScreen /> : <Outlet />}
       </main>
     </div>
   )
