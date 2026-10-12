@@ -9,6 +9,7 @@ export function Dialog({
   description,
   children,
   side = 'center',
+  fullScreen = false,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -17,6 +18,8 @@ export function Dialog({
   children: ReactNode
   /** `bottom` anchors the dialog like a sheet — easier to reach one-handed on a phone. */
   side?: 'center' | 'bottom'
+  /** Expands a centered dialog to a phone-sized full-screen section. */
+  fullScreen?: boolean
 }) {
   return (
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
@@ -26,7 +29,9 @@ export function Dialog({
           className={
             // No `relative` here: it would beat `fixed` in Tailwind's output and drop the sheet
             // into normal flow. `fixed` is already a containing block for the close button.
-            side === 'bottom'
+            fullScreen
+              ? 'fixed inset-0 z-50 h-screen w-screen overflow-x-hidden overflow-y-auto border-0 bg-background p-6 shadow-lg focus:outline-none data-[state=open]:animate-fade-in data-[state=closed]:animate-fade-out motion-reduce:animate-none sm:left-1/2 sm:top-1/2 sm:h-auto sm:w-[calc(100%-2rem)] sm:max-w-md sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-lg sm:border'
+              : side === 'bottom'
               ? 'fixed inset-x-0 bottom-0 z-50 overflow-x-hidden max-h-[90vh] overflow-y-auto rounded-t-2xl border bg-background p-6 shadow-lg focus:outline-none data-[state=open]:animate-slide-in-from-bottom data-[state=closed]:animate-slide-out-to-bottom motion-reduce:animate-none sm:inset-x-auto sm:left-1/2 sm:max-w-md sm:-translate-x-1/2'
               : 'fixed left-1/2 top-1/2 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-lg border bg-background p-6 shadow-lg focus:outline-none'
           }

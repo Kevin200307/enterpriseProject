@@ -107,6 +107,7 @@ function CourierDialog({ courier, onClose }: { courier?: Courier; onClose: () =>
       open
       onOpenChange={(o) => !o && onClose()}
       title={courier ? `Edit ${courier.name}` : 'Register courier'}
+      fullScreen
     >
       <form
         onSubmit={(e) => {
@@ -118,7 +119,7 @@ function CourierDialog({ courier, onClose }: { courier?: Courier; onClose: () =>
           })(e)
         }}
         noValidate
-        className="flex max-h-[70vh] flex-col gap-4 overflow-y-auto"
+        className="flex flex-col gap-4"
       >
         {!courier && (
           <FormField
