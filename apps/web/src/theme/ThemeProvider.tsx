@@ -2,32 +2,35 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from '
 
 const THEME_KEY = 'swiftdrop.theme'
 
-type Theme = 'light' | 'dark'
+export type ThemePreference = 'light' | 'dark' | 'system'
 
 type ThemeContextValue = {
-  theme: Theme
-  toggleTheme: () => void
+  preference: ThemePreference
+  setPreference: (preference: ThemePreference) => void
 }
 
 const ThemeContext = createContext<ThemeContextValue | null>(null)
 
-function initialTheme(): Theme {
+function initialPreference(): ThemePreference {
   const saved = localStorage.getItem(THEME_KEY)
-  if (saved === 'dark' || saved === 'light') return saved
-  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+  if (saved === 'dark' || saved === 'light' || saved === 'system') return saved
+  return 'light'
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setTheme] = useState<Theme>(initialTheme)
+  const [preference, setPreference] = useState<ThemePreference>(initialPreference)
 
   useEffect(() => {
-    document.documentElement.classList.toggle('dark', theme === 'dark')
-    document.documentElement.style.colorScheme = theme
-    localStorage.setItem(THEME_KEY, theme)
-  }, [theme])
+    const isDark =
+      preference === 'dark' ||
+      (preference === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+    document.documentElement.classList.toggle('dark', isDark)
+    document.documentElement.style.colorScheme = isDark ? 'dark' : 'light'
+    localStorage.setItem(THEME_KEY, preference)
+  }, [preference])
 
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme: () => setTheme((current) => (current === 'dark' ? 'light' : 'dark')) }}>
+    <ThemeContext.Provider value={{ preference, setPreference }}>
       {children}
     </ThemeContext.Provider>
   )

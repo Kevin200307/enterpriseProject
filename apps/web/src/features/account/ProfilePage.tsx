@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Bell, ChevronRight, LogOut, Search } from 'lucide-react'
+import { Bell, Check, ChevronRight, LogOut, Monitor, Moon, Search, Sun } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { Link } from 'react-router-dom'
@@ -19,6 +19,7 @@ import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/cn'
 import { profileSchema, type ProfileInput } from '@/features/auth/schemas'
+import { useTheme, type ThemePreference } from '@/theme/ThemeProvider'
 
 /** Reads as text rather than an empty box while the form is locked. */
 const readOnlyLook = cn(
@@ -29,6 +30,7 @@ export function ProfilePage() {
   const qc = useQueryClient()
   const { logout } = useAuth()
   const { roles } = useSession()
+  const { preference, setPreference } = useTheme()
   const me = useQuery({ queryKey: qk.me, queryFn: usersApi.me })
   // The details read as a summary until asked for; editing is opt-in so a stray tap on a phone
   // cannot change a name.
@@ -159,6 +161,42 @@ export function ProfilePage() {
           <ChevronRight className="ml-auto h-4 w-4 text-muted-foreground" aria-hidden />
         </Link>
       </nav>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Appearance</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Choose how SwiftDrop looks on this device.
+          </p>
+        </CardHeader>
+        <CardContent className="grid gap-2">
+          {([
+            ['light', 'Light', 'Use the light theme', Sun],
+            ['dark', 'Dark', 'Use the soft dark theme', Moon],
+            ['system', 'System', 'Follow your device theme', Monitor],
+          ] as const).map(([value, label, description, Icon]) => (
+            <button
+              key={value}
+              type="button"
+              aria-pressed={preference === value}
+              onClick={() => setPreference(value as ThemePreference)}
+              className={cn(
+                'flex items-center gap-3 rounded-xl border p-3 text-left transition-colors',
+                preference === value
+                  ? 'border-primary bg-secondary'
+                  : 'border-border hover:bg-secondary',
+              )}
+            >
+              <Icon className="h-5 w-5 shrink-0 text-muted-foreground" aria-hidden />
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-medium">{label}</span>
+                <span className="block text-xs text-muted-foreground">{description}</span>
+              </span>
+              {preference === value && <Check className="h-4 w-4 shrink-0 text-primary" aria-hidden />}
+            </button>
+          ))}
+        </CardContent>
+      </Card>
 
       <Button
         variant="outline"
