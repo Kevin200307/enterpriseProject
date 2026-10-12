@@ -9,6 +9,8 @@ import { LoadingScreen } from '@/components/common/LoadingScreen'
 export function AuthShell() {
   const navigation = useNavigation()
 
+  if (navigation.state === 'loading') return <LoadingScreen />
+
   return (
     <div className="min-h-screen bg-surface lg:grid lg:grid-cols-[1fr_minmax(0,38rem)]">
       {/* Brand panel — wide screens only */}
@@ -43,7 +45,7 @@ export function AuthShell() {
 
         {/* No card — the form sits straight on the page surface. */}
         <main className="w-full max-w-[400px]">
-          {navigation.state === 'loading' ? <LoadingScreen /> : <Outlet />}
+          <Outlet />
         </main>
 
         <p className="mt-6 text-center text-xs text-muted-foreground">

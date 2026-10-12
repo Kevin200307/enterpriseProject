@@ -126,6 +126,8 @@ export function AppShell() {
     return () => cancelAnimationFrame(id)
   }, [pathname, collapsed, isMobile, open, items.length])
 
+  if (status === 'loading' || navigation.state === 'loading') return <LoadingScreen />
+
   const sidebarToggle = (
     <Button
       variant="ghost"
@@ -347,7 +349,7 @@ export function AppShell() {
         >
           {/* Keyed on the path so each navigation replays the entrance animation. */}
           <div key={pathname} className="animate-fade-in-up">
-          {navigation.state === 'loading' ? <LoadingScreen /> : <Outlet />}
+            <Outlet />
           </div>
         </main>
       </div>
@@ -417,6 +419,8 @@ export function PublicShell() {
     else navigate('/track')
   }
 
+  if (navigation.state === 'loading') return <LoadingScreen />
+
   return (
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-20 flex h-14 items-center gap-2 bg-background px-2 pt-[env(safe-area-inset-top)] font-semibold">
@@ -433,7 +437,7 @@ export function PublicShell() {
         SwiftDrop
       </header>
       <main className="mx-auto w-full max-w-xl p-4">
-        {navigation.state === 'loading' ? <LoadingScreen /> : <Outlet />}
+        <Outlet />
       </main>
     </div>
   )

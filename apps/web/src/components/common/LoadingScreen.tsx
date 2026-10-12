@@ -1,7 +1,7 @@
 export function LoadingScreen() {
   return (
     <div
-      className="flex min-h-[12rem] flex-1 items-center justify-center bg-background px-6 py-12"
+      className="flex min-h-screen w-full items-center justify-center bg-background px-6 py-12"
       role="status"
       aria-label="Loading SwiftDrop"
     >
