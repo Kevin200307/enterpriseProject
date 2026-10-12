@@ -11,7 +11,7 @@ export function AuthShell() {
       {/* Brand panel — wide screens only */}
       <aside className="relative hidden overflow-hidden p-10 lg:block">
         <Link to="/" aria-label="SwiftDrop home" className="relative flex w-fit">
-          <LogoLockup className="h-11 w-[158px] text-sidebar" onLight />
+          <LogoLockup className="h-11 w-[158px] text-sidebar dark:text-white" onLight />
         </Link>
         <img
           src="/courier.webp"
@@ -28,7 +28,7 @@ export function AuthShell() {
         {/* Narrow screens get the logo and the courier above the card */}
         <div className="mb-4 flex w-full max-w-[440px] shrink-0 flex-col items-center lg:hidden">
           <Link to="/" aria-label="SwiftDrop home" className="flex">
-            <LogoLockup className="h-11 w-[158px] text-sidebar" onLight />
+            <LogoLockup className="h-11 w-[158px] text-sidebar dark:text-white" onLight />
           </Link>
           <img
             src="/courier.webp"
