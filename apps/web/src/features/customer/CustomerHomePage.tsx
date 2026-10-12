@@ -30,12 +30,10 @@ export function CustomerHomePage() {
       </div>
 
       <div
-        className="relative flex min-h-48 overflow-hidden rounded-3xl bg-sidebar bg-cover bg-center p-6 text-white sm:min-h-56"
-        style={{ backgroundImage: "url('/active-deliveries-card.webp')" }}
+        className="relative flex min-h-48 overflow-hidden rounded-3xl bg-sidebar p-6 text-white sm:min-h-56"
       >
-        <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/35 to-transparent" />
-        <div className="relative z-10 flex flex-1 flex-col items-start justify-between gap-4">
-          <div className="relative z-10">
+        <div className="relative z-10 flex w-[58%] flex-col items-start justify-between gap-4">
+          <div>
             <p className="text-sm text-white/60">Active deliveries</p>
             <p className="mt-1 text-5xl font-bold leading-none tracking-tight">
               {recent.isPending ? '—' : active}
@@ -43,10 +41,19 @@ export function CustomerHomePage() {
           </div>
           <Link
             to="/deliveries"
-            className="relative z-10 mt-auto ml-auto inline-flex items-center gap-1.5 rounded-full bg-accent px-4 py-2 text-sm font-semibold text-accent-foreground transition-transform active:scale-95"
+            className="inline-flex items-center gap-1.5 rounded-full bg-accent px-4 py-2 text-sm font-semibold text-accent-foreground transition-transform active:scale-95"
           >
             View all <ArrowRight className="h-4 w-4" aria-hidden />
           </Link>
+        </div>
+        <div className="absolute inset-y-0 right-0 w-[48%]">
+          <img
+            src="/active-deliveries-card.webp"
+            alt=""
+            aria-hidden
+            className="h-full w-full object-cover object-center"
+          />
+          <div className="absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-sidebar to-transparent" />
         </div>
       </div>
 
