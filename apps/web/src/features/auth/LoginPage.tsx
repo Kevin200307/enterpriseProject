@@ -24,14 +24,13 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { env } from '@/config/env'
 import { GoogleButton } from './GoogleButton'
+import { waitForLoginMinimum } from './loginLoading'
 import { loginSchema, type LoginInput } from './schemas'
 
 const DemoAccounts =
   import.meta.env.PROD && import.meta.env.VITE_DEMO_MODE !== 'true'
     ? null
     : lazy(() => import('./DemoAccounts'))
-
-const LOGIN_LOADING_MIN_MS = 800
 
 export function LoginPage() {
   const { status, claims, signInWithToken } = useAuth()
@@ -65,20 +64,15 @@ export function LoginPage() {
     const startedAt = Date.now()
     setLoginLoading(true)
 
-    const waitForMinimumLoading = async () => {
-      const remaining = LOGIN_LOADING_MIN_MS - (Date.now() - startedAt)
-      if (remaining > 0) await new Promise((resolve) => setTimeout(resolve, remaining))
-    }
-
     try {
       const { accessToken } = await authApi.login(values.email, values.password)
-      await waitForMinimumLoading()
+      await waitForLoginMinimum(startedAt)
       signInWithToken(accessToken)
       navigate(safeReturnTo(returnTo, roleLanding(decodeClaims(accessToken)?.roles ?? [])), {
         replace: true,
       })
     } catch (e) {
-      await waitForMinimumLoading()
+      await waitForLoginMinimum(startedAt)
       setLoginLoading(false)
       if (isApiError(e) && e.errorCode === 'RATE_LIMITED') setWait(e.retryAfter ?? 60)
       setFormError(describeError(e).message)

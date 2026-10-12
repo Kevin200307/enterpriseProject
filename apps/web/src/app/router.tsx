@@ -1,6 +1,6 @@
 import { createBrowserRouter } from 'react-router-dom'
 import { RequireAuth } from '@/auth/RequireAuth'
-import { Home } from '@/features/auth/Home'
+import { LandingPage } from '@/features/auth/LandingPage'
 import { ComingSoon, ForbiddenPage, NotFoundPage } from '@/features/system/pages'
 import { AppShell, PublicShell } from './AppShell'
 import { AuthShell } from './AuthShell'
@@ -18,11 +18,14 @@ const soon = (title: string, issue: string) => <ComingSoon title={title} issue={
 
 export const routes = [
   {
+    path: '/',
+    element: <LandingPage />,
+    errorElement: <RouteError />,
+  },
+  {
     element: <AppShell />,
     errorElement: <RouteError />,
     children: [
-      { index: true, element: <Home /> },
-
       {
         path: 'track',
         ...page(() => import('@/features/tracking/TrackLookupPage'), 'TrackLookupPage'),

@@ -15,7 +15,9 @@ import { describeError } from '@/api/errorMessages'
 import { useAuth } from '@/auth/authContext'
 import { decodeClaims } from '@/auth/jwt'
 import { roleLanding, safeReturnTo } from '@/auth/landing'
+import { LoadingScreen } from '@/components/common/LoadingScreen'
 import { DEMO_ACCOUNTS, DEMO_PASSWORD } from '@/mocks/demoAccounts'
+import { waitForLoginMinimum } from './loginLoading'
 
 const ROLE_ICONS: Record<string, React.ElementType> = {
   Customer: User,
@@ -35,18 +37,23 @@ export default function DemoAccounts({ returnTo }: { returnTo?: string }) {
   const [busy, setBusy] = useState<string>()
 
   async function enter(email: string) {
+    const startedAt = Date.now()
     setBusy(email)
     try {
       const { accessToken } = await authApi.login(email, DEMO_PASSWORD)
+      await waitForLoginMinimum(startedAt)
       signInWithToken(accessToken)
       navigate(safeReturnTo(returnTo, roleLanding(decodeClaims(accessToken)?.roles ?? [])), {
         replace: true,
       })
     } catch (e) {
+      await waitForLoginMinimum(startedAt)
       toast.error(describeError(e).message)
       setBusy(undefined)
     }
   }
+
+  if (busy) return <LoadingScreen />
 
   return (
     <section
