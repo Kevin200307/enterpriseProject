@@ -75,6 +75,7 @@ export function AppShell() {
   // full lockup — every other screen trades it for the mark plus that screen's name.
   const homePath = tabs[0]?.to
   const onHome = pathname === homePath
+  const onProfile = pathname === '/account'
   const section = navMatchFor(pathname, roles)
   const title = section?.label ?? 'SwiftDrop'
   // "Inside" means anywhere that is not one of the bar's own tabs: a detail screen reached by
@@ -394,7 +395,7 @@ export function AppShell() {
 
       {/* On a phone the launcher belongs to the tab screens only — inside a section the thumb is
           busy with that screen's own actions, and the bubble would sit over them. */}
-      {status === 'authenticated' && env.assistantEnabled && (!isMobile || !inside) && (
+      {status === 'authenticated' && env.assistantEnabled && !onProfile && (!isMobile || !inside) && (
         <Suspense fallback={null}>
           <ChatWidget />
         </Suspense>
