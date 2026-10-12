@@ -30,6 +30,9 @@ export function DeliveriesPage() {
   const page = Math.max(0, Number(params.get('page')) || 0)
   const filtered = status.length > 0 || !!from || !!to
   const [filtersOpen, setFiltersOpen] = useState(false)
+  const [draftStatus, setDraftStatus] = useState<string[]>(status)
+  const [draftFrom, setDraftFrom] = useState(from)
+  const [draftTo, setDraftTo] = useState(to)
 
   const update = (mutate: (p: URLSearchParams) => void) => {
     const next = new URLSearchParams(params)
@@ -37,29 +40,38 @@ export function DeliveriesPage() {
     if (!next.has('page') || next.get('page') === '0') next.delete('page')
     setParams(next)
   }
-  const resetPage = (p: URLSearchParams) => p.delete('page')
-
   const list = useQuery({
     queryKey: qk.parcels.list({ status, from, to, page }),
     queryFn: () => parcelsApi.list({ status, from: from || undefined, to: to || undefined, page }),
     placeholderData: (prev) => prev,
   })
 
+  const openFilters = (open: boolean) => {
+    if (open) {
+      setDraftStatus(status)
+      setDraftFrom(from)
+      setDraftTo(to)
+    }
+    setFiltersOpen(open)
+  }
   const toggleStatus = (s: string) =>
-    update((p) => {
-      const current = p.getAll('status')
-      p.delete('status')
-      ;(current.includes(s) ? current.filter((x) => x !== s) : [...current, s]).forEach((x) =>
-        p.append('status', x),
-      )
-      resetPage(p)
-    })
-  const setDate = (key: 'from' | 'to', v: string) =>
-    update((p) => {
-      if (v) p.set(key, v)
-      else p.delete(key)
-      resetPage(p)
-    })
+    setDraftStatus((current) =>
+      current.includes(s) ? current.filter((x) => x !== s) : [...current, s],
+    )
+  const applyFilters = () => {
+    const next = new URLSearchParams()
+    draftStatus.forEach((s) => next.append('status', s))
+    if (draftFrom) next.set('from', draftFrom)
+    if (draftTo) next.set('to', draftTo)
+    setParams(next)
+    setFiltersOpen(false)
+  }
+  const clearFilters = () => {
+    setDraftStatus([])
+    setDraftFrom('')
+    setDraftTo('')
+    setParams(new URLSearchParams())
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -71,7 +83,7 @@ export function DeliveriesPage() {
               type="button"
               variant="outline"
               aria-expanded={filtersOpen}
-              onClick={() => setFiltersOpen((open) => !open)}
+              onClick={() => openFilters(!filtersOpen)}
             >
               <SlidersHorizontal className="h-4 w-4" aria-hidden />
               Filter
@@ -86,7 +98,7 @@ export function DeliveriesPage() {
 
       <Dialog
         open={filtersOpen}
-        onOpenChange={setFiltersOpen}
+        onOpenChange={openFilters}
         title="Filter deliveries"
         description="Narrow your deliveries by status or date."
         side="bottom"
@@ -95,13 +107,13 @@ export function DeliveriesPage() {
           <fieldset className="flex flex-wrap gap-2">
             <legend className="sr-only">Status</legend>
             {FILTERABLE.map((s) => {
-              const on = status.includes(s)
+              const on = draftStatus.includes(s)
               return (
                 <button
                   key={s}
                   type="button"
                   aria-pressed={on}
-                  onClick={() => toggleStatus(s)}
+                    onClick={() => toggleStatus(s)}
                   className={cn(
                     'rounded-full border px-3 py-1 text-xs font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                     on ? 'border-primary bg-primary text-primary-foreground' : 'hover:bg-accent',
@@ -119,9 +131,9 @@ export function DeliveriesPage() {
               </Label>
               <DatePicker
                 id="filter-from"
-                value={from}
-                max={to || undefined}
-                onChange={(value) => setDate('from', value)}
+                value={draftFrom}
+                max={draftTo || undefined}
+                onChange={setDraftFrom}
               />
             </div>
             <div className="min-w-0 flex flex-col gap-1.5">
@@ -130,20 +142,31 @@ export function DeliveriesPage() {
               </Label>
               <DatePicker
                 id="filter-to"
-                value={to}
-                min={from || undefined}
-                onChange={(value) => setDate('to', value)}
+                value={draftTo}
+                min={draftFrom || undefined}
+                onChange={setDraftTo}
               />
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={!filtered}
-              className="col-span-2 mt-1 w-full border-black bg-black text-white transition-opacity hover:bg-black/90 hover:text-white disabled:border-black disabled:bg-black disabled:text-white disabled:opacity-40"
-              onClick={() => setParams(new URLSearchParams())}
-            >
-              Clear filters
-            </Button>
+            <div className="col-span-2 mt-1 grid grid-cols-2 gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={!draftStatus.length && !draftFrom && !draftTo}
+                className="w-full"
+                onClick={clearFilters}
+              >
+                Clear filters
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                className="w-full bg-black text-white hover:bg-black/90 hover:text-white active:!bg-black active:!text-white"
+                onClick={applyFilters}
+              >
+                Apply filters
+              </Button>
+            </div>
           </div>
         </div>
       </Dialog>

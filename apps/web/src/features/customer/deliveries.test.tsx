@@ -66,7 +66,7 @@ describe('deliveries list', () => {
     )
   })
 
-  it('sends filters from the URL to the API and keeps them in sync when toggled', async () => {
+  it('sends filters from the URL to the API and applies staged changes', async () => {
     const seen: URL[] = []
     server.use(
       http.get(`${API}/api/v1/parcels`, ({ request }) => {
@@ -82,6 +82,8 @@ describe('deliveries list', () => {
     expect(screen.getByRole('button', { name: 'Failed' })).toHaveAttribute('aria-pressed', 'true')
 
     await userEvent.click(screen.getByRole('button', { name: 'Delivered' }))
+    expect(router.state.location.search).toBe('?status=FAILED&page=1')
+    await userEvent.click(screen.getByRole('button', { name: 'Apply filters' }))
     await waitFor(() =>
       expect(router.state.location.search).toBe('?status=FAILED&status=DELIVERED'),
     )

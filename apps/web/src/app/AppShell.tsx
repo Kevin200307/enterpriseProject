@@ -51,7 +51,7 @@ function Avatar({ email }: { email?: string }) {
   return (
     <span
       aria-hidden
-      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/10 text-xs font-semibold uppercase text-white"
+      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-black/10 text-xs font-semibold uppercase text-foreground"
     >
       {email?.[0] ?? '?'}
     </span>
@@ -128,7 +128,7 @@ export function AppShell() {
       variant="ghost"
       size="icon"
       className={cn(
-        'rounded-xl text-white/70 hover:bg-white/10 hover:text-white active:scale-90',
+        'rounded-xl text-foreground/70 hover:bg-black/5 hover:text-foreground active:scale-90',
         collapsed && 'h-10 w-full', // spans the rail's inner width, centring on the icon axis
       )}
       aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
@@ -144,7 +144,7 @@ export function AppShell() {
     </Button>
   )
   /**
-   * One white pill slides between items instead of each item painting its own, so switching tabs
+   * One active pill slides between items instead of each item painting its own, so switching tabs
    * is a continuous move rather than a jump. `rail` collapses labels to zero width (not unmounted)
    * so that change can animate too.
    */
@@ -179,7 +179,7 @@ export function AppShell() {
               rail ? 'pl-[14px] pr-0' : 'pl-[14px] pr-3',
               isActive
                 ? 'is-active font-semibold text-foreground'
-                : 'mr-3 font-medium text-white/60 hover:bg-white/10 hover:text-white active:scale-[0.98]',
+                : 'mr-3 font-medium text-foreground/60 hover:bg-black/5 hover:text-foreground active:scale-[0.98]',
             )
           }
         >
@@ -223,7 +223,7 @@ export function AppShell() {
       {!isMobile && (
         <aside
           className={cn(
-            'sticky top-0 hidden h-screen flex-col bg-sidebar text-white md:flex',
+            'sticky top-0 hidden h-screen flex-col bg-sidebar text-foreground md:flex',
             'transition-[width] duration-300 ease-smooth will-change-[width]',
             collapsed ? 'md:w-[68px]' : 'md:w-[240px]',
           )}
@@ -234,7 +234,7 @@ export function AppShell() {
             <Link to="/" aria-label="SwiftDrop home" className="flex items-center">
               <LogoLockup
                 className={cn(
-                  'h-9 shrink-0 text-white transition-[width] duration-300 ease-smooth',
+                  'h-9 shrink-0 text-foreground transition-[width] duration-300 ease-smooth',
                   collapsed ? 'w-[30px]' : 'w-[119px]',
                 )}
               />
@@ -248,7 +248,7 @@ export function AppShell() {
           <div className="flex-1 overflow-y-auto">{sidebarNav(collapsed)}</div>
 
           {/* The account row lives at the foot of the rail — the desktop layout has no top bar. */}
-          <div className="border-t border-white/10 p-3">
+          <div className="border-t border-black/10 p-3">
             {roles.length === 0 ? (
               <Button asChild size="sm" className="w-full rounded-xl">
                 <Link to="/login">{collapsed ? 'In' : 'Sign in'}</Link>
@@ -258,7 +258,7 @@ export function AppShell() {
                 to="/account"
                 title={email}
                 aria-label="Account"
-                className="flex h-10 w-full items-center justify-center rounded-xl hover:bg-white/10"
+                className="flex h-10 w-full items-center justify-center rounded-xl hover:bg-black/5"
               >
                 <Avatar email={email} />
               </Link>
@@ -267,10 +267,10 @@ export function AppShell() {
                 <Link
                   to="/account"
                   title={email}
-                  className="flex min-w-0 flex-1 items-center gap-2 rounded-xl p-1.5 hover:bg-white/10"
+                  className="flex min-w-0 flex-1 items-center gap-2 rounded-xl p-1.5 hover:bg-black/5"
                 >
                   <Avatar email={email} />
-                  <span className="truncate text-xs text-white/60">{email}</span>
+                  <span className="truncate text-xs text-foreground/60">{email}</span>
                 </Link>
                 <Button
                   variant="ghost"
