@@ -128,6 +128,7 @@ export function AppShell() {
     return () => cancelAnimationFrame(id)
   }, [pathname, collapsed, isMobile, open, items.length])
 
+  if (status === 'loading') return loading ? <LoadingScreen /> : null
   if (loading) return <LoadingScreen />
 
   const sidebarToggle = (

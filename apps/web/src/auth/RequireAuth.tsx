@@ -9,7 +9,7 @@ export function RequireAuth({ roles }: { roles?: Role[] }) {
   const location = useLocation()
   const loading = useMinimumLoading(status === 'loading')
 
-  if (loading) return <LoadingScreen />
+  if (status === 'loading') return loading ? <LoadingScreen /> : null
   if (status === 'anonymous') {
     const returnTo = encodeURIComponent(location.pathname + location.search)
     return (

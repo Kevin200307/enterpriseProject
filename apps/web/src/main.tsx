@@ -6,13 +6,24 @@ import { Providers } from '@/app/providers'
 import { createRouter } from '@/app/router'
 import { LoadingScreen } from '@/components/common/LoadingScreen'
 import { env } from '@/config/env'
-import { MINIMUM_LOADING_MS } from '@/hooks/useMinimumLoading'
+import { LOADING_THRESHOLD_MS } from '@/hooks/useMinimumLoading'
+import { useEffect, useState } from 'react'
 import './index.css'
 
 const root = createRoot(document.getElementById('root')!)
-const bootStartedAt = performance.now()
 
-root.render(<LoadingScreen />)
+function BootScreen() {
+  const [visible, setVisible] = useState(false)
+
+  useEffect(() => {
+    const id = window.setTimeout(() => setVisible(true), LOADING_THRESHOLD_MS)
+    return () => window.clearTimeout(id)
+  }, [])
+
+  return visible ? <LoadingScreen /> : null
+}
+
+root.render(<BootScreen />)
 
 async function boot() {
   // `import.meta.env.PROD` is a build constant: the mock backend is never bundled into a
@@ -21,8 +32,6 @@ async function boot() {
     const { worker } = await import('@/mocks/browser')
     await worker.start({ onUnhandledRequest: 'bypass' })
   }
-  const remaining = MINIMUM_LOADING_MS - (performance.now() - bootStartedAt)
-  if (remaining > 0) await new Promise((resolve) => window.setTimeout(resolve, remaining))
   root.render(
     <StrictMode>
       <ErrorBoundary>

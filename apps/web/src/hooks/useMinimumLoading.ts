@@ -1,20 +1,18 @@
 import { useEffect, useState } from 'react'
 
-export const MINIMUM_LOADING_MS = 1200
+export const LOADING_THRESHOLD_MS = 600
 
 export function useMinimumLoading(active: boolean) {
-  const [visible, setVisible] = useState(active)
+  const [visible, setVisible] = useState(false)
 
   useEffect(() => {
     if (active) {
-      setVisible(true)
-      return
+      const id = window.setTimeout(() => setVisible(true), LOADING_THRESHOLD_MS)
+      return () => window.clearTimeout(id)
     }
-    const id = window.setTimeout(() => setVisible(false), MINIMUM_LOADING_MS)
-    return () => window.clearTimeout(id)
+    setVisible(false)
   }, [active])
 
-  // Include the current state synchronously so a new loading operation cannot briefly render
-  // the underlying page before the minimum-duration timer's state update runs.
-  return active || visible
+  // Once the threshold is crossed, keep the loader mounted until the real operation finishes.
+  return visible
 }
