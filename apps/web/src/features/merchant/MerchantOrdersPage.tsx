@@ -46,14 +46,14 @@ export function MerchantOrdersPage() {
             </Button>
           }
         />
-        <form onSubmit={search} className="flex flex-col gap-2 sm:flex-row sm:items-end">
-          <div className="flex flex-1 flex-col gap-1 sm:max-w-xs">
+        <form onSubmit={search} className="flex items-end gap-2">
+          <div className="flex min-w-0 flex-1 flex-col gap-1">
             <Label htmlFor="o-ref" className="text-xs">
               Search by reference
             </Label>
             <Input id="o-ref" value={draft} onChange={(e) => setDraft(e.target.value)} />
           </div>
-          <Button type="submit" variant="secondary" className="h-11 sm:h-10">
+          <Button type="submit" variant="secondary" size="sm" className="shrink-0">
             Search
           </Button>
         </form>
