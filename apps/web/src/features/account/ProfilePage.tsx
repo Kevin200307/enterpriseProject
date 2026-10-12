@@ -19,6 +19,12 @@ import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/cn'
 import { profileSchema, type ProfileInput } from '@/features/auth/schemas'
+import {
+  addressSchema,
+  emptyAddress,
+  type AddressInput,
+} from '@/features/customer/bookingSchema'
+import { readSavedDetails, saveSavedDetails } from '@/features/customer/savedDetails'
 import { useTheme, type ThemePreference } from '@/theme/ThemeProvider'
 
 /** Reads as text rather than an empty box while the form is locked. */
@@ -42,10 +48,24 @@ export function ProfilePage() {
     setError,
     formState: { errors, isDirty },
   } = useForm<ProfileInput>({ resolver: zodResolver(profileSchema) })
+  const [editingDetails, setEditingDetails] = useState(false)
+  const {
+    register: registerDetails,
+    handleSubmit: handleDetailsSubmit,
+    reset: resetDetails,
+    formState: { errors: detailErrors, isDirty: detailsDirty },
+  } = useForm<AddressInput>({
+    resolver: zodResolver(addressSchema),
+    defaultValues: emptyAddress,
+  })
 
   useEffect(() => {
     if (me.data) reset({ fullName: me.data.fullName, phone: me.data.phone })
   }, [me.data, reset])
+
+  useEffect(() => {
+    if (me.data) resetDetails(readSavedDetails(me.data.email))
+  }, [me.data, resetDetails])
 
   const save = useMutation({
     mutationFn: usersApi.updateMe,
@@ -59,6 +79,12 @@ export function ProfilePage() {
       toast.error([describeError(e).message, ...extra].join(' '))
     },
   })
+  const saveDetails = (details: AddressInput) => {
+    if (!me.data) return
+    saveSavedDetails(me.data.email, details)
+    setEditingDetails(false)
+    toast.success('Delivery details saved')
+  }
 
   if (me.isPending) return <Skeleton className="h-64 max-w-md" />
   if (me.isError) return <ErrorState error={me.error} onRetry={() => void me.refetch()} />
@@ -142,6 +168,109 @@ export function ProfilePage() {
           </form>
         </CardContent>
       </Card>
+
+      {roles.includes('CUSTOMER') && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Saved delivery details</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Save your pickup contact and address to prefill new deliveries.
+            </p>
+          </CardHeader>
+          <CardContent>
+            <form
+              onSubmit={(e) => void handleDetailsSubmit(saveDetails)(e)}
+              noValidate
+              className="flex flex-col gap-4"
+            >
+              <FormField label="Contact name" error={detailErrors.contactName?.message}>
+                {(p) => (
+                  <Input
+                    readOnly={!editingDetails}
+                    className={readOnlyLook}
+                    {...p}
+                    {...registerDetails('contactName')}
+                  />
+                )}
+              </FormField>
+              <FormField label="Delivery phone" error={detailErrors.phone?.message}>
+                {(p) => (
+                  <Input
+                    type="tel"
+                    readOnly={!editingDetails}
+                    className={readOnlyLook}
+                    {...p}
+                    {...registerDetails('phone')}
+                  />
+                )}
+              </FormField>
+              <FormField label="Address line 1" error={detailErrors.line1?.message}>
+                {(p) => (
+                  <Input
+                    readOnly={!editingDetails}
+                    className={readOnlyLook}
+                    {...p}
+                    {...registerDetails('line1')}
+                  />
+                )}
+              </FormField>
+              <FormField label="Address line 2 (optional)" error={detailErrors.line2?.message}>
+                {(p) => (
+                  <Input
+                    readOnly={!editingDetails}
+                    className={readOnlyLook}
+                    {...p}
+                    {...registerDetails('line2')}
+                  />
+                )}
+              </FormField>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <FormField label="City" error={detailErrors.city?.message}>
+                  {(p) => (
+                    <Input
+                      readOnly={!editingDetails}
+                      className={readOnlyLook}
+                      {...p}
+                      {...registerDetails('city')}
+                    />
+                  )}
+                </FormField>
+                <FormField label="Postal code" error={detailErrors.postalCode?.message}>
+                  {(p) => (
+                    <Input
+                      inputMode="numeric"
+                      readOnly={!editingDetails}
+                      className={readOnlyLook}
+                      {...p}
+                      {...registerDetails('postalCode')}
+                    />
+                  )}
+                </FormField>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => {
+                    if (editingDetails) resetDetails(readSavedDetails(me.data.email))
+                    setEditingDetails((current) => !current)
+                  }}
+                >
+                  {editingDetails ? 'Cancel' : 'Edit details'}
+                </Button>
+                <Button
+                  type="submit"
+                  className="flex-1"
+                  disabled={!editingDetails || !detailsDirty}
+                >
+                  Save details
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      )}
 
       <nav aria-label="Account" className="overflow-hidden rounded-2xl border bg-card">
         <Link

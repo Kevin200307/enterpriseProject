@@ -30,6 +30,7 @@ import {
   type BookingForm,
 } from './bookingSchema'
 import { EstimatePanel } from './EstimatePanel'
+import { readSavedDetails } from './savedDetails'
 
 /** `merchant` reuses the same form for B2B orders: adds the partner's own reference and merchant wording. */
 export function NewDeliveryPage({ merchant = false }: { merchant?: boolean }) {
@@ -110,8 +111,17 @@ export function NewDeliveryPage({ merchant = false }: { merchant?: boolean }) {
   async function fillMyDetails() {
     try {
       const me = await qc.fetchQuery({ queryKey: qk.me, queryFn: usersApi.me, staleTime: 60_000 })
-      setValue('pickup.contactName', me.fullName, { shouldDirty: true })
-      setValue('pickup.phone', me.phone, { shouldDirty: true })
+      const details = readSavedDetails(me.email)
+      const saved = details.line1 || details.city || details.postalCode
+      setValue('pickup.contactName', details.contactName || me.fullName, { shouldDirty: true })
+      setValue('pickup.phone', details.phone || me.phone, { shouldDirty: true })
+      if (saved) {
+        setValue('pickup.line1', details.line1, { shouldDirty: true })
+        setValue('pickup.line2', details.line2 ?? '', { shouldDirty: true })
+        setValue('pickup.city', details.city, { shouldDirty: true })
+        setValue('pickup.postalCode', details.postalCode, { shouldDirty: true })
+      }
+      toast.success(saved ? 'Saved delivery details applied' : 'Your profile details applied')
     } catch (e) {
       toast.error(describeError(e).message)
     }

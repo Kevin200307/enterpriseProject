@@ -7,7 +7,7 @@ export const SIZES = [
   { value: 'LARGE', label: 'Large', hint: 'Bulky or heavy items' },
 ] as const
 
-const address = z.object({
+export const addressSchema = z.object({
   contactName: z.string().trim().min(1, 'Contact name is required').max(100),
   phone: phoneSchema,
   line1: z.string().trim().min(1, 'Address line is required').max(200),
@@ -15,13 +15,14 @@ const address = z.object({
   city: z.string().trim().min(1, 'City is required').max(80),
   postalCode: z.string().trim().min(1, 'Postal code is required').max(10),
 })
+export type AddressInput = z.infer<typeof addressSchema>
 
 export const WEIGHT_RE = /^\d+(\.\d{1,2})?$/
 
 /** weightKg stays a string in the form (text input) and is converted on submit. */
 export const bookingSchema = z.object({
-  pickup: address,
-  dropoff: address,
+  pickup: addressSchema,
+  dropoff: addressSchema,
   size: z.enum(['SMALL', 'MEDIUM', 'LARGE'], { error: 'Choose a parcel size' }),
   weightKg: z
     .string()
