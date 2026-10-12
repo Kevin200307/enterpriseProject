@@ -29,8 +29,8 @@
     <rect x="444" y="176" width="14" height="28" rx="6" fill="#141A23" stroke="#47515E" stroke-width="3"/>
   </g>
   <style>
-    .truck {transform-origin: center;animation: bounce 1.05s ease-in-out infinite;}
-    .rotate-wheel {animation: wheel 0.85s linear infinite;}
+    .truck {transform-origin: center;animation: bounce 1.8s ease-in-out infinite;}
+    .rotate-wheel {animation: wheel 1.35s linear infinite;}
     @keyframes wheel {to {transform:rotate(360deg)}}
     @keyframes bounce {0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
     @media (prefers-reduced-motion: reduce){.truck,.rotate-wheel{animation:none}}
