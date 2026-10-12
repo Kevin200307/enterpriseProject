@@ -91,58 +91,60 @@ export function DeliveriesPage() {
         description="Narrow your deliveries by status or date."
         side="bottom"
       >
-        <fieldset className="flex flex-wrap gap-2">
-          <legend className="sr-only">Status</legend>
-          {FILTERABLE.map((s) => {
-            const on = status.includes(s)
-            return (
-              <button
-                key={s}
-                type="button"
-                aria-pressed={on}
-                onClick={() => toggleStatus(s)}
-                className={cn(
-                  'rounded-full border px-3 py-1 text-xs font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                  on ? 'border-primary bg-primary text-primary-foreground' : 'hover:bg-accent',
-                )}
-              >
-                {STATUS_META[s].label}
-              </button>
-            )
-          })}
-        </fieldset>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="min-w-0 flex flex-col gap-1">
-            <Label htmlFor="filter-from" className="text-xs">
-              From
-            </Label>
-            <DatePicker
-              id="filter-from"
-              value={from}
-              max={to || undefined}
-              onChange={(value) => setDate('from', value)}
-            />
+        <div className="flex flex-col gap-4">
+          <fieldset className="flex flex-wrap gap-2">
+            <legend className="sr-only">Status</legend>
+            {FILTERABLE.map((s) => {
+              const on = status.includes(s)
+              return (
+                <button
+                  key={s}
+                  type="button"
+                  aria-pressed={on}
+                  onClick={() => toggleStatus(s)}
+                  className={cn(
+                    'rounded-full border px-3 py-1 text-xs font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                    on ? 'border-primary bg-primary text-primary-foreground' : 'hover:bg-accent',
+                  )}
+                >
+                  {STATUS_META[s].label}
+                </button>
+              )
+            })}
+          </fieldset>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="min-w-0 flex flex-col gap-1.5">
+              <Label htmlFor="filter-from" className="text-xs">
+                From
+              </Label>
+              <DatePicker
+                id="filter-from"
+                value={from}
+                max={to || undefined}
+                onChange={(value) => setDate('from', value)}
+              />
+            </div>
+            <div className="min-w-0 flex flex-col gap-1.5">
+              <Label htmlFor="filter-to" className="text-xs">
+                To
+              </Label>
+              <DatePicker
+                id="filter-to"
+                value={to}
+                min={from || undefined}
+                onChange={(value) => setDate('to', value)}
+              />
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={!filtered}
+              className="col-span-2 mt-1 w-full border-black bg-black text-white transition-opacity hover:bg-black/90 hover:text-white disabled:border-black disabled:bg-black disabled:text-white disabled:opacity-40"
+              onClick={() => setParams(new URLSearchParams())}
+            >
+              Clear filters
+            </Button>
           </div>
-          <div className="min-w-0 flex flex-col gap-1">
-            <Label htmlFor="filter-to" className="text-xs">
-              To
-            </Label>
-            <DatePicker
-              id="filter-to"
-              value={to}
-              min={from || undefined}
-              onChange={(value) => setDate('to', value)}
-            />
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={!filtered}
-            className="transition-opacity disabled:opacity-40"
-            onClick={() => setParams(new URLSearchParams())}
-          >
-            Clear filters
-          </Button>
         </div>
       </Dialog>
 

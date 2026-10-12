@@ -14,8 +14,9 @@ import {
   subMonths,
 } from 'date-fns'
 import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { Dialog } from '@/components/ui/dialog'
 import { cn } from '@/lib/cn'
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
@@ -45,16 +46,6 @@ export function DatePicker({
   const maximum = parseDate(max ?? '')
   const [open, setOpen] = useState(false)
   const [month, setMonth] = useState(() => startOfMonth(selected ?? new Date()))
-  const containerRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (!open) return
-    const closeOnOutsideClick = (event: MouseEvent) => {
-      if (!containerRef.current?.contains(event.target as Node)) setOpen(false)
-    }
-    document.addEventListener('mousedown', closeOnOutsideClick)
-    return () => document.removeEventListener('mousedown', closeOnOutsideClick)
-  }, [open])
 
   useEffect(() => {
     const nextSelected = parseDate(value)
@@ -69,7 +60,7 @@ export function DatePicker({
     (minimum ? isBefore(day, minimum) : false) || (maximum ? isAfter(day, maximum) : false)
 
   return (
-    <div ref={containerRef} className="relative">
+    <>
       <button
         id={id}
         type="button"
@@ -83,12 +74,13 @@ export function DatePicker({
         </span>
         <CalendarDays className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
       </button>
-      {open && (
-        <div
-          role="dialog"
-          aria-label={`${placeholder} calendar`}
-          className="absolute left-0 top-full z-20 mt-2 w-[min(20rem,calc(100vw-3rem))] rounded-xl border-2 border-foreground/10 bg-background p-4 shadow-xl"
-        >
+      <Dialog
+        open={open}
+        onOpenChange={setOpen}
+        title={`${placeholder} calendar`}
+        description="Choose a date"
+      >
+        <div className="w-full">
           <div className="mb-3 flex items-center justify-between">
             <Button
               type="button"
@@ -154,7 +146,7 @@ export function DatePicker({
             </button>
           )}
         </div>
-      )}
-    </div>
+      </Dialog>
+    </>
   )
 }
