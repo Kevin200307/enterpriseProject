@@ -169,7 +169,7 @@ export function ProfilePage() {
             Choose how SwiftDrop looks on this device.
           </p>
         </CardHeader>
-        <CardContent className="grid gap-2">
+        <CardContent className="grid grid-cols-3 gap-2">
           {([
             ['light', 'Light', 'Use the light theme', Sun],
             ['dark', 'Dark', 'Use the soft dark theme', Moon],
@@ -181,7 +181,7 @@ export function ProfilePage() {
               aria-pressed={preference === value}
               onClick={() => setPreference(value as ThemePreference)}
               className={cn(
-                'flex items-center gap-3 rounded-xl border p-3 text-left transition-colors',
+                'relative flex min-w-0 flex-col items-center justify-center gap-1 rounded-xl border p-3 text-center transition-colors',
                 preference === value
                   ? 'border-primary bg-secondary'
                   : 'border-border hover:bg-secondary',
@@ -190,9 +190,11 @@ export function ProfilePage() {
               <Icon className="h-5 w-5 shrink-0 text-muted-foreground" aria-hidden />
               <span className="min-w-0 flex-1">
                 <span className="block text-sm font-medium">{label}</span>
-                <span className="block text-xs text-muted-foreground">{description}</span>
+                <span className="block text-xs leading-tight text-muted-foreground">{description}</span>
               </span>
-              {preference === value && <Check className="h-4 w-4 shrink-0 text-primary" aria-hidden />}
+              {preference === value && (
+                <Check className="absolute right-2 top-2 h-4 w-4 text-primary" aria-hidden />
+              )}
             </button>
           ))}
         </CardContent>
