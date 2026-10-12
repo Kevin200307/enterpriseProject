@@ -31,6 +31,8 @@ const DemoAccounts =
     ? null
     : lazy(() => import('./DemoAccounts'))
 
+const LOGIN_LOADING_MIN_MS = 800
+
 export function LoginPage() {
   const { status, claims, signInWithToken } = useAuth()
   const navigate = useNavigate()
@@ -40,6 +42,7 @@ export function LoginPage() {
   const [formError, setFormError] = useState<string>()
   const [wait, setWait] = useState(0)
   const [showPassword, setShowPassword] = useState(false)
+  const [loginLoading, setLoginLoading] = useState(false)
   const {
     register,
     handleSubmit,
@@ -55,17 +58,28 @@ export function LoginPage() {
   if (status === 'authenticated' && claims)
     return <Navigate to={safeReturnTo(returnTo, roleLanding(claims.roles))} replace />
 
-  if (isSubmitting) return <LoadingScreen />
+  if (isSubmitting || loginLoading) return <LoadingScreen />
 
   async function onSubmit(values: LoginInput) {
     setFormError(undefined)
+    const startedAt = Date.now()
+    setLoginLoading(true)
+
+    const waitForMinimumLoading = async () => {
+      const remaining = LOGIN_LOADING_MIN_MS - (Date.now() - startedAt)
+      if (remaining > 0) await new Promise((resolve) => setTimeout(resolve, remaining))
+    }
+
     try {
       const { accessToken } = await authApi.login(values.email, values.password)
+      await waitForMinimumLoading()
       signInWithToken(accessToken)
       navigate(safeReturnTo(returnTo, roleLanding(decodeClaims(accessToken)?.roles ?? [])), {
         replace: true,
       })
     } catch (e) {
+      await waitForMinimumLoading()
+      setLoginLoading(false)
       if (isApiError(e) && e.errorCode === 'RATE_LIMITED') setWait(e.retryAfter ?? 60)
       setFormError(describeError(e).message)
     }
