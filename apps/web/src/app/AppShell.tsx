@@ -275,7 +275,7 @@ export function AppShell() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="shrink-0 rounded-xl text-destructive hover:bg-destructive/10 hover:text-destructive active:bg-destructive/20 active:text-destructive active:scale-90"
+                  className="shrink-0 rounded-xl text-destructive hover:bg-destructive/10 hover:text-destructive active:!bg-destructive active:!text-destructive-foreground active:scale-90"
                   aria-label="Sign out"
                   title="Sign out"
                   onClick={() => void logout()}
@@ -383,7 +383,7 @@ export function AppShell() {
             <button
               type="button"
               onClick={() => void logout()}
-              className="mt-2 flex items-center gap-3 rounded-2xl px-3 py-3.5 text-sm font-medium text-destructive transition-colors hover:bg-destructive/10 active:bg-destructive/20"
+              className="mt-2 flex items-center gap-3 rounded-2xl px-3 py-3.5 text-sm font-medium text-destructive transition-colors hover:bg-destructive/10 active:bg-destructive active:text-destructive-foreground"
             >
               <LogOut className="h-4 w-4 shrink-0" aria-hidden />
               Sign out
