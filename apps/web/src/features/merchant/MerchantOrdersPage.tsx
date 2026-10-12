@@ -41,7 +41,7 @@ export function MerchantOrdersPage() {
         <PageHeader
           title="Orders"
           actions={
-            <Button asChild size="sm" className="shrink-0">
+            <Button asChild className="!flex-none">
               <Link to="/merchant/orders/new">New order</Link>
             </Button>
           }
