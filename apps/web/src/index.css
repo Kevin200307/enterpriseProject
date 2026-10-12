@@ -53,7 +53,7 @@
     --input: 0 0% 30%;
     --ring: 72 93% 64%;
     --surface: 0 0% 12%;
-    --sidebar: 130 34% 22%;
+    --sidebar: 130 45% 22%;
   }
   * {
     @apply border-border;
