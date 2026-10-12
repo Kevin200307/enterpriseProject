@@ -1,9 +1,9 @@
 import {
   addMonths,
+  addDays,
   eachDayOfInterval,
-  endOfMonth,
-  endOfWeek,
   format,
+  getYear,
   isAfter,
   isBefore,
   isSameDay,
@@ -52,10 +52,13 @@ export function DatePicker({
     if (nextSelected) setMonth(startOfMonth(nextSelected))
   }, [value])
 
-  const days = eachDayOfInterval({
-    start: startOfWeek(startOfMonth(month), { weekStartsOn: 1 }),
-    end: endOfWeek(endOfMonth(month), { weekStartsOn: 1 }),
-  })
+  const calendarStart = startOfWeek(startOfMonth(month), { weekStartsOn: 1 })
+  const days = eachDayOfInterval({ start: calendarStart, end: addDays(calendarStart, 41) })
+  const selectedYear = getYear(month)
+  const currentYear = new Date().getFullYear()
+  const firstYear = Math.min(currentYear - 20, minimum ? getYear(minimum) : currentYear - 20)
+  const lastYear = Math.max(currentYear + 20, maximum ? getYear(maximum) : currentYear + 20)
+  const years = Array.from({ length: lastYear - firstYear + 1 }, (_, index) => firstYear + index)
   const isDisabled = (day: Date) =>
     (minimum ? isBefore(day, minimum) : false) || (maximum ? isAfter(day, maximum) : false)
 
@@ -80,7 +83,7 @@ export function DatePicker({
         title={`${placeholder} calendar`}
         description="Choose a date"
       >
-        <div className="w-full">
+        <div className="w-full min-w-0">
           <div className="mb-3 flex items-center justify-between">
             <Button
               type="button"
@@ -91,7 +94,27 @@ export function DatePicker({
             >
               <ChevronLeft className="h-4 w-4" aria-hidden />
             </Button>
-            <p className="text-sm font-semibold">{format(month, 'MMMM yyyy')}</p>
+            <div className="flex items-center gap-1">
+              <p className="text-sm font-semibold">{format(month, 'MMMM')}</p>
+              <label className="sr-only" htmlFor={`${id}-year`}>
+                Year
+              </label>
+              <select
+                id={`${id}-year`}
+                aria-label="Year"
+                value={selectedYear}
+                onChange={(event) =>
+                  setMonth((current) => new Date(Number(event.target.value), current.getMonth(), 1))
+                }
+                className="rounded-md border border-input bg-background px-1.5 py-1 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                {years.map((year) => (
+                  <option key={year} value={year}>
+                    {year}
+                  </option>
+                ))}
+              </select>
+            </div>
             <Button
               type="button"
               variant="ghost"
