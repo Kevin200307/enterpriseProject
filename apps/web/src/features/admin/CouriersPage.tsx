@@ -1,7 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Check, ChevronDown } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -17,7 +16,6 @@ import type { Courier } from '@/api/types'
 import { EmptyState } from '@/components/common/EmptyState'
 import { ErrorState } from '@/components/common/ErrorState'
 import { FormField } from '@/components/common/FormField'
-import { PageHeader } from '@/components/common/PageHeader'
 import { Pagination } from '@/components/common/Pagination'
 import { Button } from '@/components/ui/button'
 import { Dialog } from '@/components/ui/dialog'
@@ -32,77 +30,6 @@ const VEHICLES = [
   { value: 'THREEWHEEL', label: 'Three-wheeler' },
   { value: 'VAN', label: 'Van' },
 ]
-
-function FilterDropdown({
-  id,
-  value,
-  options,
-  onChange,
-}: {
-  id: string
-  value: string
-  options: { value: string; label: string }[]
-  onChange: (value: string) => void
-}) {
-  const [open, setOpen] = useState(false)
-  const rootRef = useRef<HTMLDivElement>(null)
-  const selected = options.find((option) => option.value === value) ?? options[0]
-
-  useEffect(() => {
-    if (!open) return
-    const close = (event: MouseEvent) => {
-      if (!rootRef.current?.contains(event.target as Node)) setOpen(false)
-    }
-    document.addEventListener('mousedown', close)
-    return () => document.removeEventListener('mousedown', close)
-  }, [open])
-
-  return (
-    <div ref={rootRef} className="relative">
-      <button
-        id={id}
-        type="button"
-        aria-haspopup="listbox"
-        aria-expanded={open}
-        onClick={() => setOpen((current) => !current)}
-        className="flex h-11 w-full min-w-[10.5rem] items-center justify-between rounded-xl border border-input bg-background px-3 text-base shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:h-10 md:text-sm"
-      >
-        <span>{selected?.label ?? 'Select'}</span>
-        <ChevronDown className="h-4 w-4 text-muted-foreground" aria-hidden />
-      </button>
-      {open && (
-        <div
-          role="listbox"
-          aria-labelledby={id}
-          className="absolute left-0 top-[calc(100%+0.35rem)] z-30 w-full min-w-[12rem] rounded-2xl border border-border bg-card p-2 shadow-xl shadow-foreground/10"
-        >
-          {options.map((option) => {
-            const isSelected = option.value === value
-            return (
-              <button
-                key={option.value}
-                type="button"
-                role="option"
-                aria-selected={isSelected}
-                onClick={() => {
-                  onChange(option.value)
-                  setOpen(false)
-                }}
-                className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-base hover:bg-secondary md:text-sm"
-              >
-                <Check
-                  className={`h-4 w-4 shrink-0 ${isSelected ? 'opacity-100' : 'opacity-0'}`}
-                  aria-hidden
-                />
-                <span>{option.label}</span>
-              </button>
-            )
-          })}
-        </div>
-      )}
-    </div>
-  )
-}
 
 const schema = z.object({
   userId: z.string().optional(),
@@ -298,50 +225,60 @@ export function CouriersPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader
-        title="Couriers"
-        actions={<Button onClick={() => setEditing('new')}>Register courier</Button>}
-      />
+      <div className="flex items-center justify-between gap-3">
+        <h1 className="text-2xl font-semibold tracking-tight">Couriers</h1>
+        <Button className="shrink-0" onClick={() => setEditing('new')}>
+          Register courier
+        </Button>
+      </div>
       <div className="flex flex-wrap gap-3">
         <div className="flex flex-col gap-1">
           <Label htmlFor="c-zone" className="text-xs">
             Zone
           </Label>
-          <FilterDropdown
+          <Select
             id="c-zone"
             value={zone}
-            onChange={(value) => setFilter('zone', value)}
-            options={[
-              { value: '', label: 'All' },
-              ...(zones.data?.map((z) => ({ value: z.code, label: z.name })) ?? []),
-            ]}
-          />
+            onChange={(e) => setFilter('zone', e.target.value)}
+          >
+            <option value="">All</option>
+            {zones.data?.map((z) => (
+              <option key={z.id} value={z.code}>
+                {z.name}
+              </option>
+            ))}
+          </Select>
         </div>
         <div className="flex flex-col gap-1">
           <Label htmlFor="c-vehicle" className="text-xs">
             Vehicle
           </Label>
-          <FilterDropdown
+          <Select
             id="c-vehicle"
             value={vehicle}
-            onChange={(value) => setFilter('vehicle', value)}
-            options={[{ value: '', label: 'All' }, ...VEHICLES]}
-          />
+            onChange={(e) => setFilter('vehicle', e.target.value)}
+          >
+            <option value="">All</option>
+            {VEHICLES.map((v) => (
+              <option key={v.value} value={v.value}>
+                {v.label}
+              </option>
+            ))}
+          </Select>
         </div>
         <div className="flex flex-col gap-1">
           <Label htmlFor="c-active" className="text-xs">
             Status
           </Label>
-          <FilterDropdown
+          <Select
             id="c-active"
             value={active}
-            onChange={(value) => setFilter('active', value)}
-            options={[
-              { value: '', label: 'All' },
-              { value: 'true', label: 'Active' },
-              { value: 'false', label: 'Inactive' },
-            ]}
-          />
+            onChange={(e) => setFilter('active', e.target.value)}
+          >
+            <option value="">All</option>
+            <option value="true">Active</option>
+            <option value="false">Inactive</option>
+          </Select>
         </div>
       </div>
 

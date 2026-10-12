@@ -17,6 +17,7 @@ import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Dialog } from '@/components/ui/dialog'
+import { Select } from '@/components/ui/select'
 import { cn } from '@/lib/cn'
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
@@ -99,21 +100,21 @@ export function DatePicker({
               <label className="sr-only" htmlFor={`${id}-year`}>
                 Year
               </label>
-              <select
+              <Select
                 id={`${id}-year`}
                 aria-label="Year"
                 value={selectedYear}
                 onChange={(event) =>
                   setMonth((current) => new Date(Number(event.target.value), current.getMonth(), 1))
                 }
-                className="rounded-md border border-input bg-background px-1.5 py-1 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="h-8 min-w-[5.5rem] rounded-lg px-2 py-1 text-sm font-semibold"
               >
                 {years.map((year) => (
                   <option key={year} value={year}>
                     {year}
                   </option>
                 ))}
-              </select>
+              </Select>
             </div>
             <Button
               type="button"
