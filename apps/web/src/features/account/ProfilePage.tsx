@@ -191,8 +191,19 @@ export function ProfilePage() {
                   : 'border-border',
               )}
             >
-              <Icon className="h-5 w-5 shrink-0 text-current opacity-70" aria-hidden />
-              <span className="min-w-0 flex-1">
+              <Icon
+                className={cn(
+                  'h-5 w-5 shrink-0 text-current opacity-70',
+                  value === 'system' && 'rounded bg-white/90 p-0.5 text-gray-700 opacity-100',
+                )}
+                aria-hidden
+              />
+              <span
+                className={cn(
+                  'min-w-0 flex-1',
+                  value === 'system' && 'rounded bg-white/90 px-1 text-gray-900 shadow-sm',
+                )}
+              >
                 <span className="block text-sm font-medium">{label}</span>
               </span>
               {preference === value && (
