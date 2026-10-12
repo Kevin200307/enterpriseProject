@@ -21,13 +21,13 @@ export function Dialog({
   return (
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
       <DialogPrimitive.Portal>
-        <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/50" />
+        <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/50 data-[state=open]:animate-fade-in data-[state=closed]:animate-fade-out motion-reduce:animate-none" />
         <DialogPrimitive.Content
           className={
             // No `relative` here: it would beat `fixed` in Tailwind's output and drop the sheet
             // into normal flow. `fixed` is already a containing block for the close button.
             side === 'bottom'
-              ? 'fixed inset-x-0 bottom-0 z-50 overflow-x-hidden max-h-[90vh] overflow-y-auto rounded-t-2xl border bg-background p-6 shadow-lg focus:outline-none sm:inset-x-auto sm:left-1/2 sm:max-w-md sm:-translate-x-1/2'
+              ? 'fixed inset-x-0 bottom-0 z-50 overflow-x-hidden max-h-[90vh] overflow-y-auto rounded-t-2xl border bg-background p-6 shadow-lg focus:outline-none data-[state=open]:animate-slide-in-from-bottom data-[state=closed]:animate-slide-out-to-bottom motion-reduce:animate-none sm:inset-x-auto sm:left-1/2 sm:max-w-md sm:-translate-x-1/2'
               : 'fixed left-1/2 top-1/2 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-lg border bg-background p-6 shadow-lg focus:outline-none'
           }
         >

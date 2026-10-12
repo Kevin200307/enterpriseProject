@@ -78,6 +78,7 @@ describe('deliveries list', () => {
     await screen.findByRole('link', { name: /SD-ABCD2345/ })
     expect(seen[0]?.searchParams.getAll('status')).toEqual(['FAILED'])
     expect(seen[0]?.searchParams.get('page')).toBe('1')
+    await userEvent.click(screen.getByRole('button', { name: /Filter/ }))
     expect(screen.getByRole('button', { name: 'Failed' })).toHaveAttribute('aria-pressed', 'true')
 
     await userEvent.click(screen.getByRole('button', { name: 'Delivered' }))

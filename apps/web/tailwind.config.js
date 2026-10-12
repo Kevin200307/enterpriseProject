@@ -42,11 +42,23 @@ export default {
           from: { opacity: '0', transform: 'scale(0.97)' },
           to: { opacity: '1', transform: 'scale(1)' },
         },
+        'slide-in-from-bottom': {
+          from: { opacity: '0', transform: 'translateY(100%)' },
+          to: { opacity: '1', transform: 'translateY(0)' },
+        },
+        'slide-out-to-bottom': {
+          from: { opacity: '1', transform: 'translateY(0)' },
+          to: { opacity: '0', transform: 'translateY(100%)' },
+        },
+        'fade-out': { from: { opacity: '1' }, to: { opacity: '0' } },
       },
       animation: {
         'fade-in': 'fade-in 220ms cubic-bezier(0.32, 0.72, 0, 1) both',
         'fade-in-up': 'fade-in-up 260ms cubic-bezier(0.32, 0.72, 0, 1) both',
         'scale-in': 'scale-in 200ms cubic-bezier(0.32, 0.72, 0, 1) both',
+        'fade-out': 'fade-out 180ms ease-in both',
+        'slide-in-from-bottom': 'slide-in-from-bottom 320ms cubic-bezier(0.32, 0.72, 0, 1) both',
+        'slide-out-to-bottom': 'slide-out-to-bottom 240ms cubic-bezier(0.32, 0.72, 0, 1) both',
       },
     },
   },

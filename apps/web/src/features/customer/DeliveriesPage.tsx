@@ -1,3 +1,5 @@
+import { SlidersHorizontal } from 'lucide-react'
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link, useSearchParams } from 'react-router-dom'
 import { parcelsApi } from '@/api/endpoints/parcels'
@@ -9,7 +11,8 @@ import { PageHeader } from '@/components/common/PageHeader'
 import { Pagination } from '@/components/common/Pagination'
 import { StatusChip } from '@/components/common/StatusChip'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { DatePicker } from '@/components/ui/date-picker'
+import { Dialog } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
 import { formatDate } from '@/lib/format'
@@ -26,6 +29,7 @@ export function DeliveriesPage() {
   const to = params.get('to') ?? ''
   const page = Math.max(0, Number(params.get('page')) || 0)
   const filtered = status.length > 0 || !!from || !!to
+  const [filtersOpen, setFiltersOpen] = useState(false)
 
   const update = (mutate: (p: URLSearchParams) => void) => {
     const next = new URLSearchParams(params)
@@ -62,13 +66,31 @@ export function DeliveriesPage() {
       <PageHeader
         title="My deliveries"
         actions={
-          <Button asChild>
-            <Link to="/deliveries/new">New delivery</Link>
-          </Button>
+          <>
+            <Button
+              type="button"
+              variant="outline"
+              aria-expanded={filtersOpen}
+              onClick={() => setFiltersOpen((open) => !open)}
+            >
+              <SlidersHorizontal className="h-4 w-4" aria-hidden />
+              Filter
+              {filtered && <span className="sr-only"> (active filters)</span>}
+            </Button>
+            <Button asChild>
+              <Link to="/deliveries/new">New delivery</Link>
+            </Button>
+          </>
         }
       />
 
-      <section aria-label="Filters" className="flex flex-col gap-3 rounded-lg border p-4">
+      <Dialog
+        open={filtersOpen}
+        onOpenChange={setFiltersOpen}
+        title="Filter deliveries"
+        description="Narrow your deliveries by status or date."
+        side="bottom"
+      >
         <fieldset className="flex flex-wrap gap-2">
           <legend className="sr-only">Status</legend>
           {FILTERABLE.map((s) => {
@@ -89,38 +111,40 @@ export function DeliveriesPage() {
             )
           })}
         </fieldset>
-        <div className="flex flex-wrap items-end gap-3">
-          <div className="flex flex-col gap-1">
+        <div className="grid grid-cols-2 gap-3">
+          <div className="min-w-0 flex flex-col gap-1">
             <Label htmlFor="filter-from" className="text-xs">
               From
             </Label>
-            <Input
+            <DatePicker
               id="filter-from"
-              type="date"
               value={from}
               max={to || undefined}
-              onChange={(e) => setDate('from', e.target.value)}
+              onChange={(value) => setDate('from', value)}
             />
           </div>
-          <div className="flex flex-col gap-1">
+          <div className="min-w-0 flex flex-col gap-1">
             <Label htmlFor="filter-to" className="text-xs">
               To
             </Label>
-            <Input
+            <DatePicker
               id="filter-to"
-              type="date"
               value={to}
               min={from || undefined}
-              onChange={(e) => setDate('to', e.target.value)}
+              onChange={(value) => setDate('to', value)}
             />
           </div>
-          {filtered && (
-            <Button variant="outline" size="sm" onClick={() => setParams(new URLSearchParams())}>
-              Clear filters
-            </Button>
-          )}
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={!filtered}
+            className="transition-opacity disabled:opacity-40"
+            onClick={() => setParams(new URLSearchParams())}
+          >
+            Clear filters
+          </Button>
         </div>
-      </section>
+      </Dialog>
 
       {list.isPending ? (
         <div className="flex flex-col gap-3" aria-busy="true">

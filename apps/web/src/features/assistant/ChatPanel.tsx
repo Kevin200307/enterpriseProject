@@ -193,7 +193,7 @@ export function ChatPanel({
                 submit()
               }
             }}
-            className="max-h-32 min-w-0 flex-1 resize-none bg-transparent py-2 text-sm leading-6 outline-none focus-visible:outline-none focus-visible:ring-0"
+            className="max-h-32 min-w-0 flex-1 resize-none border-0 bg-transparent py-2 text-sm leading-6 outline-none focus-visible:outline-none focus-visible:ring-0"
             placeholder="Ask SwiftDrop…"
           />
           {busy ? (

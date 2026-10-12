@@ -1,0 +1,160 @@
+import {
+  addMonths,
+  eachDayOfInterval,
+  endOfMonth,
+  endOfWeek,
+  format,
+  isAfter,
+  isBefore,
+  isSameDay,
+  isValid,
+  parseISO,
+  startOfMonth,
+  startOfWeek,
+  subMonths,
+} from 'date-fns'
+import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/cn'
+
+const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+
+function parseDate(value: string) {
+  const date = parseISO(value)
+  return isValid(date) ? date : undefined
+}
+
+export function DatePicker({
+  id,
+  value,
+  onChange,
+  min,
+  max,
+  placeholder = 'Select date',
+}: {
+  id: string
+  value: string
+  onChange: (value: string) => void
+  min?: string
+  max?: string
+  placeholder?: string
+}) {
+  const selected = parseDate(value)
+  const minimum = parseDate(min ?? '')
+  const maximum = parseDate(max ?? '')
+  const [open, setOpen] = useState(false)
+  const [month, setMonth] = useState(() => startOfMonth(selected ?? new Date()))
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    const closeOnOutsideClick = (event: MouseEvent) => {
+      if (!containerRef.current?.contains(event.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', closeOnOutsideClick)
+    return () => document.removeEventListener('mousedown', closeOnOutsideClick)
+  }, [open])
+
+  useEffect(() => {
+    const nextSelected = parseDate(value)
+    if (nextSelected) setMonth(startOfMonth(nextSelected))
+  }, [value])
+
+  const days = eachDayOfInterval({
+    start: startOfWeek(startOfMonth(month), { weekStartsOn: 1 }),
+    end: endOfWeek(endOfMonth(month), { weekStartsOn: 1 }),
+  })
+  const isDisabled = (day: Date) =>
+    (minimum ? isBefore(day, minimum) : false) || (maximum ? isAfter(day, maximum) : false)
+
+  return (
+    <div ref={containerRef} className="relative">
+      <button
+        id={id}
+        type="button"
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        onClick={() => setOpen((isOpen) => !isOpen)}
+        className="flex h-10 w-full min-w-0 items-center justify-between gap-2 rounded-md border border-input bg-background px-3 text-left text-sm transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        <span className={cn(!selected && 'text-muted-foreground')}>
+          {selected ? format(selected, 'dd MMM yyyy') : placeholder}
+        </span>
+        <CalendarDays className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+      </button>
+      {open && (
+        <div
+          role="dialog"
+          aria-label={`${placeholder} calendar`}
+          className="absolute left-0 top-full z-20 mt-2 w-[min(20rem,calc(100vw-3rem))] rounded-xl border-2 border-foreground/10 bg-background p-4 shadow-xl"
+        >
+          <div className="mb-3 flex items-center justify-between">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              aria-label="Previous month"
+              onClick={() => setMonth((current) => subMonths(current, 1))}
+            >
+              <ChevronLeft className="h-4 w-4" aria-hidden />
+            </Button>
+            <p className="text-sm font-semibold">{format(month, 'MMMM yyyy')}</p>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              aria-label="Next month"
+              onClick={() => setMonth((current) => addMonths(current, 1))}
+            >
+              <ChevronRight className="h-4 w-4" aria-hidden />
+            </Button>
+          </div>
+          <div className="grid grid-cols-7 gap-1 text-center text-xs font-medium text-muted-foreground">
+            {WEEKDAYS.map((weekday) => (
+              <span key={weekday} className="py-1">
+                {weekday}
+              </span>
+            ))}
+            {days.map((day) => {
+              const disabled = isDisabled(day)
+              const inMonth = day.getMonth() === month.getMonth()
+              return (
+                <button
+                  key={day.toISOString()}
+                  type="button"
+                  disabled={disabled || !inMonth}
+                  aria-label={format(day, 'dd MMMM yyyy')}
+                  aria-pressed={selected ? isSameDay(day, selected) : false}
+                  onClick={() => {
+                    onChange(format(day, 'yyyy-MM-dd'))
+                    setOpen(false)
+                  }}
+                  className={cn(
+                    'h-9 rounded-md text-sm transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-30',
+                    selected && isSameDay(day, selected) && 'bg-primary text-primary-foreground hover:bg-primary',
+                    inMonth && !selected && isSameDay(day, new Date()) && 'font-semibold text-primary',
+                  )}
+                >
+                  {format(day, 'd')}
+                </button>
+              )
+            })}
+          </div>
+          {selected && (
+            <button
+              type="button"
+              className="mt-3 w-full rounded-md border px-3 py-2 text-sm font-medium transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              onClick={() => {
+                onChange('')
+                setOpen(false)
+              }}
+            >
+              Clear date
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
