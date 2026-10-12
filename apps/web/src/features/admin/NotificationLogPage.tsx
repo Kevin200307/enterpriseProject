@@ -14,11 +14,10 @@ import { Pagination } from '@/components/common/Pagination'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Select } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { formatDateTime, humanize } from '@/lib/format'
 import { NotificationBadge } from '@/features/notifications/NotificationBadge'
-
-const sel = 'h-10 rounded-md border border-input bg-background px-3 text-sm'
 
 export function NotificationLogPage() {
   const qc = useQueryClient()
@@ -71,9 +70,9 @@ export function NotificationLogPage() {
           <Label htmlFor="n-status" className="text-xs">
             Status
           </Label>
-          <select
+          <Select
             id="n-status"
-            className={sel}
+
             value={f.status}
             onChange={(e) => set('status', e.target.value)}
           >
@@ -83,22 +82,22 @@ export function NotificationLogPage() {
                 {humanize(s)}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
         <div className="flex flex-col gap-1">
           <Label htmlFor="n-channel" className="text-xs">
             Channel
           </Label>
-          <select
+          <Select
             id="n-channel"
-            className={sel}
+
             value={f.channel}
             onChange={(e) => set('channel', e.target.value)}
           >
             <option value="">All</option>
             <option value="EMAIL">Email</option>
             <option value="SMS">SMS</option>
-          </select>
+          </Select>
         </div>
         <div className="flex flex-col gap-1">
           <Label htmlFor="n-from" className="text-xs">

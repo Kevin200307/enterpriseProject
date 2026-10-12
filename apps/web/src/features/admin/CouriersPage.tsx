@@ -22,6 +22,7 @@ import { Button } from '@/components/ui/button'
 import { Dialog } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Select } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { phoneSchema } from '@/features/auth/schemas'
 
@@ -102,7 +103,6 @@ function CourierDialog({ courier, onClose }: { courier?: Courier; onClose: () =>
     },
     onSettled: () => void qc.invalidateQueries({ queryKey: qk.admin.all }),
   })
-  const selectCls = 'h-10 w-full rounded-md border border-input bg-background px-3 text-sm'
   return (
     <Dialog
       open
@@ -129,14 +129,14 @@ function CourierDialog({ courier, onClose }: { courier?: Courier; onClose: () =>
           >
             {(p) =>
               users.data ? (
-                <select {...p} {...register('userId')} className={selectCls}>
+                <Select {...p} {...register('userId')} className="w-full">
                   <option value="">Select…</option>
                   {users.data.content.map((u) => (
                     <option key={u.id} value={u.id}>
                       {u.fullName} ({u.email})
                     </option>
                   ))}
-                </select>
+                </Select>
               ) : (
                 <Input {...p} {...register('userId')} />
               )
@@ -145,25 +145,25 @@ function CourierDialog({ courier, onClose }: { courier?: Courier; onClose: () =>
         )}
         <FormField label="Vehicle" error={errors.vehicleType?.message}>
           {(p) => (
-            <select {...p} {...register('vehicleType')} className={selectCls}>
+            <Select {...p} {...register('vehicleType')} className="w-full">
               {VEHICLES.map((v) => (
                 <option key={v.value} value={v.value}>
                   {v.label}
                 </option>
               ))}
-            </select>
+            </Select>
           )}
         </FormField>
         <FormField label="Home zone" error={errors.homeZoneCode?.message}>
           {(p) => (
-            <select {...p} {...register('homeZoneCode')} className={selectCls}>
+            <Select {...p} {...register('homeZoneCode')} className="w-full">
               <option value="">Select…</option>
               {zones.data?.map((z) => (
                 <option key={z.id} value={z.code}>
                   {z.name}
                 </option>
               ))}
-            </select>
+            </Select>
           )}
         </FormField>
         <FormField label="Phone" error={errors.phone?.message}>
@@ -223,7 +223,6 @@ export function CouriersPage() {
     next.delete('page')
     setParams(next)
   }
-  const sel = 'h-10 rounded-md border border-input bg-background px-3 text-sm'
 
   return (
     <div className="flex flex-col gap-6">
@@ -236,9 +235,9 @@ export function CouriersPage() {
           <Label htmlFor="c-zone" className="text-xs">
             Zone
           </Label>
-          <select
+          <Select
             id="c-zone"
-            className={sel}
+
             value={zone}
             onChange={(e) => setFilter('zone', e.target.value)}
           >
@@ -248,15 +247,15 @@ export function CouriersPage() {
                 {z.name}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
         <div className="flex flex-col gap-1">
           <Label htmlFor="c-vehicle" className="text-xs">
             Vehicle
           </Label>
-          <select
+          <Select
             id="c-vehicle"
-            className={sel}
+
             value={vehicle}
             onChange={(e) => setFilter('vehicle', e.target.value)}
           >
@@ -266,22 +265,22 @@ export function CouriersPage() {
                 {v.label}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
         <div className="flex flex-col gap-1">
           <Label htmlFor="c-active" className="text-xs">
             Status
           </Label>
-          <select
+          <Select
             id="c-active"
-            className={sel}
+
             value={active}
             onChange={(e) => setFilter('active', e.target.value)}
           >
             <option value="">All</option>
             <option value="true">Active</option>
             <option value="false">Inactive</option>
-          </select>
+          </Select>
         </div>
       </div>
 

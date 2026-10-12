@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button'
 import { Dialog } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Select } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { TRACKING_NUMBER_RE, formatDate } from '@/lib/format'
 import { STATUS_META, statusMeta, type ParcelStatus } from '@/lib/status'
@@ -57,18 +58,17 @@ function StatusDialog({ parcel, onClose }: { parcel: Parcel; onClose: () => void
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-2">
             <Label htmlFor="to-status">New status</Label>
-            <select
+            <Select
               id="to-status"
               value={to}
               onChange={(e) => setTo(e.target.value as ParcelStatus)}
-              className="h-10 rounded-md border border-input bg-background px-3 text-sm"
             >
               {options.map((o) => (
                 <option key={o} value={o}>
                   {STATUS_META[o].label}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
           {needsReason && (
             <div className="flex flex-col gap-2">
@@ -174,7 +174,7 @@ export function AdminParcelsPage() {
             <Label htmlFor="p-status" className="text-xs">
               Status
             </Label>
-            <select
+            <Select
               id="p-status"
               value={status}
               onChange={(e) => {
@@ -182,7 +182,6 @@ export function AdminParcelsPage() {
                 if (e.target.value) n.set('status', e.target.value)
                 setParams(n)
               }}
-              className="h-10 rounded-md border border-input bg-background px-3 text-sm"
             >
               <option value="">All</option>
               {(Object.keys(STATUS_META) as ParcelStatus[]).map((s) => (
@@ -190,7 +189,7 @@ export function AdminParcelsPage() {
                   {STATUS_META[s].label}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
         )}
       </div>

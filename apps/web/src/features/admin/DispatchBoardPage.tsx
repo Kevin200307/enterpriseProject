@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
+import { Select } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useInView } from '@/hooks/useInView'
 import { ageTone, timeAgo } from '@/lib/format'
@@ -124,19 +125,14 @@ export function DispatchBoardPage() {
               <Label htmlFor="zone-filter" className="text-xs">
                 Pickup zone
               </Label>
-              <select
-                id="zone-filter"
-                value={zone}
-                onChange={(e) => setZone(e.target.value)}
-                className="h-10 rounded-md border border-input bg-background px-3 text-sm"
-              >
+              <Select id="zone-filter" value={zone} onChange={(e) => setZone(e.target.value)}>
                 <option value="">All zones</option>
                 {zones.data?.map((z) => (
                   <option key={z.id} value={z.code}>
                     {z.name}
                   </option>
                 ))}
-              </select>
+              </Select>
             </div>
           </div>
 

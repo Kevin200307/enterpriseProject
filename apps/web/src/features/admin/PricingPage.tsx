@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/button'
 import { Dialog } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Select } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 
 const money = (label: string) =>
@@ -112,18 +113,14 @@ function RuleDialog({
     onSettled: () => void qc.invalidateQueries({ queryKey: qk.pricing.rules }),
   })
   const select = (p: object, reg: object) => (
-    <select
-      {...p}
-      {...reg}
-      className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-    >
+    <Select {...p} {...reg} className="w-full">
       <option value="">Select…</option>
       {zones.map((z) => (
         <option key={z.id} value={z.id}>
           {z.name}
         </option>
       ))}
-    </select>
+    </Select>
   )
   return (
     <Dialog
@@ -144,15 +141,11 @@ function RuleDialog({
         </FormField>
         <FormField label="Size band" error={errors.sizeBand?.message}>
           {(p) => (
-            <select
-              {...p}
-              {...register('sizeBand')}
-              className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-            >
+            <Select {...p} {...register('sizeBand')} className="w-full">
               <option value="SMALL">Small</option>
               <option value="MEDIUM">Medium</option>
               <option value="LARGE">Large</option>
-            </select>
+            </Select>
           )}
         </FormField>
         <FormField label="Max weight (kg)" error={errors.maxWeightKg?.message}>
@@ -216,17 +209,17 @@ export function PricingPage() {
         <Label htmlFor="size-filter" className="text-xs">
           Size band
         </Label>
-        <select
+        <Select
           id="size-filter"
           value={size}
           onChange={(e) => setSize(e.target.value)}
-          className="h-10 w-48 rounded-md border border-input bg-background px-3 text-sm"
+          className="w-48"
         >
           <option value="">All sizes</option>
           <option value="SMALL">Small</option>
           <option value="MEDIUM">Medium</option>
           <option value="LARGE">Large</option>
-        </select>
+        </Select>
       </div>
       {rules.isPending ? (
         <Skeleton className="h-48 w-full" />

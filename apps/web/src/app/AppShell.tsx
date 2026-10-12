@@ -1,14 +1,15 @@
-import { Menu, PanelLeftClose, PanelLeftOpen, X } from 'lucide-react'
-import { LogoLockup, LogoTile } from '@/components/brand/Logo'
+import { Bell, LogOut, MoreHorizontal, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
+import { LogoLockup, LogoTile } from '@/components/brand/Logo'
 import { Button } from '@/components/ui/button'
+import { Dialog } from '@/components/ui/dialog'
 import { useAuth } from '@/auth/authContext'
 import { useSession } from '@/auth/session'
 import { useMobile } from '@/hooks/useMobile'
 import { env } from '@/config/env'
 import { cn } from '@/lib/cn'
-import { navFor } from './nav'
+import { mobileNavFor, navFor } from './nav'
 
 const ChatWidget = lazy(() =>
   import('@/features/assistant/ChatWidget').then((m) => ({ default: m.ChatWidget })),
@@ -53,12 +54,7 @@ export function AppShell() {
   const [indicator, setIndicator] = useState<{ top: number; height: number } | null>(null)
   const [indicatorReady, setIndicatorReady] = useState(false)
   const items = navFor(roles)
-  // The bar fits five comfortably. Prefer the role's own destinations over the shared
-  // ones (notifications, tracking), which stay reachable from the drawer.
-  const bottomItems = [
-    ...items.filter((i) => i.roles.length > 0),
-    ...items.filter((i) => i.roles.length === 0),
-  ].slice(0, 5)
+  const { tabs, overflow } = mobileNavFor(roles)
 
   useEffect(() => {
     localStorage.setItem(COLLAPSE_KEY, collapsed ? '1' : '0')
@@ -199,41 +195,40 @@ export function AppShell() {
       <div className="flex min-w-0 flex-col">
         {/* Top header */}
         <header className="flex h-14 items-center justify-between border-b border-border/40 bg-white/80 px-4 backdrop-blur-md">
+          {/* No hamburger on mobile — everything routes through the bottom bar. */}
           {isMobile ? (
-            <>
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label="Open menu"
-                onClick={() => setOpen(true)}
-                className="rounded-xl"
-              >
-                <Menu className="h-5 w-5" />
-              </Button>
-              <Link to="/" aria-label="SwiftDrop home" className="flex items-center gap-2">
-                <LogoTile />
-                <span className="font-semibold">SwiftDrop</span>
-              </Link>
-            </>
+            <Link to="/" aria-label="SwiftDrop home" className="flex items-center gap-2">
+              <LogoTile />
+              <span className="font-semibold">SwiftDrop</span>
+            </Link>
           ) : (
             <span />
           )}
-          <div className={cn('flex items-center gap-2', isMobile && 'ml-0')}>
+          <div className="flex items-center gap-2">
             {roles.length === 0 ? (
               <Button asChild size="sm" className="rounded-xl">
                 <Link to="/login">Sign in</Link>
               </Button>
+            ) : isMobile ? (
+              <Button variant="ghost" size="icon" asChild className="rounded-xl">
+                <Link to="/account/notifications" aria-label="Notifications">
+                  <Bell className="h-5 w-5" />
+                </Link>
+              </Button>
             ) : (
               <>
-                {!isMobile && (
-                  <Link
-                    to="/account"
-                    className="hidden text-sm text-muted-foreground hover:underline sm:inline"
-                  >
-                    {email}
-                  </Link>
-                )}
-                <Button variant="outline" size="sm" className="rounded-xl" onClick={() => void logout()}>
+                <Link
+                  to="/account"
+                  className="hidden text-sm text-muted-foreground hover:underline sm:inline"
+                >
+                  {email}
+                </Link>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="rounded-xl"
+                  onClick={() => void logout()}
+                >
                   Sign out
                 </Button>
               </>
@@ -262,35 +257,93 @@ export function AppShell() {
           className="fixed bottom-0 left-0 right-0 z-30 flex items-center justify-around border-t border-border/40 bg-white/90 px-2 pt-2 backdrop-blur-md"
           style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}
         >
-          {bottomItems.map(({ to, label, icon: Icon }) => (
+          {tabs.map(({ to, label, short, icon: Icon }) => (
             <NavLink
               key={to}
               to={to}
               end
               className={({ isActive }) =>
                 cn(
-                  'flex flex-col items-center gap-0.5 rounded-xl px-3 py-2 text-[10px] font-medium text-muted-foreground',
+                  'flex flex-1 flex-col items-center gap-0.5 rounded-xl py-1 text-[10px] font-medium text-muted-foreground',
                   'duration-300 ease-smooth active:scale-90',
-                  isActive && 'text-primary',
+                  isActive && 'text-foreground',
                 )
               }
             >
               {({ isActive }) => (
                 <>
-                  <div
+                  <span
                     className={cn(
                       'flex h-9 w-9 items-center justify-center rounded-full duration-300 ease-smooth',
                       isActive ? 'bg-foreground text-background' : 'scale-95',
                     )}
                   >
                     <Icon className="h-4 w-4" aria-hidden />
-                  </div>
-                  {label}
+                  </span>
+                  <span className="max-w-full truncate px-0.5">{short ?? label}</span>
                 </>
               )}
             </NavLink>
           ))}
+
+          {/* Anything that does not fit becomes the fifth slot. */}
+          {overflow.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setOpen(true)}
+              aria-haspopup="dialog"
+              aria-expanded={open}
+              className={cn(
+                'flex flex-1 flex-col items-center gap-0.5 rounded-xl py-1 text-[10px] font-medium text-muted-foreground',
+                'duration-300 ease-smooth active:scale-90',
+                open && 'text-foreground',
+              )}
+            >
+              <span
+                className={cn(
+                  'flex h-9 w-9 items-center justify-center rounded-full duration-300 ease-smooth',
+                  open ? 'bg-foreground text-background' : 'scale-95',
+                )}
+              >
+                <MoreHorizontal className="h-4 w-4" aria-hidden />
+              </span>
+              <span className="max-w-full truncate px-0.5">More</span>
+            </button>
+          )}
         </nav>
+      )}
+
+      {/* Overflow sheet */}
+      {isMobile && (
+        <Dialog open={open} onOpenChange={setOpen} title="More" side="bottom">
+          <nav aria-label="More destinations" className="flex flex-col pb-2">
+            {overflow.map(({ to, label, icon: Icon }) => (
+              <NavLink
+                key={to}
+                to={to}
+                end
+                onClick={() => setOpen(false)}
+                className={({ isActive }) =>
+                  cn(
+                    'flex items-center gap-3 rounded-2xl px-3 py-3.5 text-sm font-medium transition-colors',
+                    isActive ? 'bg-secondary font-semibold' : 'hover:bg-secondary',
+                  )
+                }
+              >
+                <Icon className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+                {label}
+              </NavLink>
+            ))}
+            <button
+              type="button"
+              onClick={() => void logout()}
+              className="mt-2 flex items-center gap-3 rounded-2xl px-3 py-3.5 text-sm font-medium text-destructive transition-colors hover:bg-destructive/5"
+            >
+              <LogOut className="h-4 w-4 shrink-0" aria-hidden />
+              Sign out
+            </button>
+          </nav>
+        </Dialog>
       )}
 
       {status === 'authenticated' && env.assistantEnabled && (
@@ -299,58 +352,6 @@ export function AppShell() {
         </Suspense>
       )}
 
-      {/* Mobile slide-out drawer — stays mounted (on mobile only) so it animates closed as well as open. */}
-      {isMobile && (
-      <div
-        className={cn(
-          'fixed inset-0 z-40 md:hidden',
-          open ? 'visible' : 'invisible delay-300',
-        )}
-        role="dialog"
-        aria-modal="true"
-        aria-label="Menu"
-        aria-hidden={!open}
-      >
-        <button
-          type="button"
-          aria-label="Close menu"
-          tabIndex={-1}
-          className={cn(
-            'absolute inset-0 h-full w-full bg-black/40 backdrop-blur-sm',
-            'transition-opacity duration-300 ease-smooth',
-            open ? 'opacity-100' : 'pointer-events-none opacity-0',
-          )}
-          onClick={() => setOpen(false)}
-        />
-        <div
-          className={cn(
-            'relative h-full w-72 bg-sidebar text-white shadow-2xl',
-            'transition-transform duration-300 ease-smooth will-change-transform',
-            open ? 'translate-x-0' : '-translate-x-full',
-          )}
-        >
-            <div className="flex h-14 items-center justify-between px-4">
-              <LogoLockup className="h-7 w-[92px] text-white" />
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label="Close menu"
-                className="rounded-xl text-white/70 hover:bg-white/10 hover:text-white"
-                onClick={() => setOpen(false)}
-              >
-                <X className="h-5 w-5" />
-              </Button>
-            </div>
-            {email && (
-              <div className="px-4 pb-1 pt-1">
-                <p className="text-xs text-white/50">Signed in as</p>
-                <p className="text-sm font-medium text-white/90">{email}</p>
-              </div>
-            )}
-            {sidebarNav()}
-        </div>
-      </div>
-      )}
     </div>
   )
 }

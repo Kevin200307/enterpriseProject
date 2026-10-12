@@ -14,6 +14,7 @@ import { Pagination } from '@/components/common/Pagination'
 import { Button } from '@/components/ui/button'
 import { Dialog } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
+import { Select } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAuth } from '@/auth/authContext'
 import { ALL_ROLES } from '@/auth/types'
@@ -131,11 +132,10 @@ export function UsersPage() {
             <Label htmlFor={`f-${f.id}`} className="text-xs">
               {f.label}
             </Label>
-            <select
+            <Select
               id={`f-${f.id}`}
               value={f.value}
               onChange={(e) => setFilter(f.id, e.target.value)}
-              className="h-10 rounded-md border border-input bg-background px-3 text-sm"
             >
               <option value="">All</option>
               {f.options.map((o) => (
@@ -143,7 +143,7 @@ export function UsersPage() {
                   {o}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
         ))}
       </div>

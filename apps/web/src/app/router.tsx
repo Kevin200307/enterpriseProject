@@ -59,6 +59,10 @@ export const routes = [
         element: <RequireAuth roles={['CUSTOMER']} />,
         children: [
           {
+            path: 'home',
+            ...page(() => import('@/features/customer/CustomerHomePage'), 'CustomerHomePage'),
+          },
+          {
             path: 'deliveries',
             ...page(() => import('@/features/customer/DeliveriesPage'), 'DeliveriesPage'),
           },
