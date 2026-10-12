@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { ArrowRight, Boxes, PackagePlus, Search } from 'lucide-react'
+import { ArrowRight, PackagePlus, Search } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { parcelsApi } from '@/api/endpoints/parcels'
 import { qk } from '@/api/queryKeys'
@@ -29,33 +29,41 @@ export function CustomerHomePage() {
         <h1 className="text-2xl font-bold tracking-tight">{firstName ?? 'there'}</h1>
       </div>
 
-      {/* Headline figure, styled like the dark cards in the design language */}
-      <div className="flex flex-col gap-5 rounded-3xl bg-sidebar p-6 text-white">
-        <div className="flex items-start justify-between gap-4">
-          <div>
+      <div
+        className="relative flex min-h-48 overflow-hidden rounded-3xl bg-sidebar bg-cover bg-center p-6 text-white sm:min-h-56"
+        style={{ backgroundImage: "url('/active-deliveries-background.webp')" }}
+      >
+        <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/35 to-transparent" />
+        <div className="relative z-10 flex flex-1 flex-col items-start justify-between gap-4">
+          <div className="relative z-10">
             <p className="text-sm text-white/60">Active deliveries</p>
             <p className="mt-1 text-5xl font-bold leading-none tracking-tight">
               {recent.isPending ? '—' : active}
             </p>
           </div>
-          <span
-            aria-hidden
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/10"
+          <Link
+            to="/deliveries"
+            className="relative z-10 mt-auto ml-auto inline-flex items-center gap-1.5 rounded-full bg-accent px-4 py-2 text-sm font-semibold text-accent-foreground transition-transform active:scale-95"
           >
-            <Boxes className="h-5 w-5" />
-          </span>
+            View all <ArrowRight className="h-4 w-4" aria-hidden />
+          </Link>
         </div>
-        <Link
-          to="/deliveries"
-          className="inline-flex w-fit self-end items-center gap-1.5 rounded-full bg-accent px-4 py-2 text-sm font-semibold text-accent-foreground transition-transform active:scale-95"
-        >
-          View all <ArrowRight className="h-4 w-4" aria-hidden />
-        </Link>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <QuickAction to="/deliveries/new" icon={PackagePlus} label="New delivery" primary />
-        <QuickAction to="/track" icon={Search} label="Track a parcel" />
+        <QuickAction
+          to="/deliveries/new"
+          icon={PackagePlus}
+          label="New delivery"
+          background="/new-delivery-background.webp"
+          primary
+        />
+        <QuickAction
+          to="/track"
+          icon={Search}
+          label="Track a parcel"
+          background="/track-parcel-background.webp"
+        />
       </div>
 
       <section className="flex flex-col gap-3">
@@ -106,23 +114,33 @@ function QuickAction({
   icon: Icon,
   label,
   primary,
+  background,
 }: {
   to: string
   icon: typeof PackagePlus
   label: string
   primary?: boolean
+  background: string
 }) {
   return (
     <Link
       to={to}
-      className={
-        primary
-          ? 'flex flex-col gap-3 rounded-2xl bg-accent p-4 text-accent-foreground transition-opacity hover:opacity-90'
-          : 'flex flex-col gap-3 rounded-2xl border bg-card p-4 transition-colors hover:bg-secondary'
-      }
+      className={`relative min-h-36 overflow-hidden rounded-2xl bg-cover bg-center p-4 transition-transform hover:scale-[1.01] active:scale-[0.99] ${
+        primary ? 'text-accent-foreground' : 'text-white'
+      }`}
+      style={{ backgroundImage: `url('${background}')` }}
     >
-      <Icon className="h-5 w-5" aria-hidden />
-      <span className="text-sm font-semibold leading-tight">{label}</span>
+      <span
+        className={`absolute inset-0 ${
+          primary
+            ? 'bg-gradient-to-r from-lime-300/90 via-lime-300/45 to-transparent'
+            : 'bg-gradient-to-r from-black/75 via-black/30 to-transparent'
+        }`}
+      />
+      <span className="relative z-10 flex h-full flex-col justify-between gap-3">
+        <Icon className="h-6 w-6" aria-hidden />
+        <span className="text-base font-semibold leading-tight">{label}</span>
+      </span>
     </Link>
   )
 }
