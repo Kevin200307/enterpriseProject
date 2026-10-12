@@ -78,12 +78,13 @@ describe('theme', () => {
     expect(token('background')[2]).toBeGreaterThan(0)
   })
 
-  it('uses a white desktop sidebar in dark mode', () => {
+  it('uses a soft black desktop sidebar in dark mode', () => {
     const darkBlock = /\.dark\s*\{([\s\S]*?)\n\s*\}/.exec(css)?.[1] ?? ''
     const match = /--sidebar:\s*([\d.]+)\s+([\d.]+)%\s+([\d.]+)%/.exec(darkBlock)
     expect(match).not.toBeNull()
     const [, s, l] = match!.slice(1).map(Number)
     expect(s).toBe(0)
-    expect(l).toBe(100)
+    expect(l).toBeGreaterThan(0)
+    expect(l).toBeLessThan(15)
   })
 })
