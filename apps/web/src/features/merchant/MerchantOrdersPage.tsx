@@ -5,7 +5,6 @@ import { merchantApi } from '@/api/endpoints/merchant'
 import { qk } from '@/api/queryKeys'
 import { EmptyState } from '@/components/common/EmptyState'
 import { ErrorState } from '@/components/common/ErrorState'
-import { PageHeader } from '@/components/common/PageHeader'
 import { Pagination } from '@/components/common/Pagination'
 import { StatusChip } from '@/components/common/StatusChip'
 import { Button } from '@/components/ui/button'
@@ -38,14 +37,12 @@ export function MerchantOrdersPage() {
   return (
     <MerchantGate error={q.error}>
       <div className="flex flex-col gap-6">
-        <PageHeader
-          title="Orders"
-          actions={
-            <Button asChild className="!flex-none">
-              <Link to="/merchant/orders/new">New order</Link>
-            </Button>
-          }
-        />
+        <div className="flex items-center justify-between gap-3">
+          <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">Orders</h1>
+          <Button asChild className="!flex-none">
+            <Link to="/merchant/orders/new">New order</Link>
+          </Button>
+        </div>
         <form onSubmit={search} className="flex items-end gap-2">
           <div className="flex min-w-0 flex-1 flex-col gap-1">
             <Label htmlFor="o-ref" className="text-xs">
