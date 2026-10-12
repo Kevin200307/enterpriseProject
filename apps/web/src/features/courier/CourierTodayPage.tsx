@@ -109,15 +109,19 @@ export function CourierTodayPage() {
           <div className="flex items-center gap-3">
             <p
               role="status"
-              className="min-w-0 flex-1 rounded-lg bg-muted p-3 text-center text-sm font-medium"
+              className="flex min-w-0 flex-1 flex-wrap items-center justify-center gap-2 rounded-lg bg-muted p-3 text-center text-sm font-medium"
             >
-              <span className="text-sky-700 dark:text-sky-300">
+              <span className="rounded-full bg-sky-100 px-2.5 py-1 text-sky-700 dark:bg-sky-950/60 dark:text-sky-300">
                 {counts.todo} to deliver
               </span>
               <span className="text-muted-foreground"> · </span>
-              <span className="text-emerald-700 dark:text-emerald-300">{counts.done} done</span>
+              <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300">
+                {counts.done} done
+              </span>
               <span className="text-muted-foreground"> · </span>
-              <span className="text-destructive">{counts.failed} failed</span>
+              <span className="rounded-full bg-red-100 px-2.5 py-1 text-red-700 dark:bg-red-950/60 dark:text-red-300">
+                {counts.failed} failed
+              </span>
             </p>
             <Button
               variant="outline"
