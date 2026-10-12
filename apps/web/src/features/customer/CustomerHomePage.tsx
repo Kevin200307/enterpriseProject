@@ -32,8 +32,8 @@ export function CustomerHomePage() {
       <div
         className="relative flex min-h-48 overflow-hidden rounded-3xl bg-card p-6 text-foreground sm:min-h-56"
       >
-        <div className="relative z-10 flex h-full w-[58%] flex-col items-start">
-          <div className="absolute left-0 top-1/2 -translate-y-1/2">
+        <div className="absolute inset-0 z-10 p-6">
+          <div className="absolute left-6 top-1/2 -translate-y-1/2">
             <p className="text-sm text-muted-foreground">Active deliveries</p>
             <p className="mt-1 text-5xl font-bold leading-none tracking-tight">
               {recent.isPending ? '—' : active}
@@ -41,7 +41,7 @@ export function CustomerHomePage() {
           </div>
           <Link
             to="/deliveries"
-            className="absolute bottom-0 left-0 inline-flex items-center gap-1.5 rounded-full bg-accent px-4 py-2 text-sm font-semibold text-accent-foreground transition-transform active:scale-95"
+            className="absolute bottom-6 left-6 inline-flex items-center gap-1.5 rounded-full bg-accent px-4 py-2 text-sm font-semibold text-accent-foreground transition-transform active:scale-95"
           >
             View all <ArrowRight className="h-4 w-4" aria-hidden />
           </Link>
