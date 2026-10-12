@@ -14,5 +14,7 @@ export function useMinimumLoading(active: boolean) {
     return () => window.clearTimeout(id)
   }, [active])
 
-  return visible
+  // Include the current state synchronously so a new loading operation cannot briefly render
+  // the underlying page before the minimum-duration timer's state update runs.
+  return active || visible
 }
