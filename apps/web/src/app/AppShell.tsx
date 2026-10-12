@@ -303,7 +303,7 @@ export function AppShell() {
             {onHome ? (
               // The flat SVG file cannot adapt its lime to a light bar, so the header uses the
               // component with its on-light tone instead.
-              <LogoLockup className="h-8 w-[114px] text-sidebar" onLight />
+              <LogoLockup className="h-8 w-[114px] text-sidebar dark:text-white" onLight />
             ) : (
               <span className="flex min-w-0 items-center gap-2">
                 {inside ? (
@@ -317,7 +317,7 @@ export function AppShell() {
                     <ArrowLeft className="h-5 w-5" />
                   </Button>
                 ) : (
-                  <LogoMark className="h-7 w-7 shrink-0 text-sidebar" onLight />
+                  <LogoMark className="h-7 w-7 shrink-0 text-sidebar dark:text-white" onLight />
                 )}
                 <span className="truncate font-semibold">{title}</span>
               </span>

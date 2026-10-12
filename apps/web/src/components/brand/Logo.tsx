@@ -21,15 +21,21 @@ interface BrandProps {
 export function LogoMark({ className, onLight }: BrandProps) {
   const lime = onLight ? LIME_ON_LIGHT : LIME
   return (
-    <svg viewBox="-3 14 224 224" className={className} role="img" aria-label="SwiftDrop">
+    <svg
+      viewBox="-3 14 224 224"
+      className={`${className ?? ''} ${onLight ? 'dark:[--logo-lime:#DDF86C]' : ''}`}
+      style={{ '--logo-lime': lime } as React.CSSProperties}
+      role="img"
+      aria-label="SwiftDrop"
+    >
       <path
         fill="currentColor"
         d="M29 112h22a5 5 0 0 1 0 10H29a5 5 0 0 1 0-10Zm-12 25h34a5 5 0 0 1 0 10H17a5 5 0 0 1 0-10Z"
       />
-      <path fill={lime} fillRule="evenodd" d="M65 81 130 44 202 83 130 122Z M97 63 163 99 173 93 107 57Z" />
+      <path fill="var(--logo-lime)" fillRule="evenodd" d="M65 81 130 44 202 83 130 122Z M97 63 163 99 173 93 107 57Z" />
       <path fill="currentColor" d="M65 91 123 125V204L65 169Z" />
       <path
-        fill={lime}
+        fill="var(--logo-lime)"
         fillRule="evenodd"
         d="M135 125 202 88V169L135 207Z M146 140H169V129L193 149 169 169V158H146Z"
       />
@@ -46,7 +52,8 @@ export function LogoLockup({ className, onLight }: BrandProps) {
       // Left-anchored slice: narrowing the element crops the wordmark away and leaves the icon,
       // so expand/collapse is one continuous width change instead of swapping two images.
       preserveAspectRatio="xMinYMid slice"
-      className={className}
+      className={`${className ?? ''} ${onLight ? 'dark:[--logo-lime:#DDF86C]' : ''}`}
+      style={{ '--logo-lime': lime } as React.CSSProperties}
       role="img"
       aria-label="SwiftDrop"
     >
@@ -54,10 +61,10 @@ export function LogoLockup({ className, onLight }: BrandProps) {
         fill="currentColor"
         d="M29 112h22a5 5 0 0 1 0 10H29a5 5 0 0 1 0-10Zm-12 25h34a5 5 0 0 1 0 10H17a5 5 0 0 1 0-10Z"
       />
-      <path fill={lime} fillRule="evenodd" d="M65 81 130 44 202 83 130 122Z M97 63 163 99 173 93 107 57Z" />
+      <path fill="var(--logo-lime)" fillRule="evenodd" d="M65 81 130 44 202 83 130 122Z M97 63 163 99 173 93 107 57Z" />
       <path fill="currentColor" d="M65 91 123 125V204L65 169Z" />
       <path
-        fill={lime}
+        fill="var(--logo-lime)"
         fillRule="evenodd"
         d="M135 125 202 88V169L135 207Z M146 140H169V129L193 149 169 169V158H146Z"
       />
@@ -88,22 +95,22 @@ export function LogoLockup({ className, onLight }: BrandProps) {
           d="M301 529H223V674H83V529H14V436H83V104C83 19 128 -23 220 -23C252 -23 275 -20 301 -12V86C287 84 280 83 269 83C232 83 223 94 223 142V436H301Z"
         />
         <path
-          fill={lime}
+          fill="var(--logo-lime)"
           transform="translate(524.624 166) scale(0.116 -0.116)"
           d="M77 0H362C473 0 543 26 593 85C650 153 681 251 681 365C681 478 650 576 593 645C543 704 474 729 362 729H77ZM227 125V604H362C475 604 531 525 531 364C531 204 475 125 362 125Z"
         />
         <path
-          fill={lime}
+          fill="var(--logo-lime)"
           transform="translate(606.876 166) scale(0.116 -0.116)"
           d="M63 540V0H203V287C203 369 244 410 326 410C341 410 351 409 370 406V548C362 549 359 549 353 549C289 549 234 507 203 434V540Z"
         />
         <path
-          fill={lime}
+          fill="var(--logo-lime)"
           transform="translate(650.5 166) scale(0.116 -0.116)"
           d="M301 549C136 549 35 440 35 263C35 85 136 -23 302 -23C467 -23 569 85 569 259C569 442 470 549 301 549ZM302 436C379 436 429 367 429 261C429 160 377 90 302 90C226 90 175 159 175 263C175 367 226 436 302 436Z"
         />
         <path
-          fill={lime}
+          fill="var(--logo-lime)"
           transform="translate(719.876 166) scale(0.116 -0.116)"
           d="M198 540H58V-218H198V64C232 4 280 -24 348 -24C478 -24 574 98 574 262C574 338 552 414 516 464C480 515 413 549 348 549C280 549 232 520 198 460ZM316 432C387 432 434 364 434 260C434 161 386 93 316 93C245 93 198 161 198 262C198 364 245 432 316 432Z"
         />
