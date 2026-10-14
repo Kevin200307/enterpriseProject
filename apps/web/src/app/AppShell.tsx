@@ -1,4 +1,4 @@
-import { ArrowLeft, Bell, LogOut, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
+import { ArrowLeft, Bell, LogOut, PanelLeftClose, PanelLeftOpen, Search } from 'lucide-react'
 import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate, useNavigation } from 'react-router-dom'
 import { LogoLockup, LogoMark, LogoTile } from '@/components/brand/Logo'
@@ -75,6 +75,7 @@ export function AppShell() {
   const [indicatorReady, setIndicatorReady] = useState(false)
   const items = navFor(roles)
   const { tabs, overflow } = mobileNavFor(roles)
+  const customerDesktop = !isMobile && roles.length === 1 && roles[0] === 'CUSTOMER'
   // The persona's first bottom-bar tab is their home; only there does the header carry the
   // full lockup — every other screen trades it for the mark plus that screen's name.
   const homePath = tabs[0]?.to
@@ -224,11 +225,11 @@ export function AppShell() {
         'min-h-screen bg-background',
         // Animating the aside's width is far smoother (and better supported) than
         // interpolating grid-template-columns, so the column just tracks its content.
-        !isMobile && 'md:grid md:grid-cols-[auto_1fr]',
+        !isMobile && !customerDesktop && 'md:grid md:grid-cols-[auto_1fr]',
       )}
     >
       {/* Desktop sidebar — width is driven solely by the toggle, never by hover */}
-      {!isMobile && (
+      {!isMobile && !customerDesktop && (
         <aside
           className={cn(
             'sticky top-0 hidden h-screen flex-col bg-sidebar text-white md:flex',
@@ -297,6 +298,85 @@ export function AppShell() {
       )}
 
       <div className="relative flex min-h-screen min-w-0 flex-col bg-background">
+        {/* Customers use a top menubar on desktop; operational roles keep the sidebar above. */}
+        {customerDesktop && (
+          <header className="sticky top-0 z-20 hidden border-b border-border bg-background md:flex">
+            <div className="mx-auto flex h-16 w-full max-w-7xl items-center gap-8 px-6">
+              <Link to="/home" aria-label="SwiftDrop home" className="flex shrink-0 items-center">
+                <LogoLockup className="h-8 w-[114px] text-sidebar dark:text-white" onLight />
+              </Link>
+              <nav aria-label="Main" className="flex min-w-0 flex-1 items-center gap-1">
+                {items
+                  .filter((item) => !item.secondary && item.to !== '/account')
+                  .map(({ to, label, icon: Icon }) => (
+                    <NavLink
+                      key={to}
+                      to={to}
+                      end
+                      className={({ isActive }) =>
+                        cn(
+                          'flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium',
+                          isActive
+                            ? 'bg-secondary font-semibold text-foreground'
+                            : 'text-muted-foreground hover:bg-secondary hover:text-foreground',
+                        )
+                      }
+                    >
+                      <Icon className="h-4 w-4 shrink-0" aria-hidden />
+                      {label}
+                    </NavLink>
+                  ))}
+                <NavLink
+                  to="/track"
+                  end
+                  className={({ isActive }) =>
+                    cn(
+                      'flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium',
+                      isActive
+                        ? 'bg-secondary font-semibold text-foreground'
+                        : 'text-muted-foreground hover:bg-secondary hover:text-foreground',
+                    )
+                  }
+                >
+                  <Search className="h-4 w-4 shrink-0" aria-hidden />
+                  Track a parcel
+                </NavLink>
+              </nav>
+              <div className="flex shrink-0 items-center gap-1">
+                <Button variant="ghost" size="icon" asChild className="rounded-xl">
+                  <Link to="/account/notifications" aria-label="Notifications">
+                    <Bell
+                      className={cn(
+                        'h-5 w-5',
+                        pathname === '/account/notifications' && 'fill-current',
+                      )}
+                    />
+                  </Link>
+                </Button>
+                <Link
+                  to="/account"
+                  title={email}
+                  aria-label="Profile"
+                  className="flex items-center gap-2 rounded-xl p-1.5 hover:bg-secondary"
+                >
+                  <Avatar email={email} />
+                  <span className="hidden max-w-32 truncate text-sm lg:block">{email}</span>
+                </Link>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="rounded-xl text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                  aria-label="Sign out"
+                  title="Sign out"
+                  onClick={() => void logout()}
+                >
+                  <LogOut className="h-[18px] w-[18px]" />
+                </Button>
+              </div>
+            </div>
+          </header>
+        )}
+
         {/* Top header — mobile only; on desktop the rail carries the account row. */}
         {isMobile && (
           <header
