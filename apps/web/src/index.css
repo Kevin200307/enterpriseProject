@@ -67,6 +67,11 @@
       Roboto,
       sans-serif;
   }
+  /* Keep the app surface painted while the router and a lazy page are mounting. */
+  #root {
+    min-height: 100vh;
+    background-color: hsl(var(--background));
+  }
 
   /* Interactive elements settle rather than snap. Layout-affecting moves are declared per-component. */
   a,

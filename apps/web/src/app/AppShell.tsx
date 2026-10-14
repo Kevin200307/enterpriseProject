@@ -221,7 +221,7 @@ export function AppShell() {
   return (
     <div
       className={cn(
-        'min-h-screen',
+        'min-h-screen bg-background',
         // Animating the aside's width is far smoother (and better supported) than
         // interpolating grid-template-columns, so the column just tracks its content.
         !isMobile && 'md:grid md:grid-cols-[auto_1fr]',
@@ -296,7 +296,7 @@ export function AppShell() {
         </aside>
       )}
 
-      <div className="relative flex min-w-0 flex-col">
+      <div className="relative flex min-h-screen min-w-0 flex-col bg-background">
         {/* Top header — mobile only; on desktop the rail carries the account row. */}
         {isMobile && (
           <header
