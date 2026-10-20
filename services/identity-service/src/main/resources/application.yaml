@@ -1,3 +1,70 @@
+server:
+  port: 8080
+  shutdown: graceful
+
 spring:
   application:
     name: identity-service
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:${IDENTITY_DB_URL:jdbc:postgresql://localhost:5432/identity_db}}
+    username: ${SPRING_DATASOURCE_USERNAME:${IDENTITY_DB_USERNAME:identity_user}}
+    password: ${SPRING_DATASOURCE_PASSWORD:${IDENTITY_DB_PASSWORD:identity_pass}}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      pool-name: IdentityHikariPool
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+  data:
+    redis:
+      host: ${SPRING_DATA_REDIS_HOST:localhost}
+      port: ${SPRING_DATA_REDIS_PORT:6379}
+      password: ${SPRING_DATA_REDIS_PASSWORD:${REDIS_PASSWORD:}}
+      timeout: 2000ms
+
+# Application-specific security & identity configuration
+app:
+  security:
+    jwt:
+      issuer: ${IDENTITY_ISSUER_URI:http://identity-service:8080}
+      access-token-ttl-seconds: 900 # 15 minutes 
+      refresh-token-ttl-seconds: 604800 # 7 days
+      private-key-pem: ${IDENTITY_JWT_PRIVATE_KEY:}
+      public-key-pem: ${IDENTITY_JWT_PUBLIC_KEY:}
+    rate-limit:
+      max-failed-login-attempts: 5 # 5 wrong attempts rate-limited 
+      window-seconds: 60
+    admin:
+      bootstrap-email: ${ADMIN_BOOTSTRAP_EMAIL:admin@swiftdrop.lk}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when_authorized
+      probes:
+        enabled: true
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
