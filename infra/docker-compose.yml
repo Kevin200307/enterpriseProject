@@ -42,6 +42,16 @@ services:
       timeout: 5s
       retries: 5
 
+  mailpit:
+    image: axllent/mailpit:latest
+    restart: unless-stopped
+    networks:
+      - swiftdrop
+    ports:
+      - "${MAILPIT_SMTP_PORT:-1025}:1025" # SMTP server
+      - "${MAILPIT_UI_PORT:-8025}:8025"   # Web UI
+
+
   # ---------------------------------------------------------------------
   # Application services
   # ---------------------------------------------------------------------
@@ -133,9 +143,14 @@ services:
       SPRING_RABBITMQ_HOST: rabbitmq
       SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USERNAME}
       SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+      SPRING_MAIL_HOST: mailpit
+      SPRING_MAIL_PORT: 1025
+      WEB_BASE_URL: ${WEB_BASE_URL:-http://localhost:5173}
     depends_on:
       rabbitmq:
         condition: service_healthy
+      mailpit:
+        condition: service_started
 
   parcel-service:
     <<: *defaults
