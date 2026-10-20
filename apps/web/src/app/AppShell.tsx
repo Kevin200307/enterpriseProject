@@ -301,11 +301,11 @@ export function AppShell() {
         {/* Customers use a top menubar on desktop; operational roles keep the sidebar above. */}
         {customerDesktop && (
           <header className="sticky top-0 z-20 hidden border-b border-border bg-background md:flex">
-            <div className="mx-auto flex h-16 w-full max-w-7xl items-center gap-8 px-6">
+            <div className="mx-auto flex h-14 w-full max-w-5xl items-center gap-6 px-5">
               <Link to="/home" aria-label="SwiftDrop home" className="flex shrink-0 items-center">
-                <LogoLockup className="h-8 w-[114px] text-sidebar dark:text-white" onLight />
+                <LogoLockup className="h-7 w-[102px] text-sidebar dark:text-white" onLight />
               </Link>
-              <nav aria-label="Main" className="flex min-w-0 flex-1 items-center gap-1">
+              <nav aria-label="Main" className="flex min-w-0 flex-1 items-center gap-0.5">
                 {items
                   .filter((item) => !item.secondary && item.to !== '/account')
                   .map(({ to, label, icon: Icon }) => (
@@ -315,7 +315,7 @@ export function AppShell() {
                       end
                       className={({ isActive }) =>
                         cn(
-                          'flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium',
+                          'flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium lg:text-sm',
                           isActive
                             ? 'bg-secondary font-semibold text-foreground'
                             : 'text-muted-foreground hover:bg-secondary hover:text-foreground',
@@ -331,7 +331,7 @@ export function AppShell() {
                   end
                   className={({ isActive }) =>
                     cn(
-                      'flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium',
+                      'flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium lg:text-sm',
                       isActive
                         ? 'bg-secondary font-semibold text-foreground'
                         : 'text-muted-foreground hover:bg-secondary hover:text-foreground',
@@ -342,12 +342,17 @@ export function AppShell() {
                   Track a parcel
                 </NavLink>
               </nav>
-              <div className="flex shrink-0 items-center gap-1">
-                <Button variant="ghost" size="icon" asChild className="rounded-xl">
+              <div className="flex shrink-0 items-center gap-0.5">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  asChild
+                  className="h-9 w-9 rounded-lg text-muted-foreground"
+                >
                   <Link to="/account/notifications" aria-label="Notifications">
                     <Bell
                       className={cn(
-                        'h-5 w-5',
+                        'h-[18px] w-[18px]',
                         pathname === '/account/notifications' && 'fill-current',
                       )}
                     />
@@ -357,15 +362,14 @@ export function AppShell() {
                   to="/account"
                   title={email}
                   aria-label="Profile"
-                  className="flex items-center gap-2 rounded-xl p-1.5 hover:bg-secondary"
+                  className="max-w-36 rounded-lg px-2 py-1.5 text-xs text-muted-foreground hover:bg-secondary hover:text-foreground lg:max-w-44 lg:text-sm"
                 >
-                  <Avatar email={email} />
-                  <span className="hidden max-w-32 truncate text-sm lg:block">{email}</span>
+                  <span className="block truncate">{email}</span>
                 </Link>
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="rounded-xl text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                  className="h-9 w-9 rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                   aria-label="Sign out"
                   title="Sign out"
                   onClick={() => void logout()}

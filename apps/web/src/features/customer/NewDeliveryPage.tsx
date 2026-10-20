@@ -154,9 +154,9 @@ export function NewDeliveryPage({ merchant = false }: { merchant?: boolean }) {
           })(e)
         }}
         noValidate
-        className="grid gap-6 lg:grid-cols-[1fr_320px]"
+        className="grid gap-6 lg:grid-cols-3"
       >
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-6 lg:contents">
           <Card>
             <CardHeader className="flex-row items-center justify-between">
               <CardTitle>Pickup</CardTitle>
@@ -252,7 +252,7 @@ export function NewDeliveryPage({ merchant = false }: { merchant?: boolean }) {
           </Card>
         </div>
 
-        <div className="flex flex-col gap-4 lg:sticky lg:top-4 lg:self-start">
+        <div className="flex flex-col gap-4 lg:col-span-3 lg:grid lg:grid-cols-[1fr_320px] lg:items-start">
           <EstimatePanel
             ready={isReady}
             loading={isReady && (!settled || estimate.isFetching)}

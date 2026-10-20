@@ -18,6 +18,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { formatDate } from '@/lib/format'
 import { STATUS_META, type ParcelStatus } from '@/lib/status'
 import { cn } from '@/lib/cn'
+import { useMobile } from '@/hooks/useMobile'
 
 const FILTERABLE = Object.keys(STATUS_META) as ParcelStatus[]
 
@@ -29,6 +30,7 @@ export function DeliveriesPage() {
   const to = params.get('to') ?? ''
   const page = Math.max(0, Number(params.get('page')) || 0)
   const filtered = status.length > 0 || !!from || !!to
+  const isMobile = useMobile()
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [draftStatus, setDraftStatus] = useState<string[]>(status)
   const [draftFrom, setDraftFrom] = useState(from)
@@ -73,6 +75,75 @@ export function DeliveriesPage() {
     setParams(new URLSearchParams())
   }
 
+  const filterContent = (
+    <div className="flex flex-col gap-4">
+      <fieldset className="flex flex-wrap gap-2">
+        <legend className="sr-only">Status</legend>
+        {FILTERABLE.map((s) => {
+          const on = draftStatus.includes(s)
+          return (
+            <button
+              key={s}
+              type="button"
+              aria-pressed={on}
+              onClick={() => toggleStatus(s)}
+              className={cn(
+                'rounded-full border px-3 py-1 text-xs font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                on ? 'border-primary bg-primary text-primary-foreground' : 'hover:bg-accent',
+              )}
+            >
+              {STATUS_META[s].label}
+            </button>
+          )
+        })}
+      </fieldset>
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-[minmax(0,12rem)_minmax(0,12rem)_auto] md:items-end">
+        <div className="min-w-0 flex flex-col gap-1.5">
+          <Label htmlFor="filter-from" className="text-xs">
+            From
+          </Label>
+          <DatePicker
+            id="filter-from"
+            value={draftFrom}
+            max={draftTo || undefined}
+            onChange={setDraftFrom}
+          />
+        </div>
+        <div className="min-w-0 flex flex-col gap-1.5">
+          <Label htmlFor="filter-to" className="text-xs">
+            To
+          </Label>
+          <DatePicker
+            id="filter-to"
+            value={draftTo}
+            min={draftFrom || undefined}
+            onChange={setDraftTo}
+          />
+        </div>
+        <div className="col-span-2 mt-1 grid grid-cols-2 gap-3 md:col-span-1">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={!draftStatus.length && !draftFrom && !draftTo}
+            className="w-full"
+            onClick={clearFilters}
+          >
+            Clear filters
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            className="w-full bg-black text-white hover:bg-black/90 hover:text-white active:!bg-black active:!text-white"
+            onClick={applyFilters}
+          >
+            Apply filters
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
@@ -96,80 +167,32 @@ export function DeliveriesPage() {
         }
       />
 
-      <Dialog
-        open={filtersOpen}
-        onOpenChange={openFilters}
-        title="Filter deliveries"
-        description="Narrow your deliveries by status or date."
-        side="bottom"
-      >
-        <div className="flex flex-col gap-4">
-          <fieldset className="flex flex-wrap gap-2">
-            <legend className="sr-only">Status</legend>
-            {FILTERABLE.map((s) => {
-              const on = draftStatus.includes(s)
-              return (
-                <button
-                  key={s}
-                  type="button"
-                  aria-pressed={on}
-                    onClick={() => toggleStatus(s)}
-                  className={cn(
-                    'rounded-full border px-3 py-1 text-xs font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                    on ? 'border-primary bg-primary text-primary-foreground' : 'hover:bg-accent',
-                  )}
-                >
-                  {STATUS_META[s].label}
-                </button>
-              )
-            })}
-          </fieldset>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="min-w-0 flex flex-col gap-1.5">
-              <Label htmlFor="filter-from" className="text-xs">
-                From
-              </Label>
-              <DatePicker
-                id="filter-from"
-                value={draftFrom}
-                max={draftTo || undefined}
-                onChange={setDraftFrom}
-              />
-            </div>
-            <div className="min-w-0 flex flex-col gap-1.5">
-              <Label htmlFor="filter-to" className="text-xs">
-                To
-              </Label>
-              <DatePicker
-                id="filter-to"
-                value={draftTo}
-                min={draftFrom || undefined}
-                onChange={setDraftTo}
-              />
-            </div>
-            <div className="col-span-2 mt-1 grid grid-cols-2 gap-3">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={!draftStatus.length && !draftFrom && !draftTo}
-                className="w-full"
-                onClick={clearFilters}
-              >
-                Clear filters
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                className="w-full bg-black text-white hover:bg-black/90 hover:text-white active:!bg-black active:!text-white"
-                onClick={applyFilters}
-              >
-                Apply filters
-              </Button>
-            </div>
+      {!isMobile && filtersOpen && (
+        <section
+          aria-label="Filter deliveries"
+          className="rounded-2xl border bg-card p-4 shadow-sm"
+        >
+          <div className="mb-3">
+            <h2 className="text-sm font-semibold">Filter deliveries</h2>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Narrow your deliveries by status or date.
+            </p>
           </div>
-        </div>
-      </Dialog>
+          {filterContent}
+        </section>
+      )}
+
+      {isMobile && (
+        <Dialog
+          open={filtersOpen}
+          onOpenChange={openFilters}
+          title="Filter deliveries"
+          description="Narrow your deliveries by status or date."
+          side="bottom"
+        >
+          {filterContent}
+        </Dialog>
+      )}
 
       {list.isPending ? (
         <div className="flex flex-col gap-3" aria-busy="true">

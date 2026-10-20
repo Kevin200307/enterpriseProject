@@ -27,7 +27,7 @@ export function TrackLookupPage() {
   }
 
   return (
-    <div className="mx-auto flex max-w-md flex-col gap-6">
+    <div className="mx-auto flex max-w-3xl flex-col gap-6 px-2">
       <PageHeader title="Track a parcel" description="Enter the tracking number you were given." />
       <form onSubmit={submit} noValidate className="flex flex-col gap-3">
         <label htmlFor="tn" className="text-sm font-medium">
@@ -85,7 +85,7 @@ function ActiveDeliveries() {
   return (
     <section className="flex flex-col gap-3">
       <h2 className="text-lg font-semibold tracking-tight">On the way</h2>
-      <ul className="flex flex-col gap-3">
+      <ul className="grid gap-3 md:grid-cols-2">
         {active.map((p) => (
           <li key={p.id}>
             {/* Straight into tracking, which is what the screen is for — not the booking detail. */}
