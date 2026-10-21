@@ -1,5 +1,7 @@
 server:
   port: ${SERVER_PORT:8080}
+  netty:
+    idle-timeout: 10m
 
 management:
   endpoints:
@@ -39,6 +41,15 @@ spring:
             connect-timeout: 2000
             response-timeout: 10s
           routes:
+            - id: tracking-websocket
+              uri: ${TRACKING_WEBSOCKET_URL:ws://tracking-service:8080}
+              predicates:
+                - Path=/ws,/ws/**
+                - Header=Upgrade,(?i)websocket
+            - id: tracking-sockjs
+              uri: ${gateway.services.tracking}
+              predicates:
+                - Path=/ws,/ws/**
             - id: identity-api
               uri: ${gateway.services.identity}
               predicates:

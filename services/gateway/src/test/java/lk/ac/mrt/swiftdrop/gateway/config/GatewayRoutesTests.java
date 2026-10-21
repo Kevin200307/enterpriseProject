@@ -34,6 +34,8 @@ class GatewayRoutesTests {
 	void declaresExactlyTheExpectedApiRoutes() {
 		assertThat(routes).isNotNull();
 		assertThat(routes.keySet()).containsExactlyInAnyOrder(
+				"tracking-websocket",
+				"tracking-sockjs",
 				"identity-api",
 				"parcel-api",
 				"pricing-api",
@@ -42,6 +44,26 @@ class GatewayRoutesTests {
 				"tracking-api",
 				"notification-api",
 				"assistant-api");
+	}
+
+	@Test
+	void proxiesWebSocketAndSockJsPathsWithoutHttpFallbackFilters() {
+		RouteDefinition route = routes.get("tracking-websocket");
+
+		assertThat(route).isNotNull();
+		assertThat(route.getUri()).isEqualTo(URI.create("ws://tracking-service:8080"));
+		assertThat(pathPatterns(route)).containsExactlyInAnyOrder("/ws", "/ws/**");
+		assertThat(route.getPredicates()).anySatisfy(predicate -> {
+			assertThat(predicate.getName()).isEqualTo("Header");
+			assertThat(predicate.getArgs()).containsValue("Upgrade").containsValue("(?i)websocket");
+		});
+		assertThat(route.getFilters()).isEmpty();
+
+		RouteDefinition sockJsRoute = routes.get("tracking-sockjs");
+		assertThat(sockJsRoute).isNotNull();
+		assertThat(sockJsRoute.getUri()).isEqualTo(URI.create("http://tracking-service:8080"));
+		assertThat(pathPatterns(sockJsRoute)).containsExactlyInAnyOrder("/ws", "/ws/**");
+		assertThat(sockJsRoute.getFilters()).isEmpty();
 	}
 
 	@Test
@@ -67,7 +89,7 @@ class GatewayRoutesTests {
 				.collect(Collectors.toSet());
 
 		assertThat(allConfiguredPaths)
-				.allMatch(path -> path.startsWith("/api/v1/"))
+				.allMatch(path -> path.startsWith("/api/v1/") || path.startsWith("/ws"))
 				.noneMatch(path -> path.startsWith("/actuator"));
 	}
 

@@ -109,6 +109,15 @@ class SecurityConfigTests {
 	}
 
 	@Test
+	void websocketAndSockJsHandshakePathsArePublic() {
+		client.get()
+				.uri("/ws/info")
+				.exchange()
+				.expectStatus().value(status ->
+						org.assertj.core.api.Assertions.assertThat(status).isNotEqualTo(401));
+	}
+
+	@Test
 	void broaderTrackingSurfaceRemainsProtected() {
 		client.get()
 				.uri("/api/v1/tracking/SD-123/events")
