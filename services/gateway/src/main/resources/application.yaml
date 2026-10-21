@@ -21,34 +21,90 @@ spring:
               uri: ${gateway.services.identity}
               predicates:
                 - Path=/api/v1/auth/**,/api/v1/users/**
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: identityService
+                    fallbackUri: forward:/internal/gateway-fallback
             - id: parcel-api
               uri: ${gateway.services.parcel}
               predicates:
                 - Path=/api/v1/parcels/**
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: parcelService
+                    fallbackUri: forward:/internal/gateway-fallback
             - id: pricing-api
               uri: ${gateway.services.pricing}
               predicates:
                 - Path=/api/v1/pricing/**
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: pricingService
+                    fallbackUri: forward:/internal/gateway-fallback
             - id: dispatch-api
               uri: ${gateway.services.dispatch}
               predicates:
                 - Path=/api/v1/dispatch/**,/api/v1/couriers/**
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: dispatchService
+                    fallbackUri: forward:/internal/gateway-fallback
             - id: merchant-api
               uri: ${gateway.services.merchant}
               predicates:
                 - Path=/api/v1/merchants/**
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: merchantService
+                    fallbackUri: forward:/internal/gateway-fallback
             - id: tracking-api
               uri: ${gateway.services.tracking}
               predicates:
                 - Path=/api/v1/tracking/**
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: trackingService
+                    fallbackUri: forward:/internal/gateway-fallback
             - id: notification-api
               uri: ${gateway.services.notification}
               predicates:
                 - Path=/api/v1/notifications/**
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: notificationService
+                    fallbackUri: forward:/internal/gateway-fallback
             - id: assistant-api
               uri: ${gateway.services.ai-assistant}
               predicates:
                 - Path=/api/v1/assistant/**
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: assistantService
+                    fallbackUri: forward:/internal/gateway-fallback
+
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        sliding-window-type: count-based
+        sliding-window-size: 20
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        permitted-number-of-calls-in-half-open-state: 3
+        wait-duration-in-open-state: 30s
+  timelimiter:
+    configs:
+      default:
+        timeout-duration: 10s
+        cancel-running-future: true
 
 gateway:
   services:

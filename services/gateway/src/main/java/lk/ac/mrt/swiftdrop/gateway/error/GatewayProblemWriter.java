@@ -16,6 +16,7 @@ import java.util.Map;
 import java.util.Objects;
 
 import lk.ac.mrt.swiftdrop.contracts.error.ErrorCode;
+import lk.ac.mrt.swiftdrop.gateway.filter.RequestIdFilter;
 import reactor.core.publisher.Mono;
 import tools.jackson.databind.ObjectMapper;
 
@@ -76,7 +77,7 @@ public final class GatewayProblemWriter {
 		problem.put(TITLE, errorCode.title());
 		problem.put(STATUS, errorCode.httpStatus());
 		problem.put(DETAIL, safeDetail);
-		problem.put(INSTANCE, exchange.getRequest().getPath().value());
+		problem.put(INSTANCE, originalRequestPath(exchange));
 		problem.put(ERROR_CODE, errorCode.name());
 		problem.put(TRACE_ID, usableTraceId(traceId));
 		problem.put(TIMESTAMP, Instant.now().toString());
@@ -102,5 +103,10 @@ public final class GatewayProblemWriter {
 
 	private String usableTraceId(String traceId) {
 		return traceId == null || traceId.isBlank() ? UNKNOWN_TRACE_ID : traceId;
+	}
+
+	private String originalRequestPath(ServerWebExchange exchange) {
+		Object originalPath = exchange.getAttribute(RequestIdFilter.ORIGINAL_REQUEST_PATH_ATTRIBUTE);
+		return originalPath instanceof String path ? path : exchange.getRequest().getPath().value();
 	}
 }

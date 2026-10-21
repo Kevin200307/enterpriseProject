@@ -71,6 +71,18 @@ class GatewayRoutesTests {
 				.noneMatch(path -> path.startsWith("/actuator"));
 	}
 
+	@Test
+	void givesEveryServiceAnIndependentCircuitBreaker() {
+		assertCircuitBreaker("identity-api", "identityService");
+		assertCircuitBreaker("parcel-api", "parcelService");
+		assertCircuitBreaker("pricing-api", "pricingService");
+		assertCircuitBreaker("dispatch-api", "dispatchService");
+		assertCircuitBreaker("merchant-api", "merchantService");
+		assertCircuitBreaker("tracking-api", "trackingService");
+		assertCircuitBreaker("notification-api", "notificationService");
+		assertCircuitBreaker("assistant-api", "assistantService");
+	}
+
 	private void assertRoute(String routeId, String expectedUri, String... expectedPaths) {
 		RouteDefinition route = routes.get(routeId);
 		assertThat(route).as("route %s", routeId).isNotNull();
@@ -86,5 +98,15 @@ class GatewayRoutesTests {
 				.map(Map.Entry::getValue)
 				.flatMap(value -> Arrays.stream(value.split(",")))
 				.collect(Collectors.toSet());
+	}
+
+	private void assertCircuitBreaker(String routeId, String expectedName) {
+		RouteDefinition route = routes.get(routeId);
+		assertThat(route.getFilters()).singleElement().satisfies(filter -> {
+			assertThat(filter.getName()).isEqualTo("CircuitBreaker");
+			assertThat(filter.getArgs())
+					.containsEntry("name", expectedName)
+					.containsEntry("fallbackUri", "forward:/internal/gateway-fallback");
+		});
 	}
 }

@@ -21,6 +21,8 @@ public final class RequestIdFilter implements GlobalFilter, Ordered {
 
 	public static final String REQUEST_ID_HEADER = "X-Request-Id";
 	public static final String REQUEST_ID_ATTRIBUTE = RequestIdFilter.class.getName() + ".requestId";
+	public static final String ORIGINAL_REQUEST_PATH_ATTRIBUTE =
+			RequestIdFilter.class.getName() + ".originalRequestPath";
 
 	private static final int MAX_REQUEST_ID_LENGTH = 128;
 	private static final Pattern VALID_REQUEST_ID =
@@ -30,6 +32,9 @@ public final class RequestIdFilter implements GlobalFilter, Ordered {
 	public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
 		String requestId = resolveRequestId(exchange);
 		exchange.getAttributes().put(REQUEST_ID_ATTRIBUTE, requestId);
+		exchange.getAttributes().put(
+				ORIGINAL_REQUEST_PATH_ATTRIBUTE,
+				exchange.getRequest().getPath().value());
 
 		ServerHttpRequest canonicalRequest = exchange.getRequest().mutate()
 				.headers(headers -> headers.set(REQUEST_ID_HEADER, requestId))
