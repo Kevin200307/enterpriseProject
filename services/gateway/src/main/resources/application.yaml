@@ -1,6 +1,23 @@
 server:
   port: ${SERVER_PORT:8080}
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-components: always
+      show-details: never
+      status:
+        order: down,out-of-service,degraded,up,unknown
+        http-mapping:
+          degraded: 200
+  health:
+    redis:
+      enabled: false
+
 spring:
   application:
     name: gateway
