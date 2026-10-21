@@ -41,6 +41,54 @@ spring:
             connect-timeout: 2000
             response-timeout: 10s
           routes:
+            - id: identity-openapi
+              uri: ${gateway.services.identity}
+              predicates:
+                - Path=/docs/services/identity/v3/api-docs
+              filters:
+                - SetPath=/v3/api-docs
+            - id: parcel-openapi
+              uri: ${gateway.services.parcel}
+              predicates:
+                - Path=/docs/services/parcel/v3/api-docs
+              filters:
+                - SetPath=/v3/api-docs
+            - id: pricing-openapi
+              uri: ${gateway.services.pricing}
+              predicates:
+                - Path=/docs/services/pricing/v3/api-docs
+              filters:
+                - SetPath=/v3/api-docs
+            - id: dispatch-openapi
+              uri: ${gateway.services.dispatch}
+              predicates:
+                - Path=/docs/services/dispatch/v3/api-docs
+              filters:
+                - SetPath=/v3/api-docs
+            - id: merchant-openapi
+              uri: ${gateway.services.merchant}
+              predicates:
+                - Path=/docs/services/merchant/v3/api-docs
+              filters:
+                - SetPath=/v3/api-docs
+            - id: tracking-openapi
+              uri: ${gateway.services.tracking}
+              predicates:
+                - Path=/docs/services/tracking/v3/api-docs
+              filters:
+                - SetPath=/v3/api-docs
+            - id: notification-openapi
+              uri: ${gateway.services.notification}
+              predicates:
+                - Path=/docs/services/notification/v3/api-docs
+              filters:
+                - SetPath=/v3/api-docs
+            - id: assistant-openapi
+              uri: ${gateway.services.ai-assistant}
+              predicates:
+                - Path=/docs/services/assistant/v3/api-docs
+              filters:
+                - SetPath=/v3/api-docs
             - id: tracking-sse
               uri: ${gateway.services.tracking}
               predicates:
@@ -147,6 +195,28 @@ resilience4j:
       default:
         timeout-duration: 10s
         cancel-running-future: true
+
+springdoc:
+  swagger-ui:
+    path: /docs
+    disable-swagger-default-url: true
+    urls:
+      - name: Identity Service
+        url: /docs/services/identity/v3/api-docs
+      - name: Parcel Service
+        url: /docs/services/parcel/v3/api-docs
+      - name: Pricing Service
+        url: /docs/services/pricing/v3/api-docs
+      - name: Dispatch Service
+        url: /docs/services/dispatch/v3/api-docs
+      - name: Merchant Service
+        url: /docs/services/merchant/v3/api-docs
+      - name: Tracking Service
+        url: /docs/services/tracking/v3/api-docs
+      - name: Notification Service
+        url: /docs/services/notification/v3/api-docs
+      - name: AI Assistant Service
+        url: /docs/services/assistant/v3/api-docs
 
 gateway:
   browser:

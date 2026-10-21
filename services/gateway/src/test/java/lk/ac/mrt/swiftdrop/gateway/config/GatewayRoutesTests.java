@@ -34,6 +34,14 @@ class GatewayRoutesTests {
 	void declaresExactlyTheExpectedApiRoutes() {
 		assertThat(routes).isNotNull();
 		assertThat(routes.keySet()).containsExactlyInAnyOrder(
+				"identity-openapi",
+				"parcel-openapi",
+				"pricing-openapi",
+				"dispatch-openapi",
+				"merchant-openapi",
+				"tracking-openapi",
+				"notification-openapi",
+				"assistant-openapi",
 				"tracking-sse",
 				"tracking-websocket",
 				"tracking-sockjs",
@@ -45,6 +53,18 @@ class GatewayRoutesTests {
 				"tracking-api",
 				"notification-api",
 				"assistant-api");
+	}
+
+	@Test
+	void proxiesEveryServiceOpenApiDocumentThroughABrowserSafePath() {
+		assertOpenApiRoute("identity-openapi", "http://identity-service:8080", "identity");
+		assertOpenApiRoute("parcel-openapi", "http://parcel-service:8080", "parcel");
+		assertOpenApiRoute("pricing-openapi", "http://pricing-service:8080", "pricing");
+		assertOpenApiRoute("dispatch-openapi", "http://dispatch-service:8080", "dispatch");
+		assertOpenApiRoute("merchant-openapi", "http://merchant-service:8080", "merchant");
+		assertOpenApiRoute("tracking-openapi", "http://tracking-service:8080", "tracking");
+		assertOpenApiRoute("notification-openapi", "http://notification-service:8080", "notification");
+		assertOpenApiRoute("assistant-openapi", "http://ai-assistant-service:8080", "assistant");
 	}
 
 	@Test
@@ -105,7 +125,9 @@ class GatewayRoutesTests {
 				.collect(Collectors.toSet());
 
 		assertThat(allConfiguredPaths)
-				.allMatch(path -> path.startsWith("/api/v1/") || path.startsWith("/ws"))
+				.allMatch(path -> path.startsWith("/api/v1/")
+						|| path.startsWith("/ws")
+						|| path.startsWith("/docs/services/"))
 				.noneMatch(path -> path.startsWith("/actuator"));
 	}
 
@@ -145,6 +167,18 @@ class GatewayRoutesTests {
 			assertThat(filter.getArgs())
 					.containsEntry("name", expectedName)
 					.containsEntry("fallbackUri", "forward:/internal/gateway-fallback");
+		});
+	}
+
+	private void assertOpenApiRoute(String routeId, String expectedUri, String serviceName) {
+		RouteDefinition route = routes.get(routeId);
+		assertThat(route).isNotNull();
+		assertThat(route.getUri()).isEqualTo(URI.create(expectedUri));
+		assertThat(pathPatterns(route))
+				.containsExactly("/docs/services/" + serviceName + "/v3/api-docs");
+		assertThat(route.getFilters()).singleElement().satisfies(filter -> {
+			assertThat(filter.getName()).isEqualTo("SetPath");
+			assertThat(filter.getArgs()).containsValue("/v3/api-docs");
 		});
 	}
 }
