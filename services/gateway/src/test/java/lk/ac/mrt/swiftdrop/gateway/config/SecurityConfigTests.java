@@ -88,6 +88,21 @@ class SecurityConfigTests {
 	}
 
 	@Test
+	void authenticatedUnknownRouteReturnsNormalizedProblem() {
+		client.mutateWith(mockJwt().jwt(jwt -> jwt.subject("user-123")))
+				.get()
+				.uri("/missing")
+				.header("X-Request-Id", "missing-route")
+				.exchange()
+				.expectStatus().isNotFound()
+				.expectHeader().contentType(MediaType.APPLICATION_PROBLEM_JSON)
+				.expectBody()
+				.jsonPath("$.errorCode").isEqualTo("RESOURCE_NOT_FOUND")
+				.jsonPath("$.traceId").isEqualTo("missing-route")
+				.jsonPath("$.instance").isEqualTo("/missing");
+	}
+
+	@Test
 	void authAndExactPublicTrackingGetAreAnonymous() {
 		assertAnonymousRequestReachesUpstream(HttpMethod.POST, "/api/v1/auth/login");
 		assertAnonymousRequestReachesUpstream(HttpMethod.GET, "/api/v1/tracking/SD-123");
