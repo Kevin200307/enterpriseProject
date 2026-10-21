@@ -18,7 +18,9 @@ import org.springframework.validation.annotation.Validated;
  */
 @Validated
 @ConfigurationProperties(prefix = "gateway")
-public record GatewayProperties(@NotNull @Valid Services services) {
+public record GatewayProperties(
+		@NotNull @Valid Services services,
+		@NotNull @Valid Browser browser) {
 
 	public record Services(
 			@NotNull URI identity,
@@ -29,5 +31,8 @@ public record GatewayProperties(@NotNull @Valid Services services) {
 			@NotNull URI tracking,
 			@NotNull URI notification,
 			@NotNull URI aiAssistant) {
+	}
+
+	public record Browser(@NotNull URI origin) {
 	}
 }

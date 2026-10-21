@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.AccessDeniedException;
@@ -120,6 +121,61 @@ class SecurityConfigTests {
 				.exchange()
 				.expectStatus().value(status ->
 						org.assertj.core.api.Assertions.assertThat(status).isNotEqualTo(401));
+	}
+
+	@Test
+	void allowsConfiguredOriginPreflightWithExplicitPolicy() {
+		client.options()
+				.uri("http://localhost/api/v1/parcels")
+				.header(HttpHeaders.ORIGIN, "http://localhost:5173")
+				.header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "POST")
+				.header(
+						HttpHeaders.ACCESS_CONTROL_REQUEST_HEADERS,
+						"authorization,content-type,x-request-id")
+				.exchange()
+				.expectStatus().isOk()
+				.expectHeader().valueEquals(
+						HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN,
+						"http://localhost:5173")
+				.expectHeader().valueEquals(
+						HttpHeaders.ACCESS_CONTROL_ALLOW_CREDENTIALS,
+						"true")
+				.expectHeader().value(
+						HttpHeaders.ACCESS_CONTROL_ALLOW_METHODS,
+						value -> org.assertj.core.api.Assertions.assertThat(value).contains("POST"))
+				.expectHeader().value(
+						HttpHeaders.ACCESS_CONTROL_ALLOW_HEADERS,
+						value -> org.assertj.core.api.Assertions.assertThat(value.toLowerCase())
+								.contains("authorization", "content-type", "x-request-id"));
+	}
+
+	@Test
+	void rejectsUnconfiguredOriginPreflight() {
+		client.options()
+				.uri("http://localhost/api/v1/parcels")
+				.header(HttpHeaders.ORIGIN, "https://attacker.example")
+				.header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "GET")
+				.exchange()
+				.expectStatus().isForbidden()
+				.expectHeader().doesNotExist(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN);
+	}
+
+	@Test
+	void writesBrowserSecurityHeaders() {
+		client.get()
+				.uri("https://localhost/v3/api-docs")
+				.exchange()
+				.expectStatus().isOk()
+				.expectHeader().valueEquals("X-Content-Type-Options", "nosniff")
+				.expectHeader().valueEquals("X-Frame-Options", "DENY")
+				.expectHeader().valueEquals("Referrer-Policy", "no-referrer")
+				.expectHeader().valueEquals(
+						"Strict-Transport-Security",
+						"max-age=31536000 ; includeSubDomains")
+				.expectHeader().value(
+						"Content-Security-Policy",
+						value -> org.assertj.core.api.Assertions.assertThat(value)
+								.contains("default-src 'self'", "frame-ancestors 'none'"));
 	}
 
 	@Test

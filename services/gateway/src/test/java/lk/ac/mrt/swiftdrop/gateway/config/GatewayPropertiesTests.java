@@ -12,6 +12,7 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 class GatewayPropertiesTests {
 
 	private static final String[] VALID_SERVICE_PROPERTIES = {
+			"gateway.browser.origin=http://localhost:5173",
 			"gateway.services.identity=http://identity:8080",
 			"gateway.services.parcel=http://parcel:8080",
 			"gateway.services.pricing=http://pricing:8080",
@@ -31,6 +32,8 @@ class GatewayPropertiesTests {
 			assertThat(context).hasNotFailed();
 
 			GatewayProperties.Services services = context.getBean(GatewayProperties.class).services();
+			assertThat(context.getBean(GatewayProperties.class).browser().origin())
+					.isEqualTo(URI.create("http://localhost:5173"));
 			assertThat(services.identity()).isEqualTo(URI.create("http://identity:8080"));
 			assertThat(services.parcel()).isEqualTo(URI.create("http://parcel:8080"));
 			assertThat(services.pricing()).isEqualTo(URI.create("http://pricing:8080"));

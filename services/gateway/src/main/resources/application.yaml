@@ -112,6 +112,8 @@ resilience4j:
         cancel-running-future: true
 
 gateway:
+  browser:
+    origin: ${WEB_ORIGIN:http://localhost:5173}
   services:
     identity: ${IDENTITY_SERVICE_URL:http://identity-service:8080}
     parcel: ${PARCEL_SERVICE_URL:http://parcel-service:8080}
