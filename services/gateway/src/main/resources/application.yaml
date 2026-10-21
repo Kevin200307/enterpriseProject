@@ -1,3 +1,29 @@
+server:
+  port: ${SERVER_PORT:8080}
+
 spring:
   application:
     name: gateway
+  data:
+    redis:
+      host: ${SPRING_DATA_REDIS_HOST:redis}
+      port: ${SPRING_DATA_REDIS_PORT:6379}
+      password: ${SPRING_DATA_REDIS_PASSWORD:${REDIS_PASSWORD:}}
+  cloud:
+    gateway:
+      server:
+        webflux:
+          httpclient:
+            connect-timeout: 2000
+            response-timeout: 10s
+
+gateway:
+  services:
+    identity: ${IDENTITY_SERVICE_URL:http://identity-service:8080}
+    parcel: ${PARCEL_SERVICE_URL:http://parcel-service:8080}
+    pricing: ${PRICING_SERVICE_URL:http://pricing-service:8080}
+    dispatch: ${DISPATCH_SERVICE_URL:http://dispatch-service:8080}
+    merchant: ${MERCHANT_SERVICE_URL:http://merchant-service:8080}
+    tracking: ${TRACKING_SERVICE_URL:http://tracking-service:8080}
+    notification: ${NOTIFICATION_SERVICE_URL:http://notification-service:8080}
+    ai-assistant: ${AI_ASSISTANT_SERVICE_URL:http://ai-assistant-service:8080}
