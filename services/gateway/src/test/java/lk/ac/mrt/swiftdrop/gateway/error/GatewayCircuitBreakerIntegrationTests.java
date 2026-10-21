@@ -21,7 +21,9 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(
+		webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+		properties = "spring.main.allow-bean-definition-overriding=true")
 @Import(GatewayCircuitBreakerIntegrationTests.TestSecurityConfiguration.class)
 class GatewayCircuitBreakerIntegrationTests {
 
@@ -43,7 +45,7 @@ class GatewayCircuitBreakerIntegrationTests {
 	static class TestSecurityConfiguration {
 
 		@Bean
-		SecurityWebFilterChain testSecurityWebFilterChain(ServerHttpSecurity http) {
+		SecurityWebFilterChain gatewaySecurityWebFilterChain(ServerHttpSecurity http) {
 			return http
 					.csrf(ServerHttpSecurity.CsrfSpec::disable)
 					.authorizeExchange(exchanges -> exchanges.anyExchange().permitAll())

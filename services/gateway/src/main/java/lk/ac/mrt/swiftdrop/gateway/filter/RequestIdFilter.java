@@ -6,18 +6,18 @@ import java.util.regex.Pattern;
 
 import reactor.core.publisher.Mono;
 
-import org.springframework.cloud.gateway.filter.GatewayFilterChain;
-import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Component;
+import org.springframework.web.server.WebFilter;
+import org.springframework.web.server.WebFilterChain;
 import org.springframework.web.server.ServerWebExchange;
 
 /**
  * Establishes one trusted correlation ID before any other gateway filter runs.
  */
 @Component
-public final class RequestIdFilter implements GlobalFilter, Ordered {
+public final class RequestIdFilter implements WebFilter, Ordered {
 
 	public static final String REQUEST_ID_HEADER = "X-Request-Id";
 	public static final String REQUEST_ID_ATTRIBUTE = RequestIdFilter.class.getName() + ".requestId";
@@ -29,7 +29,7 @@ public final class RequestIdFilter implements GlobalFilter, Ordered {
 			Pattern.compile("[A-Za-z0-9][A-Za-z0-9._:-]{0," + (MAX_REQUEST_ID_LENGTH - 1) + "}");
 
 	@Override
-	public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+	public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
 		String requestId = resolveRequestId(exchange);
 		exchange.getAttributes().put(REQUEST_ID_ATTRIBUTE, requestId);
 		exchange.getAttributes().put(
