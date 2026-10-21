@@ -8,8 +8,10 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import lk.ac.mrt.swiftdrop.identity_service.api.dto.LoginRequest;
 import lk.ac.mrt.swiftdrop.identity_service.api.dto.RegisterRequest;
 import lk.ac.mrt.swiftdrop.identity_service.api.dto.UserResponse;
+import lk.ac.mrt.swiftdrop.identity_service.service.AuthService;
 import lk.ac.mrt.swiftdrop.identity_service.service.UserService;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
@@ -31,9 +33,11 @@ import java.net.URI;
 public class AuthController {
 
     private final UserService userService;
+    private final AuthService authService;
 
-    public AuthController(UserService userService) {
+    public AuthController(UserService userService, AuthService authService) {
         this.userService = userService;
+        this.authService = authService;
     }
 
     @PostMapping(path = "/register", consumes = MediaType.APPLICATION_JSON_VALUE)
@@ -62,5 +66,42 @@ public class AuthController {
         UserResponse response = userService.register(request);
         URI location = URI.create("/api/v1/users/" + response.id());
         return ResponseEntity.created(location).body(response);
+    }
+
+    @PostMapping(path = "/login", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Authenticate user with email and password",
+            description = "Validates user credentials with anti-timing attack defenses and rate limiting. Returns the authenticated user profile."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Successfully authenticated",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = UserResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Validation failed (RFC 7807)",
+                    content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Invalid credentials (RFC 7807)",
+                    content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "Account suspended (RFC 7807)",
+                    content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class))
+            ),
+            @ApiResponse(
+                    responseCode = "429",
+                    description = "Rate limit exceeded (RFC 7807)",
+                    content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class))
+            )
+    })
+    public ResponseEntity<UserResponse> login(@Valid @RequestBody LoginRequest request) {
+        UserResponse response = authService.login(request);
+        return ResponseEntity.ok(response);
     }
 }
