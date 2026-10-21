@@ -16,6 +16,39 @@ spring:
           httpclient:
             connect-timeout: 2000
             response-timeout: 10s
+          routes:
+            - id: identity-api
+              uri: ${gateway.services.identity}
+              predicates:
+                - Path=/api/v1/auth/**,/api/v1/users/**
+            - id: parcel-api
+              uri: ${gateway.services.parcel}
+              predicates:
+                - Path=/api/v1/parcels/**
+            - id: pricing-api
+              uri: ${gateway.services.pricing}
+              predicates:
+                - Path=/api/v1/pricing/**
+            - id: dispatch-api
+              uri: ${gateway.services.dispatch}
+              predicates:
+                - Path=/api/v1/dispatch/**,/api/v1/couriers/**
+            - id: merchant-api
+              uri: ${gateway.services.merchant}
+              predicates:
+                - Path=/api/v1/merchants/**
+            - id: tracking-api
+              uri: ${gateway.services.tracking}
+              predicates:
+                - Path=/api/v1/tracking/**
+            - id: notification-api
+              uri: ${gateway.services.notification}
+              predicates:
+                - Path=/api/v1/notifications/**
+            - id: assistant-api
+              uri: ${gateway.services.ai-assistant}
+              predicates:
+                - Path=/api/v1/assistant/**
 
 gateway:
   services:
