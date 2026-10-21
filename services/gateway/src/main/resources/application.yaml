@@ -221,6 +221,8 @@ springdoc:
 gateway:
   browser:
     origin: ${WEB_ORIGIN:http://localhost:5173}
+  dashboard:
+    timeout: ${DASHBOARD_UPSTREAM_TIMEOUT:2s}
   services:
     identity: ${IDENTITY_SERVICE_URL:http://identity-service:8080}
     parcel: ${PARCEL_SERVICE_URL:http://parcel-service:8080}
