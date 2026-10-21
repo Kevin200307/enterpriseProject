@@ -41,6 +41,15 @@ spring:
             connect-timeout: 2000
             response-timeout: 10s
           routes:
+            - id: tracking-sse
+              uri: ${gateway.services.tracking}
+              predicates:
+                - Path=/api/v1/tracking/public/*/stream
+                - Method=GET
+              filters:
+                - AddResponseHeader=X-Accel-Buffering,no
+              metadata:
+                response-timeout: -1
             - id: tracking-websocket
               uri: ${TRACKING_WEBSOCKET_URL:ws://tracking-service:8080}
               predicates:

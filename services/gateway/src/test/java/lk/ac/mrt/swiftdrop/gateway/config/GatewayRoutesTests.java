@@ -34,6 +34,7 @@ class GatewayRoutesTests {
 	void declaresExactlyTheExpectedApiRoutes() {
 		assertThat(routes).isNotNull();
 		assertThat(routes.keySet()).containsExactlyInAnyOrder(
+				"tracking-sse",
 				"tracking-websocket",
 				"tracking-sockjs",
 				"identity-api",
@@ -44,6 +45,21 @@ class GatewayRoutesTests {
 				"tracking-api",
 				"notification-api",
 				"assistant-api");
+	}
+
+	@Test
+	void streamsTrackingEventsWithoutFallbackOrResponseTimeout() {
+		RouteDefinition route = routes.get("tracking-sse");
+
+		assertThat(route).isNotNull();
+		assertThat(route.getUri()).isEqualTo(URI.create("http://tracking-service:8080"));
+		assertThat(pathPatterns(route))
+				.containsExactly("/api/v1/tracking/public/*/stream");
+		assertThat(route.getMetadata()).containsEntry("response-timeout", -1);
+		assertThat(route.getFilters()).singleElement().satisfies(filter -> {
+			assertThat(filter.getName()).isEqualTo("AddResponseHeader");
+			assertThat(filter.getArgs()).containsValue("X-Accel-Buffering").containsValue("no");
+		});
 	}
 
 	@Test

@@ -69,6 +69,7 @@ public class SecurityConfig {
 				.authorizeExchange(exchanges -> exchanges
 						.pathMatchers("/api/v1/auth/**").permitAll()
 						.pathMatchers(HttpMethod.GET, "/api/v1/tracking/*").permitAll()
+						.pathMatchers(HttpMethod.GET, "/api/v1/tracking/public/*/stream").permitAll()
 						.pathMatchers("/ws", "/ws/**").permitAll()
 						.pathMatchers(
 								"/docs", "/docs/**",

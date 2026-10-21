@@ -118,6 +118,15 @@ class SecurityConfigTests {
 	}
 
 	@Test
+	void trackingEventStreamIsPublic() {
+		client.get()
+				.uri("/api/v1/tracking/public/SD-123/stream")
+				.exchange()
+				.expectStatus().value(status ->
+						org.assertj.core.api.Assertions.assertThat(status).isNotEqualTo(401));
+	}
+
+	@Test
 	void broaderTrackingSurfaceRemainsProtected() {
 		client.get()
 				.uri("/api/v1/tracking/SD-123/events")
