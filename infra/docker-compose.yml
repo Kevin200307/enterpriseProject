@@ -51,14 +51,34 @@ services:
       context: ..
       dockerfile: services/gateway/Dockerfile
     ports:
-      - "${GATEWAY_HOST_PORT}:8080"
+      - "${GATEWAY_HOST_PORT:-8081}:8080"
     environment:
       JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=75
+      SERVER_PORT: 8080
       SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
       SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD}
+      IDENTITY_JWKS_URI: ${IDENTITY_JWKS_URI:-http://identity-service:8080/.well-known/jwks.json}
+      IDENTITY_SERVICE_URL: ${IDENTITY_SERVICE_URL:-http://identity-service:8080}
+      PARCEL_SERVICE_URL: ${PARCEL_SERVICE_URL:-http://parcel-service:8080}
+      PRICING_SERVICE_URL: ${PRICING_SERVICE_URL:-http://pricing-service:8080}
+      DISPATCH_SERVICE_URL: ${DISPATCH_SERVICE_URL:-http://dispatch-service:8080}
+      MERCHANT_SERVICE_URL: ${MERCHANT_SERVICE_URL:-http://merchant-service:8080}
+      TRACKING_SERVICE_URL: ${TRACKING_SERVICE_URL:-http://tracking-service:8080}
+      TRACKING_WEBSOCKET_URL: ${TRACKING_WEBSOCKET_URL:-ws://tracking-service:8080}
+      NOTIFICATION_SERVICE_URL: ${NOTIFICATION_SERVICE_URL:-http://notification-service:8080}
+      AI_ASSISTANT_SERVICE_URL: ${AI_ASSISTANT_SERVICE_URL:-http://ai-assistant-service:8080}
+      WEB_ORIGIN: ${WEB_ORIGIN:-http://localhost:5173}
+      DASHBOARD_UPSTREAM_TIMEOUT: ${DASHBOARD_UPSTREAM_TIMEOUT:-2s}
     depends_on:
       redis:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 3s
+      start_period: 30s
+      retries: 3
 
   ai-assistant-service:
     <<: *defaults
