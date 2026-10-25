@@ -14,6 +14,9 @@ public final class Queues {
     public static final String TRACKING_PARCEL_STATUS_CHANGED =
             "tracking." + RoutingKeys.PARCEL_STATUS_CHANGED_V1;
 
+    public static final String TRACKING_PARCEL_SNAPSHOT =
+            "tracking." + RoutingKeys.PARCEL_TRACKING_SNAPSHOT_V1;
+
     public static final String MERCHANT_WEBHOOK_PARCEL_STATUS_CHANGED =
             "merchant-webhook." + RoutingKeys.PARCEL_STATUS_CHANGED_V1;
 

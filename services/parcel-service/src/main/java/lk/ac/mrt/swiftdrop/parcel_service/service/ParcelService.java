@@ -5,7 +5,9 @@ import java.time.*;
 import java.util.*;
 import lk.ac.mrt.swiftdrop.contracts.domain.ParcelStatus;
 import lk.ac.mrt.swiftdrop.contracts.error.ErrorCode;
+import lk.ac.mrt.swiftdrop.contracts.domain.TrackingNumber;
 import lk.ac.mrt.swiftdrop.contracts.events.ParcelStatusChangedV1;
+import lk.ac.mrt.swiftdrop.contracts.events.ParcelTrackingSnapshotV1;
 import lk.ac.mrt.swiftdrop.parcel_service.api.*;
 import lk.ac.mrt.swiftdrop.parcel_service.api.ParcelDtos.*;
 import lk.ac.mrt.swiftdrop.parcel_service.domain.*;
@@ -26,6 +28,30 @@ public class ParcelService {
     private final JsonMapper mapper;
     private final Clock clock;
     private final TrackingNumberGenerator trackingNumbers;
+
+    public ParcelTrackingSnapshotV1 getSnapshotByTrackingNumber(String trackingNumber) {
+        if (!TrackingNumber.isValid(trackingNumber)) {
+            throw new ParcelException(ErrorCode.VALIDATION_FAILED, "Invalid tracking number format");
+        }
+        Parcel p = parcels.findByTrackingNumber(trackingNumber)
+                .orElseThrow(() -> new ParcelException(ErrorCode.RESOURCE_NOT_FOUND, "Parcel was not found"));
+        var historyList = history.findByParcelIdOrderByOccurredAtAsc(p.getId());
+        List<ParcelTrackingSnapshotV1.SnapshotTimelineEntryV1> timeline = historyList.stream()
+                .map(h -> new ParcelTrackingSnapshotV1.SnapshotTimelineEntryV1(h.getToStatus(), h.getOccurredAt(), h.getNote()))
+                .toList();
+        String courierFirstName = p.getAssigneeId() != null ? "Courier" : null;
+        return new ParcelTrackingSnapshotV1(
+                p.getId(),
+                p.getTrackingNumber(),
+                p.getStatus(),
+                p.getPickup().getCity(),
+                p.getDropoff().getCity(),
+                courierFirstName,
+                null,
+                p.getUpdatedAt() != null ? p.getUpdatedAt() : p.getCreatedAt(),
+                timeline
+        );
+    }
 
     @Transactional
     public ParcelView book(BookingRequest request, String key, Actor actor) {

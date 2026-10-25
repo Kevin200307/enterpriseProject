@@ -1,0 +1,29 @@
+{
+  "eventId": "4a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d",
+  "eventType": "parcel.tracking.snapshot",
+  "version": 1,
+  "occurredAt": "2026-09-29T10:15:30Z",
+  "producer": "parcel-service",
+  "payload": {
+    "parcelId": "b6a4e1d2-5c3f-4a8b-9e7d-1f2a3b4c5d6e",
+    "trackingNumber": "SD-4F7K2Q9M",
+    "status": "IN_TRANSIT",
+    "originCity": "Colombo",
+    "destinationCity": "Kandy",
+    "courierFirstName": "Kasun",
+    "eta": "2026-10-10T09:00:00Z",
+    "updatedAt": "2026-09-29T10:15:30Z",
+    "timeline": [
+      {
+        "status": "CREATED",
+        "occurredAt": "2026-09-29T08:00:00Z",
+        "note": "Parcel created"
+      },
+      {
+        "status": "IN_TRANSIT",
+        "occurredAt": "2026-09-29T10:15:30Z",
+        "note": "Departed hub"
+      }
+    ]
+  }
+}
