@@ -19,7 +19,7 @@ public class ParcelServiceClient {
 
     private final RestClient restClient;
 
-    public ParcelServiceClient(TrackingProperties properties, RestClient.Builder builder) {
+    public ParcelServiceClient(TrackingProperties properties, @org.springframework.beans.factory.annotation.Autowired(required = false) RestClient.Builder builder) {
         TrackingProperties.ParcelServiceProperties p = properties.parcelService();
         String baseUrl = p != null && p.url() != null ? p.url() : "http://parcel-service:8080";
         Duration connectTimeout = p != null && p.connectTimeout() != null ? p.connectTimeout() : Duration.ofSeconds(2);
@@ -30,7 +30,7 @@ public class ParcelServiceClient {
         requestFactory.setConnectTimeout((int) connectTimeout.toMillis());
         requestFactory.setReadTimeout((int) readTimeout.toMillis());
 
-        RestClient.Builder clientBuilder = builder
+        RestClient.Builder clientBuilder = (builder != null ? builder : RestClient.builder())
                 .baseUrl(baseUrl)
                 .requestFactory(requestFactory);
 

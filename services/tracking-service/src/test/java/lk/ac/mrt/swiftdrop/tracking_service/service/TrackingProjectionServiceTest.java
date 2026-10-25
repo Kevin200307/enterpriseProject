@@ -36,13 +36,16 @@ class TrackingProjectionServiceTest {
     @Mock
     private ParcelServiceClient parcelClient;
 
+    @Mock
+    private lk.ac.mrt.swiftdrop.tracking_service.realtime.TrackingRealtimePublisher realtimePublisher;
+
     private DefaultTrackingProjectionService projectionService;
 
     private final String tn = "SD-4F7K2Q9M";
 
     @BeforeEach
     void setUp() {
-        projectionService = new DefaultTrackingProjectionService(redisRepository, parcelClient);
+        projectionService = new DefaultTrackingProjectionService(redisRepository, parcelClient, realtimePublisher);
     }
 
     @Test

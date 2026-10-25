@@ -12,6 +12,7 @@ import lk.ac.mrt.swiftdrop.contracts.events.ParcelTrackingSnapshotV1;
 import lk.ac.mrt.swiftdrop.tracking_service.client.ParcelServiceClient;
 import lk.ac.mrt.swiftdrop.tracking_service.domain.TrackingProjection;
 import lk.ac.mrt.swiftdrop.tracking_service.dto.TimelineEntry;
+import lk.ac.mrt.swiftdrop.tracking_service.realtime.TrackingRealtimePublisher;
 import lk.ac.mrt.swiftdrop.tracking_service.repository.RedisTrackingRepository;
 import lk.ac.mrt.swiftdrop.tracking_service.service.TrackingProjectionService;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +26,7 @@ public class DefaultTrackingProjectionService implements TrackingProjectionServi
 
     private final RedisTrackingRepository redisRepository;
     private final ParcelServiceClient parcelClient;
+    private final TrackingRealtimePublisher realtimePublisher;
 
     @Override
     public void applyStatusChanged(EventEnvelope<ParcelStatusChangedV1> envelope) {
@@ -43,30 +45,26 @@ public class DefaultTrackingProjectionService implements TrackingProjectionServi
         TrackingProjection base = existingOpt.orElseGet(() ->
                 parcelClient.fetchSnapshot(tn)
                         .map(this::fromSnapshot)
-                        .orElseGet(() -> new TrackingProjection(
-                                tn,
-                                newStatus,
-                                "Unknown",
-                                "Unknown",
-                                null,
-                                null,
-                                occurredAt,
-                                List.of()
-                        ))
+                        .orElse(null)
         );
 
-        // Out-of-order protection: older event does not regress current status
-        boolean isNewer = occurredAt.isAfter(base.updatedAt())
-                || (occurredAt.equals(base.updatedAt()) && envelope.eventId().compareTo(UUID_ZERO) > 0);
+        if (base == null) {
+            log.warn("Unable to find projection or backfill snapshot for {}; dropping status update", tn);
+            return;
+        }
 
-        ParcelStatus resolvedStatus = isNewer ? newStatus : base.status();
-        Instant resolvedUpdatedAt = isNewer ? occurredAt : base.updatedAt();
+        // Tie-breaking: older events cannot regress current status
+        boolean shouldAdvanceStatus = occurredAt.isAfter(base.updatedAt())
+                || (occurredAt.equals(base.updatedAt()) && envelope.eventId().compareTo(UUID_ZERO) >= 0);
 
-        // Update timeline
+        ParcelStatus resolvedStatus = shouldAdvanceStatus ? newStatus : base.status();
+        Instant resolvedUpdatedAt = shouldAdvanceStatus ? occurredAt : base.updatedAt();
+
         List<TimelineEntry> updatedTimeline = new ArrayList<>(base.timeline());
-        boolean duplicate = updatedTimeline.stream()
+        boolean alreadyInTimeline = updatedTimeline.stream()
                 .anyMatch(t -> t.status() == newStatus && t.occurredAt().equals(occurredAt));
-        if (!duplicate) {
+
+        if (!alreadyInTimeline) {
             updatedTimeline.add(new TimelineEntry(newStatus, occurredAt, null));
             updatedTimeline.sort(Comparator.comparing(TimelineEntry::occurredAt));
         }
@@ -84,6 +82,7 @@ public class DefaultTrackingProjectionService implements TrackingProjectionServi
 
         try {
             redisRepository.saveProjection(updated);
+            realtimePublisher.publishUpdate(updated.toPublicDto());
         } catch (Exception ex) {
             log.error("Failed to save projection for {} into Redis: {}", tn, ex.getMessage());
             throw ex;
@@ -95,6 +94,7 @@ public class DefaultTrackingProjectionService implements TrackingProjectionServi
         TrackingProjection projection = fromSnapshot(envelope.payload());
         try {
             redisRepository.saveProjection(projection);
+            realtimePublisher.publishUpdate(projection.toPublicDto());
         } catch (Exception ex) {
             log.error("Failed to save snapshot projection for {} to Redis: {}", projection.trackingNumber(), ex.getMessage());
             throw ex;
@@ -115,8 +115,8 @@ public class DefaultTrackingProjectionService implements TrackingProjectionServi
             return parcelClient.fetchSnapshot(trackingNumber).map(this::fromSnapshot);
         }
 
-        // Step 2: cold cache miss -> backfill from parcel-service
-        log.info("Cold cache miss for tracking number {}; backfilling from parcel-service", trackingNumber);
+        // Step 2: cold miss backfill
+        log.info("Cold cache miss for {}; backfilling from parcel-service", trackingNumber);
         Optional<ParcelTrackingSnapshotV1> snapshotOpt = parcelClient.fetchSnapshot(trackingNumber);
         if (snapshotOpt.isEmpty()) {
             return Optional.empty();
@@ -150,5 +150,5 @@ public class DefaultTrackingProjectionService implements TrackingProjectionServi
         );
     }
 
-    private static final java.util.UUID UUID_ZERO = new java.util.UUID(0L, 0L);
+    private static final java.util.UUID UUID_ZERO = new java.util.UUID(0, 0);
 }
