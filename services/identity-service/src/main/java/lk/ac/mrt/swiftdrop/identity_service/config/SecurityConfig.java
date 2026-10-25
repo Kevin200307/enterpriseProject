@@ -9,6 +9,8 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
+import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.web.servlet.HandlerExceptionResolver;
 
 /**
@@ -29,6 +31,11 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        var roles = new JwtGrantedAuthoritiesConverter();
+        roles.setAuthoritiesClaimName("roles");
+        roles.setAuthorityPrefix("ROLE_");
+        var converter = new JwtAuthenticationConverter();
+        converter.setJwtGrantedAuthoritiesConverter(roles);
         return http
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(AbstractHttpConfigurer::disable)
@@ -48,6 +55,7 @@ public class SecurityConfig {
                         .accessDeniedHandler((request, response, accessDeniedException) ->
                                 handlerExceptionResolver.resolveException(request, response, null, accessDeniedException))
                 )
+                .oauth2ResourceServer(oauth -> oauth.jwt(jwt -> jwt.jwtAuthenticationConverter(converter)))
                 .build();
     }
 }

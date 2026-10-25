@@ -42,6 +42,8 @@ app:
   security:
     jwt:
       issuer: ${IDENTITY_ISSUER_URI:http://identity-service:8080}
+      audience: ${JWT_AUDIENCE:swiftdrop}
+      key-id: ${IDENTITY_JWT_KEY_ID:swiftdrop-v1}
       access-token-ttl-seconds: 900 # 15 minutes 
       refresh-token-ttl-seconds: 604800 # 7 days
       private-key-pem: ${IDENTITY_JWT_PRIVATE_KEY:}

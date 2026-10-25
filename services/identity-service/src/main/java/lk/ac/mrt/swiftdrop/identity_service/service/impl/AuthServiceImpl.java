@@ -1,6 +1,7 @@
 package lk.ac.mrt.swiftdrop.identity_service.service.impl;
 
 import lk.ac.mrt.swiftdrop.identity_service.api.dto.LoginRequest;
+import lk.ac.mrt.swiftdrop.identity_service.api.dto.AuthResponse;
 import lk.ac.mrt.swiftdrop.identity_service.api.dto.UserResponse;
 import lk.ac.mrt.swiftdrop.identity_service.domain.User;
 import lk.ac.mrt.swiftdrop.identity_service.error.InvalidCredentialsException;
@@ -8,6 +9,7 @@ import lk.ac.mrt.swiftdrop.identity_service.error.UserSuspendedException;
 import lk.ac.mrt.swiftdrop.identity_service.repository.UserRepository;
 import lk.ac.mrt.swiftdrop.identity_service.service.AuthService;
 import lk.ac.mrt.swiftdrop.identity_service.service.RateLimiterService;
+import lk.ac.mrt.swiftdrop.identity_service.service.JwtTokenService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -36,15 +38,18 @@ public class AuthServiceImpl implements AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final RateLimiterService rateLimiterService;
+    private final JwtTokenService jwtTokenService;
 
     public AuthServiceImpl(
             UserRepository userRepository,
             PasswordEncoder passwordEncoder,
-            RateLimiterService rateLimiterService
+            RateLimiterService rateLimiterService,
+            JwtTokenService jwtTokenService
     ) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.rateLimiterService = rateLimiterService;
+        this.jwtTokenService = jwtTokenService;
     }
 
     @Override
@@ -95,9 +100,9 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public UserResponse login(LoginRequest request) {
+    public AuthResponse login(LoginRequest request) {
         User user = authenticate(request);
-        return UserResponse.fromEntity(user);
+        return new AuthResponse(jwtTokenService.createAccessToken(user), jwtTokenService.expiresIn(), UserResponse.fromEntity(user));
     }
 
     private String maskEmail(String email) {

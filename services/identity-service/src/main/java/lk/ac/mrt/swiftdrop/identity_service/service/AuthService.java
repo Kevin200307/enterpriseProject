@@ -1,7 +1,7 @@
 package lk.ac.mrt.swiftdrop.identity_service.service;
 
 import lk.ac.mrt.swiftdrop.identity_service.api.dto.LoginRequest;
-import lk.ac.mrt.swiftdrop.identity_service.api.dto.UserResponse;
+import lk.ac.mrt.swiftdrop.identity_service.api.dto.AuthResponse;
 import lk.ac.mrt.swiftdrop.identity_service.domain.User;
 
 /**
@@ -28,5 +28,5 @@ public interface AuthService {
      * @param request the login credentials
      * @return the authenticated user's profile
      */
-    UserResponse login(LoginRequest request);
+    AuthResponse login(LoginRequest request);
 }

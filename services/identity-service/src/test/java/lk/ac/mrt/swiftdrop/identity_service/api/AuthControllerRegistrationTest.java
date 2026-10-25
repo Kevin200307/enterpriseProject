@@ -19,6 +19,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Instant;
@@ -37,6 +38,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(controllers = AuthController.class)
 @Import({GlobalExceptionHandler.class, SecurityConfig.class})
 class AuthControllerRegistrationTest {
+    @MockitoBean
+    private JwtDecoder jwtDecoder;
 
     @Autowired
     private MockMvc mockMvc;

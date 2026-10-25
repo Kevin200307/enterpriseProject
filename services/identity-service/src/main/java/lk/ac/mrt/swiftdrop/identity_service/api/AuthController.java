@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lk.ac.mrt.swiftdrop.identity_service.api.dto.LoginRequest;
+import lk.ac.mrt.swiftdrop.identity_service.api.dto.AuthResponse;
 import lk.ac.mrt.swiftdrop.identity_service.api.dto.RegisterRequest;
 import lk.ac.mrt.swiftdrop.identity_service.api.dto.UserResponse;
 import lk.ac.mrt.swiftdrop.identity_service.service.AuthService;
@@ -100,8 +101,8 @@ public class AuthController {
                     content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class))
             )
     })
-    public ResponseEntity<UserResponse> login(@Valid @RequestBody LoginRequest request) {
-        UserResponse response = authService.login(request);
+    public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
+        AuthResponse response = authService.login(request);
         return ResponseEntity.ok(response);
     }
 }

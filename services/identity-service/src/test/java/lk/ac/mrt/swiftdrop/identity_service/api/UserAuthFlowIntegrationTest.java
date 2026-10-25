@@ -16,6 +16,8 @@ import lk.ac.mrt.swiftdrop.identity_service.error.RateLimitExceededException;
 import lk.ac.mrt.swiftdrop.identity_service.repository.RoleRepository;
 import lk.ac.mrt.swiftdrop.identity_service.repository.UserRepository;
 import lk.ac.mrt.swiftdrop.identity_service.service.RateLimiterService;
+import lk.ac.mrt.swiftdrop.identity_service.service.JwtTokenService;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 import lk.ac.mrt.swiftdrop.identity_service.service.impl.AuthServiceImpl;
 import lk.ac.mrt.swiftdrop.identity_service.service.impl.UserServiceImpl;
 import org.junit.jupiter.api.DisplayName;
@@ -84,6 +86,12 @@ class UserAuthFlowIntegrationTest {
     @MockitoBean
     private RateLimiterService rateLimiterService;
 
+    @MockitoBean
+    private JwtTokenService jwtTokenService;
+
+    @MockitoBean
+    private JwtDecoder jwtDecoder;
+
     @Test
     @DisplayName("Full Lifecycle: Register customer -> Login with BCrypt -> Get profile -> Update profile")
     void shouldCompleteFullRegistrationLoginAndProfileLifecycle() throws Exception {
@@ -136,15 +144,18 @@ class UserAuthFlowIntegrationTest {
                 .thenReturn(Optional.of(registeredUser));
 
         LoginRequest loginRequest = new LoginRequest("amandi.arangala@swiftdrop.lk", "StrongPassword123!");
+        when(jwtTokenService.createAccessToken(registeredUser)).thenReturn("signed-token");
+        when(jwtTokenService.expiresIn()).thenReturn(900L);
 
         mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(loginRequest)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(registeredUser.getId().toString()))
-                .andExpect(jsonPath("$.email").value("amandi.arangala@swiftdrop.lk"))
-                .andExpect(jsonPath("$.roles[0]").value("CUSTOMER"))
-                .andExpect(jsonPath("$.passwordHash").doesNotExist());
+                .andExpect(jsonPath("$.accessToken").value("signed-token"))
+                .andExpect(jsonPath("$.user.id").value(registeredUser.getId().toString()))
+                .andExpect(jsonPath("$.user.email").value("amandi.arangala@swiftdrop.lk"))
+                .andExpect(jsonPath("$.user.roles[0]").value("CUSTOMER"))
+                .andExpect(jsonPath("$.user.passwordHash").doesNotExist());
 
         verify(rateLimiterService).checkRateLimit("amandi.arangala@swiftdrop.lk");
         verify(rateLimiterService).resetAttempts("amandi.arangala@swiftdrop.lk");

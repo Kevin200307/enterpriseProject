@@ -5,6 +5,7 @@ import lk.ac.mrt.swiftdrop.contracts.domain.Role;
 import lk.ac.mrt.swiftdrop.contracts.error.ErrorCode;
 import lk.ac.mrt.swiftdrop.contracts.error.ProblemFields;
 import lk.ac.mrt.swiftdrop.identity_service.api.dto.LoginRequest;
+import lk.ac.mrt.swiftdrop.identity_service.api.dto.AuthResponse;
 import lk.ac.mrt.swiftdrop.identity_service.api.dto.UserResponse;
 import lk.ac.mrt.swiftdrop.identity_service.config.SecurityConfig;
 import lk.ac.mrt.swiftdrop.identity_service.domain.UserStatus;
@@ -23,6 +24,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 
 import java.time.Instant;
 import java.util.Set;
@@ -52,6 +54,9 @@ class AuthControllerLoginTest {
     @MockitoBean
     private AuthService authService;
 
+    @MockitoBean
+    private JwtDecoder jwtDecoder;
+
     @Test
     @DisplayName("POST /api/v1/auth/login - 200 OK with authenticated user profile")
     void shouldLoginSuccessfully() throws Exception {
@@ -70,17 +75,18 @@ class AuthControllerLoginTest {
                 Instant.now()
         );
 
-        when(authService.login(any(LoginRequest.class))).thenReturn(userResponse);
+        when(authService.login(any(LoginRequest.class))).thenReturn(new AuthResponse("signed-token", 900, userResponse));
 
         mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(userId.toString()))
-                .andExpect(jsonPath("$.email").value("amandi.arangala@swiftdrop.lk"))
-                .andExpect(jsonPath("$.fullName").value("Amandi Arangala"))
-                .andExpect(jsonPath("$.roles[0]").value("CUSTOMER"))
-                .andExpect(jsonPath("$.status").value("ACTIVE"));
+                .andExpect(jsonPath("$.accessToken").value("signed-token"))
+                .andExpect(jsonPath("$.tokenType").value("Bearer"))
+                .andExpect(jsonPath("$.expiresIn").value(900))
+                .andExpect(jsonPath("$.user.id").value(userId.toString()))
+                .andExpect(jsonPath("$.user.email").value("amandi.arangala@swiftdrop.lk"))
+                .andExpect(jsonPath("$.user.roles[0]").value("CUSTOMER"));
     }
 
     @Test

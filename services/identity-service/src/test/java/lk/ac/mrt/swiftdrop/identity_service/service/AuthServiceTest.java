@@ -2,7 +2,7 @@ package lk.ac.mrt.swiftdrop.identity_service.service;
 
 import lk.ac.mrt.swiftdrop.contracts.domain.Role;
 import lk.ac.mrt.swiftdrop.identity_service.api.dto.LoginRequest;
-import lk.ac.mrt.swiftdrop.identity_service.api.dto.UserResponse;
+import lk.ac.mrt.swiftdrop.identity_service.api.dto.AuthResponse;
 import lk.ac.mrt.swiftdrop.identity_service.domain.RoleEntity;
 import lk.ac.mrt.swiftdrop.identity_service.domain.User;
 import lk.ac.mrt.swiftdrop.identity_service.domain.UserStatus;
@@ -46,6 +46,9 @@ class AuthServiceTest {
 
     @Mock
     private RateLimiterService rateLimiterService;
+
+    @Mock
+    private JwtTokenService jwtTokenService;
 
     @InjectMocks
     private AuthServiceImpl authService;
@@ -96,12 +99,16 @@ class AuthServiceTest {
         when(passwordEncoder.matches("ValidPassword123!", activeUser.getPasswordHash()))
                 .thenReturn(true);
 
-        UserResponse response = authService.login(request);
+        when(jwtTokenService.createAccessToken(activeUser)).thenReturn("signed-token");
+        when(jwtTokenService.expiresIn()).thenReturn(900L);
+        AuthResponse response = authService.login(request);
 
         assertThat(response).isNotNull();
-        assertThat(response.id()).isEqualTo(activeUser.getId());
-        assertThat(response.email()).isEqualTo("amandi.arangala@swiftdrop.lk");
-        assertThat(response.roles()).contains(Role.CUSTOMER);
+        assertThat(response.accessToken()).isEqualTo("signed-token");
+        assertThat(response.expiresIn()).isEqualTo(900L);
+        assertThat(response.user().id()).isEqualTo(activeUser.getId());
+        assertThat(response.user().email()).isEqualTo("amandi.arangala@swiftdrop.lk");
+        assertThat(response.user().roles()).contains(Role.CUSTOMER);
         verify(rateLimiterService).resetAttempts("amandi.arangala@swiftdrop.lk");
     }
 
