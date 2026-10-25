@@ -18,6 +18,12 @@ spring:
     listener:
       simple:
         default-requeue-rejected: false
+        retry:
+          enabled: true
+          max-attempts: 3
+          initial-interval: 100ms
+          multiplier: 2.0
+          max-interval: 1000ms
   security:
     oauth2:
       resourceserver:
