@@ -30,7 +30,7 @@ class IdentityHeaderFilterTests {
 		ServerWebExchange exchange = authenticatedExchange(Map.of(
 				"sub", USER_ID,
 				"roles", List.of("MERCHANT", "CUSTOMER", "MERCHANT"),
-				"merchantId", MERCHANT_ID));
+				"merchant_id", MERCHANT_ID));
 		AtomicReference<ServerWebExchange> forwarded = new AtomicReference<>();
 
 		StepVerifier.create(filter.filter(exchange, filteredExchange -> {
@@ -82,7 +82,7 @@ class IdentityHeaderFilterTests {
 		ServerWebExchange exchange = authenticatedExchange(Map.of(
 				"sub", "not-a-uuid",
 				"roles", List.of("ADMIN", "FORGED_ROLE"),
-				"merchantId", "also-not-a-uuid"));
+				"merchant_id", "also-not-a-uuid"));
 		AtomicReference<ServerWebExchange> forwarded = new AtomicReference<>();
 
 		StepVerifier.create(filter.filter(exchange, filteredExchange -> {
