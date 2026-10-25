@@ -42,6 +42,16 @@ services:
       timeout: 5s
       retries: 5
 
+  mailpit:
+    image: axllent/mailpit:latest
+    restart: unless-stopped
+    networks:
+      - swiftdrop
+    ports:
+      - "${MAILPIT_SMTP_PORT:-1025}:1025" # SMTP server
+      - "${MAILPIT_UI_PORT:-8025}:8025"   # Web UI
+
+
   # ---------------------------------------------------------------------
   # Application services
   # ---------------------------------------------------------------------
@@ -51,14 +61,34 @@ services:
       context: ..
       dockerfile: services/gateway/Dockerfile
     ports:
-      - "${GATEWAY_HOST_PORT}:8080"
+      - "${GATEWAY_HOST_PORT:-8081}:8080"
     environment:
       JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=75
+      SERVER_PORT: 8080
       SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
       SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD}
+      IDENTITY_JWKS_URI: ${IDENTITY_JWKS_URI:-http://identity-service:8080/.well-known/jwks.json}
+      IDENTITY_SERVICE_URL: ${IDENTITY_SERVICE_URL:-http://identity-service:8080}
+      PARCEL_SERVICE_URL: ${PARCEL_SERVICE_URL:-http://parcel-service:8080}
+      PRICING_SERVICE_URL: ${PRICING_SERVICE_URL:-http://pricing-service:8080}
+      DISPATCH_SERVICE_URL: ${DISPATCH_SERVICE_URL:-http://dispatch-service:8080}
+      MERCHANT_SERVICE_URL: ${MERCHANT_SERVICE_URL:-http://merchant-service:8080}
+      TRACKING_SERVICE_URL: ${TRACKING_SERVICE_URL:-http://tracking-service:8080}
+      TRACKING_WEBSOCKET_URL: ${TRACKING_WEBSOCKET_URL:-ws://tracking-service:8080}
+      NOTIFICATION_SERVICE_URL: ${NOTIFICATION_SERVICE_URL:-http://notification-service:8080}
+      AI_ASSISTANT_SERVICE_URL: ${AI_ASSISTANT_SERVICE_URL:-http://ai-assistant-service:8080}
+      WEB_ORIGIN: ${WEB_ORIGIN:-http://localhost:5173}
+      DASHBOARD_UPSTREAM_TIMEOUT: ${DASHBOARD_UPSTREAM_TIMEOUT:-2s}
     depends_on:
       redis:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 3s
+      start_period: 30s
+      retries: 3
 
   ai-assistant-service:
     <<: *defaults
@@ -99,6 +129,12 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${IDENTITY_DB_PASSWORD}
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD}
+      IDENTITY_ISSUER_URI: ${IDENTITY_ISSUER_URI:-http://identity-service:8080}
+      IDENTITY_JWT_PRIVATE_KEY: ${IDENTITY_JWT_PRIVATE_KEY}
+      IDENTITY_JWT_PUBLIC_KEY: ${IDENTITY_JWT_PUBLIC_KEY}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      ADMIN_BOOTSTRAP_EMAIL: ${ADMIN_BOOTSTRAP_EMAIL:-admin@swiftdrop.lk}
     depends_on:
       redis:
         condition: service_healthy
@@ -133,9 +169,14 @@ services:
       SPRING_RABBITMQ_HOST: rabbitmq
       SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USERNAME}
       SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+      SPRING_MAIL_HOST: mailpit
+      SPRING_MAIL_PORT: 1025
+      WEB_BASE_URL: ${WEB_BASE_URL:-http://localhost:5173}
     depends_on:
       rabbitmq:
         condition: service_healthy
+      mailpit:
+        condition: service_started
 
   parcel-service:
     <<: *defaults
@@ -182,6 +223,23 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+
+  # Static SPA served by nginx. API_BASE_URL is the gateway URL as the *browser* sees it
+  # (host port), not the Compose DNS name. Add http://localhost:${WEB_HOST_PORT} to the
+  # gateway's WEB_ORIGIN (CORS) allow-list.
+  web:
+    <<: *defaults
+    mem_limit: 64m
+    build:
+      context: ../apps/web
+      dockerfile: Dockerfile
+    ports:
+      - "${WEB_HOST_PORT:-5174}:80"
+    environment:
+      API_BASE_URL: ${WEB_API_BASE_URL:-http://localhost:8081}
+      ASSISTANT_ENABLED: ${ASSISTANT_ENABLED:-true}
+    depends_on:
+      - gateway
 
 networks:
   swiftdrop:

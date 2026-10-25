@@ -1,3 +1,5 @@
 .env
 *.env
 !*.env.example
+services/gateway/gatewayplan.md
+services/gateway/commit steps.md

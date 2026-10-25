@@ -153,7 +153,8 @@ enterpriseProject/
     tracking-service/
     ai-assistant-service/
   infra/
-    docker/                  # Dockerfiles, compose, Mailpit, MinIO init
+    docker-compose.yml       # local service and infrastructure orchestration
+    .env.example             # non-secret local configuration template
     k8s/helm/swiftdrop/      # umbrella Helm chart
     observability/           # Grafana dashboards, Prometheus scrape
   packages/common/           # shared DTOs, error codes, event contracts (Java lib)
@@ -196,6 +197,72 @@ Core entities:
 - **notification-service** — consumes `parcel.status.changed`, sends email (and mock SMS), never logs full addresses/phones.
 - **ai-assistant-service** — chat UI backend; tools: `getParcelByTrackingNumber`, `estimateFee`, `listMyParcels` (user-scoped). MCP server exposing the same tools.
 
+## Gateway local operation
+
+The API gateway is the public entry point for the local stack. Compose maps host
+port `8081` to gateway container port `8080`.
+
+1. Copy `infra/.env.example` to `infra/.env` and replace every `change-me`
+   placeholder. Never commit `infra/.env`.
+2. Start Docker Desktop or another Docker engine.
+3. Build and start the gateway and its required Redis dependency:
+
+```bash
+docker compose --env-file infra/.env -f infra/docker-compose.yml up --build gateway
+```
+
+Useful local URLs:
+
+| Purpose | URL |
+|---|---|
+| Gateway health | `http://localhost:8081/actuator/health` |
+| Aggregated Swagger UI | `http://localhost:8081/docs` |
+| Versioned APIs | `http://localhost:8081/api/v1/**` |
+| Dashboard BFF | `http://localhost:8081/api/v1/dashboard` |
+
+The health response can be `DEGRADED` with HTTP 200 when an optional downstream
+service is unavailable. Redis is the gateway's only required startup dependency;
+API routes for unavailable services return an RFC 7807 response instead of
+preventing the gateway from starting.
+
+Gateway configuration is environment-based. Compose supplies safe internal DNS
+defaults for the service URLs, while `infra/.env.example` documents the values
+that developers may override:
+
+| Variable | Purpose / default |
+|---|---|
+| `GATEWAY_HOST_PORT` | Public host port; defaults to `8081` |
+| `REDIS_PASSWORD` | Password shared with the local Redis container; required |
+| `IDENTITY_JWKS_URI` | JWT verification keys from identity-service |
+| `IDENTITY_SERVICE_URL` | Identity API base URL |
+| `PARCEL_SERVICE_URL` | Parcel API base URL |
+| `PRICING_SERVICE_URL` | Pricing API base URL |
+| `DISPATCH_SERVICE_URL` | Dispatch API base URL |
+| `MERCHANT_SERVICE_URL` | Merchant API base URL |
+| `TRACKING_SERVICE_URL` | Tracking HTTP/SSE base URL |
+| `TRACKING_WEBSOCKET_URL` | Tracking WebSocket base URL |
+| `NOTIFICATION_SERVICE_URL` | Notification API base URL |
+| `AI_ASSISTANT_SERVICE_URL` | AI assistant API base URL |
+| `WEB_ORIGIN` | Exact browser origin allowed by CORS; defaults to `http://localhost:5173` |
+| `DASHBOARD_UPSTREAM_TIMEOUT` | Independent dashboard section timeout; defaults to `2s` |
+
+Run the gateway test suite from the repository root:
+
+```bash
+mvn -pl services/gateway -am test
+```
+
+Run the consolidated public-edge acceptance contract with:
+
+```bash
+mvn -pl services/gateway -am \
+  -Dtest=GatewayAcceptanceSuite \
+  -Dsurefire.failIfNoSpecifiedTests=false test
+```
+
+Docker is required only for the Redis-backed rate-limit acceptance scenario;
+JUnit skips that scenario when Docker is unavailable.
+
 ## Integration patterns (assignment requirement)
 
 | Flow | Pattern | Why |
@@ -234,7 +301,10 @@ Mobile-friendly tracking page is a first-class public route (responsive).
 
 ## Containers and Kubernetes
 
-**Local:** `docker-compose.yml` starts Postgres, Redis, RabbitMQ, MinIO, Mailpit, all 9 Java services, and the Nginx-served SPA. One command: `docker compose up --build`.
+**Local:** `infra/docker-compose.yml` starts Redis, RabbitMQ, and the nine Java
+services. Service databases use the external Neon connections configured in
+`infra/.env`. Run the stack with
+`docker compose --env-file infra/.env -f infra/docker-compose.yml up --build`.
 
 **K8s (bonus):** umbrella Helm chart `infra/k8s/helm/swiftdrop`:
 

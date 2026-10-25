@@ -1,0 +1,61 @@
+import { z } from 'zod'
+import { phoneSchema } from '@/features/auth/schemas'
+
+export const SIZES = [
+  { value: 'SMALL', label: 'Small', hint: 'Envelope / box up to 2 kg' },
+  { value: 'MEDIUM', label: 'Medium', hint: 'Shoebox to backpack' },
+  { value: 'LARGE', label: 'Large', hint: 'Bulky or heavy items' },
+] as const
+
+export const addressSchema = z.object({
+  contactName: z.string().trim().min(1, 'Contact name is required').max(100),
+  phone: phoneSchema,
+  line1: z.string().trim().min(1, 'Address line is required').max(200),
+  line2: z.string().trim().max(200).optional(),
+  city: z.string().trim().min(1, 'City is required').max(80),
+  postalCode: z.string().trim().min(1, 'Postal code is required').max(10),
+})
+export type AddressInput = z.infer<typeof addressSchema>
+
+export const WEIGHT_RE = /^\d+(\.\d{1,2})?$/
+
+/** weightKg stays a string in the form (text input) and is converted on submit. */
+export const bookingSchema = z.object({
+  pickup: addressSchema,
+  dropoff: addressSchema,
+  size: z.enum(['SMALL', 'MEDIUM', 'LARGE'], { error: 'Choose a parcel size' }),
+  weightKg: z
+    .string()
+    .refine(
+      (v) => WEIGHT_RE.test(v.trim()) && Number(v) > 0,
+      'Enter a weight above 0 (up to 2 decimals)',
+    ),
+  express: z.boolean(),
+})
+
+export type BookingForm = z.infer<typeof bookingSchema>
+
+export const emptyAddress = {
+  contactName: '',
+  phone: '+94',
+  line1: '',
+  line2: '',
+  city: '',
+  postalCode: '',
+}
+
+/** Size is left unset on purpose — the customer picks it rather than inheriting a guess. */
+export const bookingDefaults: Omit<BookingForm, 'size'> & Partial<Pick<BookingForm, 'size'>> = {
+  pickup: emptyAddress,
+  dropoff: emptyAddress,
+  weightKg: '',
+  express: false,
+}
+
+export const ADDRESS_FIELDS = ['contactName', 'phone', 'line1', 'line2', 'city', 'postalCode']
+export const BOOKING_FIELDS = [
+  ...['pickup', 'dropoff'].flatMap((p) => ADDRESS_FIELDS.map((f) => `${p}.${f}`)),
+  'size',
+  'weightKg',
+  'express',
+]
