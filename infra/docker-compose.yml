@@ -108,6 +108,8 @@ services:
     build:
       context: ..
       dockerfile: services/merchant-service/Dockerfile
+    ports:
+      - "8080:8080"
     environment:
       JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=75
       SPRING_DATASOURCE_URL: ${MERCHANT_DB_URL}
@@ -116,6 +118,8 @@ services:
       SPRING_RABBITMQ_HOST: rabbitmq
       SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USERNAME}
       SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+      IDENTITY_SERVICE_URL: ${IDENTITY_SERVICE_URL}
+      IDENTITY_JWKS_URI: ${IDENTITY_JWKS_URI}
     depends_on:
       rabbitmq:
         condition: service_healthy
