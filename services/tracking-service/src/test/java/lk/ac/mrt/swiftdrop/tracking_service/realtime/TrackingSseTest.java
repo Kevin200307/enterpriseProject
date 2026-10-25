@@ -1,7 +1,6 @@
 package lk.ac.mrt.swiftdrop.tracking_service.realtime;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
@@ -17,7 +16,6 @@ import lk.ac.mrt.swiftdrop.tracking_service.config.TrackingProperties;
 import lk.ac.mrt.swiftdrop.tracking_service.domain.TrackingProjection;
 import lk.ac.mrt.swiftdrop.tracking_service.dto.PublicTracking;
 import lk.ac.mrt.swiftdrop.tracking_service.dto.TimelineEntry;
-import lk.ac.mrt.swiftdrop.tracking_service.error.TrackingException;
 import lk.ac.mrt.swiftdrop.tracking_service.error.TrackingExceptionHandler;
 import lk.ac.mrt.swiftdrop.tracking_service.service.PrivateTrackingService;
 import lk.ac.mrt.swiftdrop.tracking_service.service.TrackingProjectionService;
@@ -30,7 +28,6 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 @WebMvcTest(controllers = TrackingController.class)

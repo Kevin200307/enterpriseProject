@@ -12,7 +12,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import lk.ac.mrt.swiftdrop.contracts.domain.ParcelStatus;
 import lk.ac.mrt.swiftdrop.tracking_service.config.TrackingSubscriptionInterceptor;
-import lk.ac.mrt.swiftdrop.tracking_service.config.WebSocketConfig;
 import lk.ac.mrt.swiftdrop.tracking_service.dto.PublicTracking;
 import lk.ac.mrt.swiftdrop.tracking_service.dto.TimelineEntry;
 import org.junit.jupiter.api.BeforeEach;

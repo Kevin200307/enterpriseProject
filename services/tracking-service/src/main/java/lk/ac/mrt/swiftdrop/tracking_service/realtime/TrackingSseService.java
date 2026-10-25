@@ -11,7 +11,6 @@ import lk.ac.mrt.swiftdrop.tracking_service.domain.TrackingProjection;
 import lk.ac.mrt.swiftdrop.tracking_service.dto.PublicTracking;
 import lk.ac.mrt.swiftdrop.tracking_service.error.TrackingException;
 import lk.ac.mrt.swiftdrop.tracking_service.service.TrackingProjectionService;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -20,13 +19,16 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class TrackingSseService {
 
     public static final long SSE_TIMEOUT_MS = 30 * 60 * 1000L; // 30 minutes maximum duration
     public static final int MAX_EMITTERS_PER_TRACKING_NUMBER = 50;
 
     private final TrackingProjectionService projectionService;
+
+    public TrackingSseService(@org.springframework.context.annotation.Lazy TrackingProjectionService projectionService) {
+        this.projectionService = projectionService;
+    }
 
     // Per-tracking-number registry of active emitters
     private final Map<String, Set<SseEmitter>> activeSinks = new ConcurrentHashMap<>();

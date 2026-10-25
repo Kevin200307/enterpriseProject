@@ -12,21 +12,41 @@ import lk.ac.mrt.swiftdrop.contracts.events.ParcelTrackingSnapshotV1;
 import lk.ac.mrt.swiftdrop.tracking_service.client.ParcelServiceClient;
 import lk.ac.mrt.swiftdrop.tracking_service.domain.TrackingProjection;
 import lk.ac.mrt.swiftdrop.tracking_service.dto.TimelineEntry;
+import lk.ac.mrt.swiftdrop.tracking_service.metrics.TrackingMetrics;
 import lk.ac.mrt.swiftdrop.tracking_service.realtime.TrackingRealtimePublisher;
 import lk.ac.mrt.swiftdrop.tracking_service.repository.RedisTrackingRepository;
 import lk.ac.mrt.swiftdrop.tracking_service.service.TrackingProjectionService;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class DefaultTrackingProjectionService implements TrackingProjectionService {
 
     private final RedisTrackingRepository redisRepository;
     private final ParcelServiceClient parcelClient;
     private final TrackingRealtimePublisher realtimePublisher;
+    private final TrackingMetrics metrics;
+
+    @Autowired
+    public DefaultTrackingProjectionService(
+            RedisTrackingRepository redisRepository,
+            ParcelServiceClient parcelClient,
+            TrackingRealtimePublisher realtimePublisher,
+            @Autowired(required = false) TrackingMetrics metrics) {
+        this.redisRepository = redisRepository;
+        this.parcelClient = parcelClient;
+        this.realtimePublisher = realtimePublisher;
+        this.metrics = metrics;
+    }
+
+    public DefaultTrackingProjectionService(
+            RedisTrackingRepository redisRepository,
+            ParcelServiceClient parcelClient,
+            TrackingRealtimePublisher realtimePublisher) {
+        this(redisRepository, parcelClient, realtimePublisher, null);
+    }
 
     @Override
     public void applyStatusChanged(EventEnvelope<ParcelStatusChangedV1> envelope) {
@@ -57,6 +77,10 @@ public class DefaultTrackingProjectionService implements TrackingProjectionServi
         boolean shouldAdvanceStatus = occurredAt.isAfter(base.updatedAt())
                 || (occurredAt.equals(base.updatedAt()) && envelope.eventId().compareTo(UUID_ZERO) >= 0);
 
+        if (!shouldAdvanceStatus && metrics != null) {
+            metrics.incrementOutOfOrder();
+        }
+
         ParcelStatus resolvedStatus = shouldAdvanceStatus ? newStatus : base.status();
         Instant resolvedUpdatedAt = shouldAdvanceStatus ? occurredAt : base.updatedAt();
 
@@ -82,7 +106,9 @@ public class DefaultTrackingProjectionService implements TrackingProjectionServi
 
         try {
             redisRepository.saveProjection(updated);
-            realtimePublisher.publishUpdate(updated.toPublicDto());
+            if (realtimePublisher != null) {
+                realtimePublisher.publishUpdate(updated.toPublicDto());
+            }
         } catch (Exception ex) {
             log.error("Failed to save projection for {} into Redis: {}", tn, ex.getMessage());
             throw ex;
@@ -94,7 +120,9 @@ public class DefaultTrackingProjectionService implements TrackingProjectionServi
         TrackingProjection projection = fromSnapshot(envelope.payload());
         try {
             redisRepository.saveProjection(projection);
-            realtimePublisher.publishUpdate(projection.toPublicDto());
+            if (realtimePublisher != null) {
+                realtimePublisher.publishUpdate(projection.toPublicDto());
+            }
         } catch (Exception ex) {
             log.error("Failed to save snapshot projection for {} to Redis: {}", projection.trackingNumber(), ex.getMessage());
             throw ex;
@@ -112,6 +140,9 @@ public class DefaultTrackingProjectionService implements TrackingProjectionServi
         } catch (Exception ex) {
             log.warn("Redis outage detected during getProjection for {}; degrading to direct parcel-service read: {}",
                     trackingNumber, ex.getMessage());
+            if (metrics != null) {
+                metrics.incrementRedisFallback();
+            }
             return parcelClient.fetchSnapshot(trackingNumber).map(this::fromSnapshot);
         }
 
