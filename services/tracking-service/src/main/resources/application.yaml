@@ -1,3 +1,51 @@
+server:
+  port: ${SERVER_PORT:8080}
+
 spring:
   application:
     name: tracking-service
+  data:
+    redis:
+      host: ${SPRING_DATA_REDIS_HOST:localhost}
+      port: ${SPRING_DATA_REDIS_PORT:6379}
+      password: ${SPRING_DATA_REDIS_PASSWORD:}
+      timeout: 2000ms
+  rabbitmq:
+    host: ${SPRING_RABBITMQ_HOST:localhost}
+    port: ${SPRING_RABBITMQ_PORT:5672}
+    username: ${SPRING_RABBITMQ_USERNAME:guest}
+    password: ${SPRING_RABBITMQ_PASSWORD:guest}
+    listener:
+      simple:
+        default-requeue-rejected: false
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: ${JWT_JWK_SET_URI:${IDENTITY_JWKS_URI:http://identity-service:8080/.well-known/jwks.json}}
+          issuer-uri: ${JWT_ISSUER_URI:${IDENTITY_ISSUER_URI:http://identity-service:8080}}
+          audiences: ${JWT_AUDIENCE:swiftdrop}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
+
+tracking:
+  parcel-service:
+    url: ${PARCEL_SERVICE_URL:http://parcel-service:8080}
+    token: ${TRACKING_PARCEL_SERVICE_TOKEN:}
+    connect-timeout-ms: 2000
+    read-timeout-ms: 3000
+  cors:
+    allowed-origins: ${WEB_ORIGIN:http://localhost:5173}
+  cache:
+    parcel-ttl-days: 90
+    timeline-ttl-days: 90
+    event-dedup-ttl-hours: 24
