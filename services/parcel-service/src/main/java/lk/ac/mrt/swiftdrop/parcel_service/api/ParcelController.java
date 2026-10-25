@@ -36,6 +36,11 @@ public class ParcelController {
         return parcels.getSnapshotByTrackingNumber(trackingNumber);
     }
 
+    @GetMapping("/by-tracking/{trackingNumber}/details")
+    public ParcelView getDetailsByTrackingNumber(@PathVariable String trackingNumber) {
+        return parcels.getDetailsByTrackingNumber(trackingNumber);
+    }
+
     @PutMapping("/{id}/assignment")
     public ParcelView assign(@PathVariable UUID id, @Valid @RequestBody AssignmentRequest request, Authentication auth) {
         return parcels.assign(id, request.courierId(), Actor.from(auth));

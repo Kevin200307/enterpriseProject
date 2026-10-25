@@ -42,6 +42,9 @@ class TrackingControllerTest {
     @MockitoBean
     private TrackingProjectionService projectionService;
 
+    @MockitoBean
+    private lk.ac.mrt.swiftdrop.tracking_service.service.PrivateTrackingService privateTrackingService;
+
     @Autowired
     private ObjectMapper objectMapper;
 

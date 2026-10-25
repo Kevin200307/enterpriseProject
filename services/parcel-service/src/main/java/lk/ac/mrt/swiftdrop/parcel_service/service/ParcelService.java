@@ -53,6 +53,15 @@ public class ParcelService {
         );
     }
 
+    public ParcelView getDetailsByTrackingNumber(String trackingNumber) {
+        if (!TrackingNumber.isValid(trackingNumber)) {
+            throw new ParcelException(ErrorCode.VALIDATION_FAILED, "Invalid tracking number format");
+        }
+        Parcel p = parcels.findByTrackingNumber(trackingNumber)
+                .orElseThrow(() -> new ParcelException(ErrorCode.RESOURCE_NOT_FOUND, "Parcel was not found"));
+        return ParcelView.of(p);
+    }
+
     @Transactional
     public ParcelView book(BookingRequest request, String key, Actor actor) {
         if (!actor.has("CUSTOMER") && !actor.has("MERCHANT") && !actor.has("ADMIN")) {

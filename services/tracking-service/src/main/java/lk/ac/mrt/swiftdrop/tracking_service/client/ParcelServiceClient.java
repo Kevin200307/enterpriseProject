@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
 /**
- * Service-to-service client for authenticated parcel snapshot backfill.
+ * Service-to-service client for authenticated parcel snapshot backfill and private parcel details.
  */
 @Slf4j
 @Component
@@ -58,6 +58,27 @@ public class ParcelServiceClient {
                     });
         } catch (Exception ex) {
             log.warn("Failed to fetch parcel snapshot for {} from parcel-service: {}", trackingNumber, ex.getMessage());
+            return Optional.empty();
+        }
+    }
+
+    public Optional<ParcelDetails> fetchParcelDetails(String trackingNumber) {
+        try {
+            return restClient.get()
+                    .uri("/api/v1/parcels/by-tracking/{trackingNumber}/details", trackingNumber)
+                    .exchange((req, resp) -> {
+                        if (resp.getStatusCode().is2xxSuccessful()) {
+                            return Optional.ofNullable(resp.bodyTo(ParcelDetails.class));
+                        }
+                        if (resp.getStatusCode().value() == 404) {
+                            return Optional.empty();
+                        }
+                        log.warn("Upstream parcel-service returned status {} for parcel details {}",
+                                resp.getStatusCode(), trackingNumber);
+                        return Optional.empty();
+                    });
+        } catch (Exception ex) {
+            log.warn("Failed to fetch parcel details for {} from parcel-service: {}", trackingNumber, ex.getMessage());
             return Optional.empty();
         }
     }
