@@ -69,6 +69,8 @@ services:
       SPRING_DATA_REDIS_PORT: 6379
       SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD}
       IDENTITY_JWKS_URI: ${IDENTITY_JWKS_URI:-http://identity-service:8080/.well-known/jwks.json}
+      IDENTITY_ISSUER_URI: ${IDENTITY_ISSUER_URI:-http://identity-service:8080}
+      JWT_AUDIENCE: ${JWT_AUDIENCE:-swiftdrop}
       IDENTITY_SERVICE_URL: ${IDENTITY_SERVICE_URL:-http://identity-service:8080}
       PARCEL_SERVICE_URL: ${PARCEL_SERVICE_URL:-http://parcel-service:8080}
       PRICING_SERVICE_URL: ${PRICING_SERVICE_URL:-http://pricing-service:8080}
@@ -82,6 +84,8 @@ services:
       DASHBOARD_UPSTREAM_TIMEOUT: ${DASHBOARD_UPSTREAM_TIMEOUT:-2s}
     depends_on:
       redis:
+        condition: service_healthy
+      identity-service:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/actuator/health"]
@@ -130,6 +134,8 @@ services:
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD}
       IDENTITY_ISSUER_URI: ${IDENTITY_ISSUER_URI:-http://identity-service:8080}
+      JWT_AUDIENCE: ${JWT_AUDIENCE:-swiftdrop}
+      IDENTITY_JWT_KEY_ID: ${IDENTITY_JWT_KEY_ID:-swiftdrop-v1}
       IDENTITY_JWT_PRIVATE_KEY: ${IDENTITY_JWT_PRIVATE_KEY}
       IDENTITY_JWT_PUBLIC_KEY: ${IDENTITY_JWT_PUBLIC_KEY}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
@@ -138,6 +144,12 @@ services:
     depends_on:
       redis:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 10s
+      timeout: 3s
+      start_period: 30s
+      retries: 5
 
   merchant-service:
     <<: *defaults
@@ -152,9 +164,21 @@ services:
       SPRING_RABBITMQ_HOST: rabbitmq
       SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USERNAME}
       SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+      JWT_ISSUER_URI: ${IDENTITY_ISSUER_URI:-http://identity-service:8080}
+      JWT_JWK_SET_URI: ${IDENTITY_JWKS_URI:-http://identity-service:8080/.well-known/jwks.json}
+      JWT_AUDIENCE: ${JWT_AUDIENCE:-swiftdrop}
+      PRICING_SERVICE_URL: ${PRICING_SERVICE_URL:-http://pricing-service:8080}
     depends_on:
       rabbitmq:
         condition: service_healthy
+      identity-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 10s
+      timeout: 3s
+      start_period: 30s
+      retries: 5
 
   notification-service:
     <<: *defaults
