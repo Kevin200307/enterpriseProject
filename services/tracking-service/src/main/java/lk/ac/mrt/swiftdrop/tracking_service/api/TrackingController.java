@@ -12,10 +12,13 @@ import lk.ac.mrt.swiftdrop.tracking_service.domain.TrackingProjection;
 import lk.ac.mrt.swiftdrop.tracking_service.dto.PrivateTracking;
 import lk.ac.mrt.swiftdrop.tracking_service.dto.PublicTracking;
 import lk.ac.mrt.swiftdrop.tracking_service.error.TrackingException;
+import lk.ac.mrt.swiftdrop.tracking_service.realtime.TrackingSseService;
 import lk.ac.mrt.swiftdrop.tracking_service.service.PrivateTrackingService;
 import lk.ac.mrt.swiftdrop.tracking_service.service.TrackingProjectionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.CacheControl;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -26,11 +29,13 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 /**
  * Endpoints for tracking parcels:
  * - Public tracking: Privacy-safe unauthenticated view.
  * - Private tracking: Authenticated full view with role/ownership validation.
+ * - SSE tracking: Real-time public event stream with heartbeat comments.
  */
 @RestController
 @RequestMapping("/api/v1/tracking")
@@ -39,6 +44,7 @@ public class TrackingController {
 
     private final TrackingProjectionService projectionService;
     private final PrivateTrackingService privateTrackingService;
+    private final TrackingSseService sseService;
 
     @GetMapping("/{trackingNumber}")
     public ResponseEntity<PublicTracking> getPublicTracking(
@@ -62,6 +68,25 @@ public class TrackingController {
         }
 
         return builder.body(response);
+    }
+
+    @GetMapping(value = {"/{trackingNumber}/stream", "/public/{trackingNumber}/stream"}, produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public ResponseEntity<SseEmitter> streamTracking(
+            @PathVariable String trackingNumber,
+            @RequestHeader(value = "X-Request-Id", required = false) String requestId) {
+
+        SseEmitter emitter = sseService.createEmitter(trackingNumber);
+
+        var builder = ResponseEntity.ok()
+                .header(HttpHeaders.CACHE_CONTROL, "no-cache, no-transform")
+                .header("X-Accel-Buffering", "no")
+                .contentType(MediaType.TEXT_EVENT_STREAM);
+
+        if (requestId != null && !requestId.isBlank()) {
+            builder.header("X-Request-Id", requestId);
+        }
+
+        return builder.body(emitter);
     }
 
     @GetMapping("/{trackingNumber}/full")

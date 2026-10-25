@@ -12,14 +12,21 @@ import org.springframework.stereotype.Component;
 public class WebSocketTrackingPublisher implements TrackingRealtimePublisher {
 
     private final SimpMessagingTemplate messagingTemplate;
+    private final TrackingSseService sseService;
 
     @Override
     public void publishUpdate(PublicTracking update) {
         if (update == null || update.trackingNumber() == null) {
             return;
         }
+
+        // 1. WebSocket / STOMP broadcast
         String destination = "/topic/parcels." + update.trackingNumber();
         log.debug("Broadcasting tracking update to WebSocket destination {}", destination);
         messagingTemplate.convertAndSend(destination, update);
+
+        // 2. Server-Sent Events broadcast
+        log.debug("Broadcasting tracking update to SSE subscribers for {}", update.trackingNumber());
+        sseService.broadcast(update);
     }
 }

@@ -54,6 +54,9 @@ class PrivateTrackingControllerTest {
     @MockitoBean
     private TrackingAuditLogger auditLogger;
 
+    @MockitoBean
+    private lk.ac.mrt.swiftdrop.tracking_service.realtime.TrackingSseService sseService;
+
     private final String trackingNumber = "SD-4F7K2Q9M";
     private final UUID parcelId = UUID.randomUUID();
     private final UUID customerId = UUID.randomUUID();
