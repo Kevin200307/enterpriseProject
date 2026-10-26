@@ -48,7 +48,6 @@ app:
       refresh-token-ttl-seconds: 604800 # 7 days
       private-key-pem: ${IDENTITY_JWT_PRIVATE_KEY:}
       public-key-pem: ${IDENTITY_JWT_PUBLIC_KEY:}
-      key-id: ${IDENTITY_JWT_KEY_ID:swiftdrop-identity-key-1}
     rate-limit:
       max-failed-login-attempts: 5 # 5 wrong attempts rate-limited 
       window-seconds: 60

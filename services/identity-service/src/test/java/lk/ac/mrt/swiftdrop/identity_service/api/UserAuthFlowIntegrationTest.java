@@ -18,6 +18,7 @@ import lk.ac.mrt.swiftdrop.identity_service.repository.UserRepository;
 import lk.ac.mrt.swiftdrop.identity_service.service.RateLimiterService;
 import lk.ac.mrt.swiftdrop.identity_service.service.JwtTokenService;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.JwtEncoder;
 import lk.ac.mrt.swiftdrop.identity_service.service.impl.AuthServiceImpl;
 import lk.ac.mrt.swiftdrop.identity_service.service.impl.UserServiceImpl;
 import org.junit.jupiter.api.DisplayName;
@@ -91,6 +92,9 @@ class UserAuthFlowIntegrationTest {
 
     @MockitoBean
     private JwtDecoder jwtDecoder;
+
+    @MockitoBean
+    private JwtEncoder jwtEncoder;
 
     @Test
     @DisplayName("Full Lifecycle: Register customer -> Login with BCrypt -> Get profile -> Update profile")
