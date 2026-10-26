@@ -3,6 +3,8 @@ package lk.ac.mrt.swiftdrop.gateway.config;
 import static org.springframework.security.test.web.reactive.server.SecurityMockServerConfigurers.mockJwt;
 import static org.springframework.security.test.web.reactive.server.SecurityMockServerConfigurers.springSecurity;
 
+import java.time.Duration;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -44,6 +46,8 @@ class SecurityConfigTests {
 	void createClient() {
 		client = WebTestClient.bindToApplicationContext(applicationContext)
 				.apply(springSecurity())
+				.configureClient()
+				.responseTimeout(Duration.ofSeconds(15))
 				.build();
 	}
 
