@@ -43,6 +43,8 @@ isProject: false
 
 # SwiftDrop — Complete Enterprise Implementation Plan
 
+Parcel-service implementation, API examples, configuration, and acceptance checks: [services/parcel-service/README.md](services/parcel-service/README.md).
+
 Greenfield repo. Spec: [Group Assignment.pdf](Group Assignment.pdf). First implementation artifact after approval: a full markdown architecture/implementation guide at [docs/SWIFTDROP.md](docs/SWIFTDROP.md) (also summarized in [README.md](README.md)).
 
 ## Recommended stack (locked unless you reject this plan)

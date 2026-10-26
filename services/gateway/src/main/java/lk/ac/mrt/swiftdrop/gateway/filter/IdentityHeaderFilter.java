@@ -29,7 +29,7 @@ public final class IdentityHeaderFilter implements WebFilter, Ordered {
 	public static final String MERCHANT_ID_HEADER = "X-Merchant-Id";
 
 	private static final String ROLES_CLAIM = "roles";
-	private static final String MERCHANT_ID_CLAIM = "merchantId";
+	private static final String MERCHANT_ID_CLAIM = "merchant_id";
 	private static final Set<String> KNOWN_ROLES = Arrays.stream(Role.values())
 			.map(Role::name)
 			.collect(Collectors.toUnmodifiableSet());

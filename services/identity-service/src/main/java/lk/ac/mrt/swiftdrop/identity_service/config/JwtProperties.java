@@ -8,6 +8,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "app.security.jwt")
 public record JwtProperties(
         String issuer,
+        String audience,
         long accessTokenTtlSeconds,
         long refreshTokenTtlSeconds,
         String privateKeyPem,
@@ -17,6 +18,9 @@ public record JwtProperties(
     public JwtProperties {
         if (issuer == null || issuer.isBlank()) {
             issuer = "http://identity-service:8080";
+        }
+        if (audience == null || audience.isBlank()) {
+            audience = "swiftdrop";
         }
         if (accessTokenTtlSeconds <= 0) {
             accessTokenTtlSeconds = 900; // 15 minutes
@@ -28,4 +32,33 @@ public record JwtProperties(
             keyId = "swiftdrop-identity-key-1";
         }
     }
+
+    /**
+     * Backward-compatible constructor for components/tests specifying 6 arguments without audience.
+     */
+    public JwtProperties(
+            String issuer,
+            long accessTokenTtlSeconds,
+            long refreshTokenTtlSeconds,
+            String privateKeyPem,
+            String publicKeyPem,
+            String keyId
+    ) {
+        this(issuer, "swiftdrop", accessTokenTtlSeconds, refreshTokenTtlSeconds, privateKeyPem, publicKeyPem, keyId);
+    }
+
+    /**
+     * Backward-compatible constructor for components/tests specifying 6 arguments with audience.
+     */
+    public JwtProperties(
+            String issuer,
+            String audience,
+            long accessTokenTtlSeconds,
+            String keyId,
+            String privateKeyPem,
+            String publicKeyPem
+    ) {
+        this(issuer, audience, accessTokenTtlSeconds, 604800, privateKeyPem, publicKeyPem, keyId);
+    }
 }
+

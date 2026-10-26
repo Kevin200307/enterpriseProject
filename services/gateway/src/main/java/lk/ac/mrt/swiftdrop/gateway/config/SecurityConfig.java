@@ -16,6 +16,12 @@ import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.web.server.header.ReferrerPolicyServerHttpHeadersWriter.ReferrerPolicy;
 import org.springframework.security.web.server.header.XFrameOptionsServerHttpHeadersWriter.Mode;
 import org.springframework.security.web.server.SecurityWebFilterChain;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
+import org.springframework.security.oauth2.jwt.JwtClaimValidator;
+import org.springframework.security.oauth2.jwt.JwtValidators;
+import org.springframework.security.oauth2.jwt.NimbusReactiveJwtDecoder;
+import org.springframework.security.oauth2.jwt.ReactiveJwtDecoder;
 import org.springframework.security.web.server.ServerAuthenticationEntryPoint;
 import org.springframework.security.web.server.authorization.ServerAccessDeniedHandler;
 import org.springframework.web.server.ServerWebExchange;
@@ -25,6 +31,19 @@ import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
 
 @Configuration(proxyBeanMethods = false)
 public class SecurityConfig {
+
+	@Bean
+	ReactiveJwtDecoder gatewayJwtDecoder(
+			@Value("${spring.security.oauth2.resourceserver.jwt.jwk-set-uri}") String jwkSetUri,
+			@Value("${spring.security.oauth2.resourceserver.jwt.issuer-uri}") String issuer,
+			@Value("${spring.security.oauth2.resourceserver.jwt.audiences}") String audience) {
+		var decoder = NimbusReactiveJwtDecoder.withJwkSetUri(jwkSetUri).build();
+		var issuerValidator = JwtValidators.createDefaultWithIssuer(issuer);
+		var audienceValidator = new JwtClaimValidator<java.util.List<String>>("aud",
+				values -> values != null && values.contains(audience));
+		decoder.setJwtValidator(new DelegatingOAuth2TokenValidator<>(issuerValidator, audienceValidator));
+		return decoder;
+	}
 
 	@Bean
 	ServerAuthenticationEntryPoint gatewayAuthenticationEntryPoint(GatewayProblemWriter problemWriter) {
