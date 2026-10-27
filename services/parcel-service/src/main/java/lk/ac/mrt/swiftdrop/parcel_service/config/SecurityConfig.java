@@ -10,7 +10,7 @@ import org.springframework.security.oauth2.server.resource.authentication.*;
 import org.springframework.security.web.SecurityFilterChain;
 import tools.jackson.databind.json.JsonMapper;
 
-@Configuration
+@Configuration @org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity
 public class SecurityConfig {
     @Bean
     SecurityFilterChain security(HttpSecurity http, JsonMapper mapper) throws Exception {

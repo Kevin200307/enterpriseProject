@@ -243,3 +243,46 @@ public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Excepti
   - Invalid email and invalid password return identical RFC 7807 problem details: `401 INVALID_CREDENTIALS`.
 - **Distributed Rate Limiting:**
   - Redis token bucket / sliding counter limits authentication attempts per email to 5 failed requests per minute, throwing `429 RATE_LIMITED`.
+
+---
+
+## 3. Dispatch Service (`services/dispatch-service`)
+
+### 3.1 Security & Concurrency Verification
+`services/dispatch-service/src/test/java/lk/ac/mrt/swiftdrop/dispatch_service/DispatchAuthorizationTest.java`
+verifies signed JWT claims, anonymous 401, CUSTOMER 403, courier ownership (404 for another courier),
+and rejection of spoofed identity headers/query parameters. `AssignmentConcurrencyTest` proves capacity
+and unique assignment protection with real PostgreSQL. See `services/dispatch-service/README.md` for
+API contracts, service authentication, pending command recovery and RabbitMQ DLQ behavior.
+
+---
+
+## 4. Pricing Service (`services/pricing-service`)
+
+### 4.1 Pricing Strategies & Open-Closed Principle
+Pricing calculations follow an ordered Strategy chain. `PricingEngine` depends only on the strategy interface, so a new contribution can be added without modifying the engine.
+
+```mermaid
+classDiagram
+    class PricingEngine {
+      +calculate(PricingContext) Result
+    }
+    class PricingStrategy {
+      <<interface>>
+      +order() int
+      +apply(PricingContext, PricingBreakdown) PricingBreakdown
+    }
+    class ZoneBandStrategy
+    class WeightSurchargeStrategy
+    class ExpressSurchargeStrategy
+    class PricingContext
+    class PricingBreakdown
+    PricingEngine --> PricingStrategy : ordered list
+    PricingStrategy <|.. ZoneBandStrategy
+    PricingStrategy <|.. WeightSurchargeStrategy
+    PricingStrategy <|.. ExpressSurchargeStrategy
+    PricingEngine ..> PricingContext
+    PricingEngine ..> PricingBreakdown
+```
+
+`ZoneBandStrategy` selects the rule base fee, `WeightSurchargeStrategy` charges only weight above the configured included weight, and `ExpressSurchargeStrategy` adds the configured percentage. Contributions and totals use LKR `BigDecimal` values with two-decimal `HALF_UP` rounding. See `services/pricing-service/README.md` for endpoint and deployment details.

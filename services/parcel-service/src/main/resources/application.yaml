@@ -52,7 +52,7 @@ parcel:
     estimate-path: ${PRICING_ESTIMATE_PATH:/api/v1/pricing/estimate}
   outbox:
     enabled: true
-    delay-ms: 3000
+    delay-ms: 500
 logging:
   level:
     org.springframework.web: INFO

@@ -11,10 +11,15 @@ public class OutboxEvent {
     @Column(columnDefinition="text") private String payload;
     private Instant createdAt;
     private Instant publishedAt;
+    private String routingKey;
     public OutboxEvent(UUID id, String payload, Instant now) {
+        this(id,payload,now,lk.ac.mrt.swiftdrop.contracts.messaging.RoutingKeys.PARCEL_STATUS_CHANGED_V1);
+    }
+    public OutboxEvent(UUID id, String payload, Instant now, String routingKey) {
         this.id = id;
         this.payload = payload;
         this.createdAt = now;
+        this.routingKey = routingKey;
     }
     public void published(Instant now) { this.publishedAt = now; }
 
@@ -25,6 +30,8 @@ public class OutboxEvent {
     public Instant getCreatedAt() { return createdAt; }
 
     public Instant getPublishedAt() { return publishedAt; }
+
+    public String getRoutingKey() { return routingKey; }
 
     protected OutboxEvent() {}
 }

@@ -36,6 +36,7 @@ class ParcelApiIntegrationTest {
     @Autowired HistoryRepository history;
     @Autowired ProofRepository proofs;
     @Autowired OutboxRepository outbox;
+    @Autowired org.springframework.jdbc.core.JdbcTemplate jdbc;
     @Autowired org.springframework.amqp.rabbit.core.RabbitTemplate rabbit;
     @Autowired lk.ac.mrt.swiftdrop.parcel_service.service.ParcelService service;
     @Autowired org.springframework.transaction.PlatformTransactionManager transactions;
@@ -48,12 +49,44 @@ class ParcelApiIntegrationTest {
     private final UUID courier = UUID.randomUUID();
     private final UUID dispatcher = UUID.randomUUID();
 
+    private List<lk.ac.mrt.swiftdrop.parcel_service.domain.OutboxEvent> statusEvents() {
+        return outbox.findAll().stream().filter(e -> e.getRoutingKey().equals(
+            lk.ac.mrt.swiftdrop.contracts.messaging.RoutingKeys.PARCEL_STATUS_CHANGED_V1)).toList();
+    }
+
+    @Test void internalAssignmentIsServiceOnlyIdempotentAndPublishesVersionedSnapshot() throws Exception {
+        var parcel = book("internal-assignment");
+        UUID command = UUID.randomUUID();
+        String body = mapper.writeValueAsString(new lk.ac.mrt.swiftdrop.parcel_service.service.InternalAssignmentService.Command(
+            command,null,courier,dispatcher,"Dispatch request"));
+        mvc.perform(put("/api/v1/internal/parcels/{id}/assignment",parcel.id()).with(as(dispatcher,"DISPATCHER"))
+            .contentType(MediaType.APPLICATION_JSON).content(body)).andExpect(status().isForbidden());
+        var service = jwt().jwt(j -> j.subject(UUID.randomUUID().toString()).claim("client_id","dispatch-service").claim("scope","dispatch.internal"));
+        var first = mvc.perform(put("/api/v1/internal/parcels/{id}/assignment",parcel.id()).with(service)
+            .contentType(MediaType.APPLICATION_JSON).content(body)).andExpect(status().isOk())
+            .andExpect(jsonPath("$.assigneeUserId").value(courier.toString())).andReturn().getResponse().getContentAsString();
+        mvc.perform(put("/api/v1/internal/parcels/{id}/assignment",parcel.id()).with(service)
+            .contentType(MediaType.APPLICATION_JSON).content(body)).andExpect(status().isOk()).andExpect(content().json(first));
+        assertThat(jdbc.queryForObject("select count(*) from parcel_assignment_commands",Integer.class)).isEqualTo(1);
+        var dispatchEvent = outbox.findAll().stream().filter(e -> e.getRoutingKey().equals(
+            lk.ac.mrt.swiftdrop.contracts.messaging.RoutingKeys.PARCEL_DISPATCH_CHANGED_V1))
+            .map(e -> mapper.readTree(e.getPayload())).filter(e -> e.path("payload").path("assigneeUserId").asString().equals(courier.toString())).findFirst().orElseThrow();
+        assertThat(dispatchEvent.path("payload").path("parcelVersion").asLong()).isEqualTo(1);
+        String unassign = mapper.writeValueAsString(new lk.ac.mrt.swiftdrop.parcel_service.service.InternalAssignmentService.Command(
+            UUID.randomUUID(),courier,null,dispatcher,"Vehicle repair"));
+        mvc.perform(put("/api/v1/internal/parcels/{id}/assignment",parcel.id()).with(service)
+            .contentType(MediaType.APPLICATION_JSON).content(unassign)).andExpect(status().isOk()).andExpect(jsonPath("$.assigneeUserId").isEmpty());
+        mvc.perform(put("/api/v1/internal/parcels/{id}/assignment",parcel.id()).with(service)
+            .contentType(MediaType.APPLICATION_JSON).content(unassign.replace("Vehicle repair","Different reason"))).andExpect(status().isConflict());
+    }
+
     @BeforeEach void resetData() {
         storedProofs.clear();
         doAnswer(inv -> { storedProofs.put(inv.getArgument(0), inv.getArgument(1)); return null; })
             .when(storage).put(anyString(), any(byte[].class), anyString());
         when(storage.get(anyString())).thenAnswer(inv -> storedProofs.get(inv.getArgument(0)));
         when(storage.presign(anyString(),eq(300))).thenReturn("https://storage.test/proof?X-Amz-Expires=300");
+        jdbc.update("delete from parcel_assignment_commands");
         history.deleteAll(); proofs.deleteAll(); outbox.deleteAll(); parcels.deleteAll();
         when(pricing.estimate(any(), any())).thenReturn(new PricingClient.Quote(new BigDecimal("450.00"), "LKR"));
     }
@@ -90,8 +123,9 @@ class ParcelApiIntegrationTest {
         assertThat(first.fee()).isEqualByComparingTo("450.00");
         assertThat(parcels.count()).isEqualTo(1);
         assertThat(history.count()).isEqualTo(1);
-        assertThat(outbox.count()).isEqualTo(1);
-        var envelope = mapper.readTree(outbox.findAll().getFirst().getPayload());
+        assertThat(statusEvents().size()).isEqualTo(1);
+        assertThat(outbox.count()).isEqualTo(2);
+        var envelope = mapper.readTree(statusEvents().getFirst().getPayload());
         assertThat(envelope.path("eventType").asString()).isEqualTo("parcel.status.changed");
         assertThat(envelope.path("payload").path("toStatus").asString()).isEqualTo("CREATED");
         verify(pricing, times(1)).estimate(any(), any());
@@ -112,6 +146,11 @@ class ParcelApiIntegrationTest {
             org.springframework.amqp.core.Binding.DestinationType.QUEUE,exchange,
             lk.ac.mrt.swiftdrop.contracts.messaging.RoutingKeys.PARCEL_STATUS_CHANGED_V1,null));
         var transaction = new org.springframework.transaction.support.TransactionTemplate(transactions);
+        String dispatchQueue = queue+"-dispatch";
+        admin.declareQueue(new org.springframework.amqp.core.Queue(dispatchQueue,false,false,false));
+        admin.declareBinding(new org.springframework.amqp.core.Binding(dispatchQueue,
+            org.springframework.amqp.core.Binding.DestinationType.QUEUE,exchange,
+            lk.ac.mrt.swiftdrop.contracts.messaging.RoutingKeys.PARCEL_DISPATCH_CHANGED_V1,null));
         var publisher = new lk.ac.mrt.swiftdrop.parcel_service.messaging.OutboxPublisher(outbox,rabbit,java.time.Clock.systemUTC());
         try {
             var p = book("live-booking-001");
@@ -136,9 +175,9 @@ class ParcelApiIntegrationTest {
                 throw new IllegalStateException("Simulated failure");
             })).isInstanceOf(IllegalStateException.class);
             transaction.executeWithoutResult(status -> publisher.publish());
-            assertThat(outbox.count()).isEqualTo(2);
+            assertThat(statusEvents().size()).isEqualTo(2);
             assertThat(rabbit.receive(queue)).isNull();
-        } finally { admin.deleteQueue(queue); }
+        } finally { admin.deleteQueue(queue); admin.deleteQueue(dispatchQueue); }
     }
     @Test void generatesTenThousandUniqueTrackingNumbersInTheRequiredPattern() {
         Set<String> generated = new HashSet<>();
@@ -165,7 +204,7 @@ class ParcelApiIntegrationTest {
             .content(mapper.writeValueAsString(booking("Kandy")))).andExpect(status().isCreated()).andReturn();
         var p = mapper.readValue(result.getResponse().getContentAsString(),ParcelView.class);
         assertThat(p.merchantId()).isEqualTo(merchant);
-        assertThat(mapper.readTree(outbox.findAll().getFirst().getPayload()).path("payload").path("merchantId").asString())
+        assertThat(mapper.readTree(statusEvents().getFirst().getPayload()).path("payload").path("merchantId").asString())
             .isEqualTo(merchant.toString());
         mvc.perform(get("/api/v1/parcels").with(merchantAuth))
             .andExpect(status().isOk()).andExpect(jsonPath("$.totalElements").value(1));
@@ -253,7 +292,7 @@ class ParcelApiIntegrationTest {
         transition(p.id(), ParcelStatus.OUT_FOR_DELIVERY, null, null).andExpect(status().isConflict());
         mvc.perform(get("/api/v1/parcels/{id}/history",p.id()).with(as(customer,"CUSTOMER")))
             .andExpect(status().isOk()).andExpect(jsonPath("$.totalElements").value(7));
-        assertThat(outbox.count()).isEqualTo(7);
+        assertThat(statusEvents().size()).isEqualTo(7);
         mvc.perform(get("/api/v1/parcels/{id}/proofs/{proof}",p.id(),proof).with(as(customer,"CUSTOMER")))
             .andExpect(status().isOk()).andExpect(content().bytes(png));
         byte[] pdf = mvc.perform(get("/api/v1/parcels/{id}/receipt",p.id()).with(as(customer,"CUSTOMER")))
