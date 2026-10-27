@@ -162,4 +162,28 @@ public class AuthController {
                 .header(HttpHeaders.SET_COOKIE, cookie.toString())
                 .body(result.toAuthResponse());
     }
+
+    @PostMapping(path = "/logout")
+    @Operation(
+            summary = "Logout user and revoke refresh token",
+            description = "Revokes the active refresh token provided via HttpOnly cookie and clears the cookie from the client with Max-Age=0."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "204",
+                    description = "Successfully logged out and cleared refresh token cookie",
+                    headers = @Header(name = "Set-Cookie", description = "Cleared refresh token cookie with Max-Age=0", schema = @Schema(type = "string"))
+            )
+    })
+    public ResponseEntity<Void> logout(
+            @CookieValue(name = AuthCookieService.REFRESH_TOKEN_COOKIE_NAME, required = false) String refreshToken
+    ) {
+        if (refreshToken != null && !refreshToken.isBlank()) {
+            refreshTokenService.revokeToken(refreshToken.trim());
+        }
+        ResponseCookie clearCookie = authCookieService.createClearCookie();
+        return ResponseEntity.noContent()
+                .header(HttpHeaders.SET_COOKIE, clearCookie.toString())
+                .build();
+    }
 }
