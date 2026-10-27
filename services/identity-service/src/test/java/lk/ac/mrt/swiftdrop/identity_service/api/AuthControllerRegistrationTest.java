@@ -10,7 +10,9 @@ import lk.ac.mrt.swiftdrop.identity_service.config.SecurityConfig;
 import lk.ac.mrt.swiftdrop.identity_service.domain.UserStatus;
 import lk.ac.mrt.swiftdrop.identity_service.error.DuplicateEmailException;
 import lk.ac.mrt.swiftdrop.identity_service.error.GlobalExceptionHandler;
+import lk.ac.mrt.swiftdrop.identity_service.service.AuthCookieService;
 import lk.ac.mrt.swiftdrop.identity_service.service.AuthService;
+import lk.ac.mrt.swiftdrop.identity_service.service.RefreshTokenService;
 import lk.ac.mrt.swiftdrop.identity_service.service.UserService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -51,6 +53,12 @@ class AuthControllerRegistrationTest {
 
     @MockitoBean
     private AuthService authService;
+
+    @MockitoBean
+    private AuthCookieService authCookieService;
+
+    @MockitoBean
+    private RefreshTokenService refreshTokenService;
 
     @Test
     @DisplayName("POST /api/v1/auth/register - 201 Created with Location header and user body")

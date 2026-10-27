@@ -12,11 +12,19 @@ import lk.ac.mrt.swiftdrop.identity_service.api.dto.LoginRequest;
 import lk.ac.mrt.swiftdrop.identity_service.api.dto.AuthResponse;
 import lk.ac.mrt.swiftdrop.identity_service.api.dto.RegisterRequest;
 import lk.ac.mrt.swiftdrop.identity_service.api.dto.UserResponse;
+import lk.ac.mrt.swiftdrop.identity_service.error.InvalidTokenException;
+import lk.ac.mrt.swiftdrop.identity_service.service.AuthCookieService;
 import lk.ac.mrt.swiftdrop.identity_service.service.AuthService;
+import lk.ac.mrt.swiftdrop.identity_service.service.LoginResult;
+import lk.ac.mrt.swiftdrop.identity_service.service.RefreshTokenService;
+import lk.ac.mrt.swiftdrop.identity_service.service.TokenRotationResult;
 import lk.ac.mrt.swiftdrop.identity_service.service.UserService;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -35,10 +43,19 @@ public class AuthController {
 
     private final UserService userService;
     private final AuthService authService;
+    private final AuthCookieService authCookieService;
+    private final RefreshTokenService refreshTokenService;
 
-    public AuthController(UserService userService, AuthService authService) {
+    public AuthController(
+            UserService userService,
+            AuthService authService,
+            AuthCookieService authCookieService,
+            RefreshTokenService refreshTokenService
+    ) {
         this.userService = userService;
         this.authService = authService;
+        this.authCookieService = authCookieService;
+        this.refreshTokenService = refreshTokenService;
     }
 
     @PostMapping(path = "/register", consumes = MediaType.APPLICATION_JSON_VALUE)
@@ -72,13 +89,14 @@ public class AuthController {
     @PostMapping(path = "/login", consumes = MediaType.APPLICATION_JSON_VALUE)
     @Operation(
             summary = "Authenticate user with email and password",
-            description = "Validates user credentials with anti-timing attack defenses and rate limiting. Returns the authenticated user profile."
+            description = "Validates user credentials with anti-timing attack defenses and rate limiting. Issues RS256 access token in body and refresh token in HttpOnly cookie."
     )
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "200",
                     description = "Successfully authenticated",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = UserResponse.class))
+                    headers = @Header(name = "Set-Cookie", description = "HttpOnly, Secure, SameSite=Strict refresh token cookie", schema = @Schema(type = "string")),
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = AuthResponse.class))
             ),
             @ApiResponse(
                     responseCode = "400",
@@ -102,7 +120,70 @@ public class AuthController {
             )
     })
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
-        AuthResponse response = authService.login(request);
-        return ResponseEntity.ok(response);
+        LoginResult result = authService.login(request);
+        ResponseCookie cookie = authCookieService.createRefreshTokenCookie(result.rawRefreshToken());
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, cookie.toString())
+                .body(result.authResponse());
+    }
+
+    @PostMapping(path = "/refresh")
+    @Operation(
+            summary = "Rotate refresh token and issue new access token",
+            description = "Validates the refresh token from the HttpOnly cookie, rotates the token pair with replay attack detection, and sets a new HttpOnly refresh cookie."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Successfully rotated refresh token",
+                    headers = @Header(name = "Set-Cookie", description = "HttpOnly, Secure, SameSite=Strict rotated refresh token cookie", schema = @Schema(type = "string")),
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = AuthResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Invalid, expired, missing, or replayed refresh token (RFC 7807)",
+                    content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "Account suspended (RFC 7807)",
+                    content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class))
+            )
+    })
+    public ResponseEntity<AuthResponse> refresh(
+            @CookieValue(name = AuthCookieService.REFRESH_TOKEN_COOKIE_NAME, required = false) String refreshToken
+    ) {
+        if (refreshToken == null || refreshToken.isBlank()) {
+            throw new InvalidTokenException("Refresh token cookie is missing");
+        }
+        TokenRotationResult result = refreshTokenService.rotate(refreshToken);
+        ResponseCookie cookie = authCookieService.createRefreshTokenCookie(result.rawRefreshToken());
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, cookie.toString())
+                .body(result.toAuthResponse());
+    }
+
+    @PostMapping(path = "/logout")
+    @Operation(
+            summary = "Logout user and revoke refresh token",
+            description = "Revokes the active refresh token provided via HttpOnly cookie and clears the cookie from the client with Max-Age=0."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "204",
+                    description = "Successfully logged out and cleared refresh token cookie",
+                    headers = @Header(name = "Set-Cookie", description = "Cleared refresh token cookie with Max-Age=0", schema = @Schema(type = "string"))
+            )
+    })
+    public ResponseEntity<Void> logout(
+            @CookieValue(name = AuthCookieService.REFRESH_TOKEN_COOKIE_NAME, required = false) String refreshToken
+    ) {
+        if (refreshToken != null && !refreshToken.isBlank()) {
+            refreshTokenService.revokeToken(refreshToken.trim());
+        }
+        ResponseCookie clearCookie = authCookieService.createClearCookie();
+        return ResponseEntity.noContent()
+                .header(HttpHeaders.SET_COOKIE, clearCookie.toString())
+                .build();
     }
 }
