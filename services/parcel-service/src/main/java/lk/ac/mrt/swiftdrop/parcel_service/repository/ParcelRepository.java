@@ -10,6 +10,7 @@ public interface ParcelRepository extends JpaRepository<Parcel, UUID> {
     @org.springframework.data.jpa.repository.Query("select p from Parcel p where p.id=:id")
     Optional<Parcel> lock(UUID id);
     Optional<Parcel> findByCustomerIdAndBookingKey(UUID customerId, String bookingKey);
+    Optional<Parcel> findByTrackingNumber(String trackingNumber);
     Page<Parcel> findByCustomerIdAndMerchantIdIsNull(UUID customerId, Pageable pageable);
     Page<Parcel> findByMerchantId(UUID merchantId, Pageable pageable);
     Page<Parcel> findByAssigneeId(UUID assigneeId, Pageable pageable);

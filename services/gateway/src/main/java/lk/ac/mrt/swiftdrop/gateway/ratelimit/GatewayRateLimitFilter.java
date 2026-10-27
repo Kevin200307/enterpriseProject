@@ -102,6 +102,9 @@ public final class GatewayRateLimitFilter implements GlobalFilter, Ordered {
 	}
 
 	private boolean isPublicTrackingPath(String path) {
+		if (path.startsWith("/api/v1/tracking/public/")) {
+			return true;
+		}
 		String prefix = "/api/v1/tracking/";
 		return path.startsWith(prefix)
 				&& path.length() > prefix.length()

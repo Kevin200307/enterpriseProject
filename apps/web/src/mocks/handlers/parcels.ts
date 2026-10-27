@@ -257,6 +257,7 @@ export const parcelHandlers = [
   ),
   http.get(`${base}/ws/*`, () => new HttpResponse(null, { status: 404 })),
   http.get(`${base}/api/v1/tracking/:tn/stream`, () => new HttpResponse(null, { status: 404 })),
+  http.get(`${base}/api/v1/tracking/public/:tn/stream`, () => new HttpResponse(null, { status: 404 })),
 
   // pricing
   http.get(

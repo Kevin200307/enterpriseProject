@@ -12,6 +12,10 @@ public final class RoutingKeys {
     public static final String PARCEL_STATUS_CHANGED_V1 =
             ParcelStatusChangedV1.EVENT_TYPE + ".v" + ParcelStatusChangedV1.VERSION;
 
+    public static final String PARCEL_TRACKING_SNAPSHOT_V1 =
+            lk.ac.mrt.swiftdrop.contracts.events.ParcelTrackingSnapshotV1.EVENT_TYPE + ".v"
+                    + lk.ac.mrt.swiftdrop.contracts.events.ParcelTrackingSnapshotV1.VERSION;
+
     /** Binding pattern matching every parcel event, any version. */
     public static final String ALL_PARCEL_EVENTS = "parcel.#";
 
