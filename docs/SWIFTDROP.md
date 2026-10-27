@@ -124,3 +124,32 @@ and rejection of spoofed identity headers/query parameters. `AssignmentConcurren
 and unique assignment protection with real PostgreSQL. See `services/dispatch-service/README.md` for
 API contracts, service authentication, pending command recovery and RabbitMQ DLQ behavior.
 
+## Pricing strategies
+
+Pricing calculations follow an ordered Strategy chain. `PricingEngine` depends only on the strategy interface, so a new contribution can be added without modifying the engine.
+
+```mermaid
+classDiagram
+    class PricingEngine {
+      +calculate(PricingContext) Result
+    }
+    class PricingStrategy {
+      <<interface>>
+      +order() int
+      +apply(PricingContext, PricingBreakdown) PricingBreakdown
+    }
+    class ZoneBandStrategy
+    class WeightSurchargeStrategy
+    class ExpressSurchargeStrategy
+    class PricingContext
+    class PricingBreakdown
+    PricingEngine --> PricingStrategy : ordered list
+    PricingStrategy <|.. ZoneBandStrategy
+    PricingStrategy <|.. WeightSurchargeStrategy
+    PricingStrategy <|.. ExpressSurchargeStrategy
+    PricingEngine ..> PricingContext
+    PricingEngine ..> PricingBreakdown
+```
+
+`ZoneBandStrategy` selects the rule base fee, `WeightSurchargeStrategy` charges only weight above the configured included weight, and `ExpressSurchargeStrategy` adds the configured percentage. Contributions and totals use LKR `BigDecimal` values with two-decimal `HALF_UP` rounding. See `services/pricing-service/README.md` for endpoint and deployment details.
+
