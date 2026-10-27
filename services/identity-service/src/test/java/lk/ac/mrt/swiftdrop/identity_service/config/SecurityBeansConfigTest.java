@@ -3,18 +3,33 @@ package lk.ac.mrt.swiftdrop.identity_service.config;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.mock.env.MockEnvironment;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.JwtEncoder;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 class SecurityBeansConfigTest {
 
+    private SecurityBeansConfig config;
     private PasswordEncoder passwordEncoder;
+    private RsaKeyProvider rsaKeyProvider;
 
     @BeforeEach
     void setUp() {
-        SecurityBeansConfig config = new SecurityBeansConfig();
+        config = new SecurityBeansConfig();
         passwordEncoder = config.passwordEncoder();
+
+        JwtProperties properties = new JwtProperties(
+                "http://identity-service:8080",
+                900,
+                604800,
+                "",
+                "",
+                "test-kid"
+        );
+        rsaKeyProvider = new RsaKeyProviderImpl(properties, new MockEnvironment());
     }
 
     @Test
@@ -50,5 +65,15 @@ class SecurityBeansConfigTest {
         assertThat(hash1).isNotEqualTo(hash2);
         assertThat(passwordEncoder.matches(rawPassword, hash1)).isTrue();
         assertThat(passwordEncoder.matches(rawPassword, hash2)).isTrue();
+    }
+
+    @Test
+    @DisplayName("Should instantiate JwtEncoder and JwtDecoder beans backed by RsaKeyProvider")
+    void shouldInstantiateJwtEncoderAndDecoderBeans() {
+        JwtEncoder encoder = config.jwtEncoder(rsaKeyProvider);
+        JwtDecoder decoder = config.jwtDecoder(rsaKeyProvider);
+
+        assertThat(encoder).isNotNull();
+        assertThat(decoder).isNotNull();
     }
 }

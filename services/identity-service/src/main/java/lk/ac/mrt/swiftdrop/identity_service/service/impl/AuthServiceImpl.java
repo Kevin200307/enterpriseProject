@@ -9,7 +9,9 @@ import lk.ac.mrt.swiftdrop.identity_service.error.UserSuspendedException;
 import lk.ac.mrt.swiftdrop.identity_service.repository.UserRepository;
 import lk.ac.mrt.swiftdrop.identity_service.service.AuthService;
 import lk.ac.mrt.swiftdrop.identity_service.service.RateLimiterService;
-import lk.ac.mrt.swiftdrop.identity_service.service.JwtTokenService;
+import lk.ac.mrt.swiftdrop.identity_service.service.JwtService;
+import lk.ac.mrt.swiftdrop.identity_service.service.LoginResult;
+import lk.ac.mrt.swiftdrop.identity_service.service.RefreshTokenService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -25,6 +27,7 @@ import java.util.Optional;
  * 2. Constant-time dummy BCrypt execution to eliminate timing attack side-channels
  * 3. Consistent 401 INVALID_CREDENTIALS for both missing users and wrong passwords
  * 4. 403 ACCESS_DENIED for suspended accounts
+ * 5. Short-lived RS256 access token issuance and long-lived refresh token generation
  */
 @Service
 @Transactional
@@ -38,18 +41,21 @@ public class AuthServiceImpl implements AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final RateLimiterService rateLimiterService;
-    private final JwtTokenService jwtTokenService;
+    private final JwtService jwtService;
+    private final RefreshTokenService refreshTokenService;
 
     public AuthServiceImpl(
             UserRepository userRepository,
             PasswordEncoder passwordEncoder,
             RateLimiterService rateLimiterService,
-            JwtTokenService jwtTokenService
+            JwtService jwtService,
+            RefreshTokenService refreshTokenService
     ) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.rateLimiterService = rateLimiterService;
-        this.jwtTokenService = jwtTokenService;
+        this.jwtService = jwtService;
+        this.refreshTokenService = refreshTokenService;
     }
 
     @Override
@@ -100,9 +106,13 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public AuthResponse login(LoginRequest request) {
+    public LoginResult login(LoginRequest request) {
         User user = authenticate(request);
-        return new AuthResponse(jwtTokenService.createAccessToken(user), jwtTokenService.expiresIn(), UserResponse.fromEntity(user));
+        String accessToken = jwtService.generateAccessToken(user);
+        long expiresIn = jwtService.getAccessTokenTtl().toSeconds();
+        String rawRefreshToken = refreshTokenService.issueRefreshToken(user);
+        AuthResponse authResponse = new AuthResponse(accessToken, expiresIn, UserResponse.fromEntity(user));
+        return new LoginResult(authResponse, rawRefreshToken);
     }
 
     private String maskEmail(String email) {

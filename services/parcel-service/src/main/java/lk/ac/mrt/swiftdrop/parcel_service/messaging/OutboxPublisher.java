@@ -34,7 +34,7 @@ public class OutboxPublisher {
                 properties.setDeliveryMode(MessageDeliveryMode.PERSISTENT);
                 properties.setMessageId(event.getId().toString());
                 var correlation = new CorrelationData(event.getId().toString());
-                rabbit.send(Exchanges.PARCEL_EVENTS, RoutingKeys.PARCEL_STATUS_CHANGED_V1,
+                rabbit.send(Exchanges.PARCEL_EVENTS, event.getRoutingKey(),
                     new Message(event.getPayload().getBytes(StandardCharsets.UTF_8), properties), correlation);
                 var confirm = correlation.getFuture().get(5, TimeUnit.SECONDS);
                 if (!confirm.ack() || correlation.getReturned() != null) {
