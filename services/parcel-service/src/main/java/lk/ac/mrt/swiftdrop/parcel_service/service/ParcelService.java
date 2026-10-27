@@ -26,6 +26,7 @@ public class ParcelService {
     private final JsonMapper mapper;
     private final Clock clock;
     private final TrackingNumberGenerator trackingNumbers;
+    private final lk.ac.mrt.swiftdrop.parcel_service.messaging.DispatchEventWriter dispatchEvents;
 
     @Transactional
     public ParcelView book(BookingRequest request, String key, Actor actor) {
@@ -82,6 +83,7 @@ public class ParcelService {
         }
         parcel.assign(courierId, clock.instant());
         parcels.flush();
+        dispatchEvents.write(parcel,"Assigned by dispatcher",clock.instant());
         return ParcelView.of(parcel);
     }
 
@@ -144,6 +146,8 @@ public class ParcelService {
         var envelope = new ParcelStatusChangedV1(p.getId(), p.getTrackingNumber(), from,
             p.getStatus(), actor.id(), p.getMerchantId()).toEnvelope("parcel-service");
         outbox.save(new OutboxEvent(envelope.eventId(), mapper.writeValueAsString(envelope), now));
+        parcels.flush();
+        dispatchEvents.write(p,note,now);
     }
 
     private UUID requireMerchant(Actor actor) {
@@ -169,7 +173,8 @@ public class ParcelService {
         return PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, sort).and(Sort.by("id")));
     }
 
-    public ParcelService(ParcelRepository parcels, HistoryRepository history, ProofRepository proofs, OutboxRepository outbox, PricingClient pricing, JsonMapper mapper, Clock clock, TrackingNumberGenerator trackingNumbers) {
+    public ParcelService(ParcelRepository parcels, HistoryRepository history, ProofRepository proofs, OutboxRepository outbox, PricingClient pricing, JsonMapper mapper, Clock clock, TrackingNumberGenerator trackingNumbers,
+            lk.ac.mrt.swiftdrop.parcel_service.messaging.DispatchEventWriter dispatchEvents) {
         this.parcels = parcels;
         this.history = history;
         this.proofs = proofs;
@@ -178,5 +183,6 @@ public class ParcelService {
         this.mapper = mapper;
         this.clock = clock;
         this.trackingNumbers = trackingNumbers;
+        this.dispatchEvents = dispatchEvents;
     }
 }
