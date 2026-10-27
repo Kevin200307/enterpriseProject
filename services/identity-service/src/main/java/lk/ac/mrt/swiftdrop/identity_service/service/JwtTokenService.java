@@ -34,4 +34,13 @@ public class JwtTokenService {
     }
 
     public long expiresIn() { return properties.accessTokenTtlSeconds(); }
+
+    public String createServiceToken(java.util.UUID subject, String scope) {
+        Instant now = Instant.now();
+        var claims = JwtClaimsSet.builder().issuer(properties.issuer()).audience(List.of(properties.audience()))
+                .subject(subject.toString()).issuedAt(now).expiresAt(now.plusSeconds(300))
+                .claim("scope",scope).claim("client_id","dispatch-service").claim("roles",List.of()).build();
+        var header = JwsHeader.with(SignatureAlgorithm.RS256).keyId(properties.keyId()).build();
+        return encoder.encode(JwtEncoderParameters.from(header,claims)).getTokenValue();
+    }
 }

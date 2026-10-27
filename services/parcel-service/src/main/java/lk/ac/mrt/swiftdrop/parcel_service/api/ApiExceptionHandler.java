@@ -14,6 +14,10 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 @RestControllerAdvice
 public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
     private static final Logger LOG = LoggerFactory.getLogger(ApiExceptionHandler.class);
+    @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
+    ResponseEntity<ProblemDetail> denied(org.springframework.security.access.AccessDeniedException ex) {
+        return ResponseEntity.status(403).body(problem(ErrorCode.ACCESS_DENIED,"This operation is not permitted"));
+    }
     @ExceptionHandler(ParcelException.class)
     ResponseEntity<ProblemDetail> parcel(ParcelException ex) {
         return ResponseEntity.status(ex.code().httpStatus()).body(problem(ex.code(), ex.getMessage()));

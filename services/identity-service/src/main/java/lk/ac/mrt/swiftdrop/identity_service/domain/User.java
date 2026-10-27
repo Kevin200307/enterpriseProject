@@ -39,7 +39,7 @@ public class User {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(nullable = false, unique = true, length = 255)
+    @Column(nullable = false, unique = true, length = 255, columnDefinition = "citext")
     private String email;
 
     @Column(name = "password_hash")

@@ -116,3 +116,11 @@ The notification delivery architecture adheres strictly to the **Strategy Patter
 
 
 
+# Dispatch security evidence
+
+`services/dispatch-service/src/test/java/lk/ac/mrt/swiftdrop/dispatch_service/DispatchAuthorizationTest.java`
+verifies signed JWT claims, anonymous 401, CUSTOMER 403, courier ownership (404 for another courier),
+and rejection of spoofed identity headers/query parameters. `AssignmentConcurrencyTest` proves capacity
+and unique assignment protection with real PostgreSQL. See `services/dispatch-service/README.md` for
+API contracts, service authentication, pending command recovery and RabbitMQ DLQ behavior.
+
