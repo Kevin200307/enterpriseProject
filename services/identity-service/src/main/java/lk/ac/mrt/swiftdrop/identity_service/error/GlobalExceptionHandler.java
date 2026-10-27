@@ -1,6 +1,7 @@
 package lk.ac.mrt.swiftdrop.identity_service.error;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.ConstraintViolationException;
 import lk.ac.mrt.swiftdrop.contracts.error.ErrorCode;
 import lk.ac.mrt.swiftdrop.contracts.error.FieldViolation;
 import lk.ac.mrt.swiftdrop.contracts.error.ProblemFields;
@@ -18,8 +19,10 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.net.URI;
@@ -76,6 +79,96 @@ public class GlobalExceptionHandler {
                 "Request body validation failed",
                 request,
                 violations
+        );
+
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .contentType(PROBLEM_JSON_MEDIA_TYPE)
+                .body(problemDetail);
+    }
+
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<ProblemDetail> handleMissingServletRequestParameter(
+            MissingServletRequestParameterException ex,
+            HttpServletRequest request
+    ) {
+        List<FieldViolation> violations = List.of(
+                new FieldViolation(ex.getParameterName(), "Parameter '" + ex.getParameterName() + "' is required")
+        );
+        ProblemDetail problemDetail = buildProblemDetail(
+                ErrorCode.VALIDATION_FAILED,
+                "Required request parameter is missing",
+                request,
+                violations
+        );
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .contentType(PROBLEM_JSON_MEDIA_TYPE)
+                .body(problemDetail);
+    }
+
+    @ExceptionHandler(HandlerMethodValidationException.class)
+    public ResponseEntity<ProblemDetail> handleHandlerMethodValidation(
+            HandlerMethodValidationException ex,
+            HttpServletRequest request
+    ) {
+        List<FieldViolation> violations = new ArrayList<>();
+        ex.getParameterValidationResults().forEach(result -> {
+            String paramName = result.getMethodParameter().getParameterName();
+            result.getResolvableErrors().forEach(error ->
+                    violations.add(new FieldViolation(paramName != null ? paramName : "parameter", error.getDefaultMessage()))
+            );
+        });
+        ProblemDetail problemDetail = buildProblemDetail(
+                ErrorCode.VALIDATION_FAILED,
+                "Request parameter validation failed",
+                request,
+                violations
+        );
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .contentType(PROBLEM_JSON_MEDIA_TYPE)
+                .body(problemDetail);
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ProblemDetail> handleConstraintViolation(
+            ConstraintViolationException ex,
+            HttpServletRequest request
+    ) {
+        List<FieldViolation> violations = ex.getConstraintViolations().stream()
+                .map(v -> {
+                    String propertyPath = v.getPropertyPath() != null ? v.getPropertyPath().toString() : "";
+                    String fieldName = propertyPath.contains(".")
+                            ? propertyPath.substring(propertyPath.lastIndexOf('.') + 1)
+                            : propertyPath;
+                    return new FieldViolation(fieldName.isBlank() ? "parameter" : fieldName, v.getMessage());
+                })
+                .toList();
+
+        ProblemDetail problemDetail = buildProblemDetail(
+                ErrorCode.VALIDATION_FAILED,
+                "Request parameter validation failed",
+                request,
+                violations
+        );
+
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .contentType(PROBLEM_JSON_MEDIA_TYPE)
+                .body(problemDetail);
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ProblemDetail> handleIllegalArgument(
+            IllegalArgumentException ex,
+            HttpServletRequest request
+    ) {
+        ProblemDetail problemDetail = buildProblemDetail(
+                ErrorCode.VALIDATION_FAILED,
+                ex.getMessage(),
+                request,
+                null
         );
 
         return ResponseEntity
