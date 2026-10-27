@@ -16,6 +16,7 @@ import lk.ac.mrt.swiftdrop.identity_service.error.UserSuspendedException;
 import lk.ac.mrt.swiftdrop.identity_service.service.AuthCookieService;
 import lk.ac.mrt.swiftdrop.identity_service.service.AuthService;
 import lk.ac.mrt.swiftdrop.identity_service.service.LoginResult;
+import lk.ac.mrt.swiftdrop.identity_service.service.RefreshTokenService;
 import lk.ac.mrt.swiftdrop.identity_service.service.UserService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -59,6 +60,9 @@ class AuthControllerLoginTest {
 
     @MockitoBean
     private AuthCookieService authCookieService;
+
+    @MockitoBean
+    private RefreshTokenService refreshTokenService;
 
     @MockitoBean
     private JwtDecoder jwtDecoder;
