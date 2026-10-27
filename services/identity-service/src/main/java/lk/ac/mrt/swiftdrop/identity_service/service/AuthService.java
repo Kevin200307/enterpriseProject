@@ -23,10 +23,11 @@ public interface AuthService {
     User authenticate(LoginRequest request);
 
     /**
-     * Executes authentication and returns the sanitized UserResponse.
+     * Executes authentication and returns the LoginResult containing the public AuthResponse
+     * and the raw opaque refresh token for cookie transport.
      *
      * @param request the login credentials
-     * @return the authenticated user's profile
+     * @return the authentication result with access and refresh tokens
      */
-    AuthResponse login(LoginRequest request);
+    LoginResult login(LoginRequest request);
 }

@@ -16,7 +16,10 @@ import lk.ac.mrt.swiftdrop.identity_service.error.RateLimitExceededException;
 import lk.ac.mrt.swiftdrop.identity_service.repository.RoleRepository;
 import lk.ac.mrt.swiftdrop.identity_service.repository.UserRepository;
 import lk.ac.mrt.swiftdrop.identity_service.service.RateLimiterService;
-import lk.ac.mrt.swiftdrop.identity_service.service.JwtTokenService;
+import lk.ac.mrt.swiftdrop.identity_service.service.AuthCookieService;
+import lk.ac.mrt.swiftdrop.identity_service.service.JwtService;
+import lk.ac.mrt.swiftdrop.identity_service.service.RefreshTokenService;
+import org.springframework.http.ResponseCookie;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import lk.ac.mrt.swiftdrop.identity_service.service.impl.AuthServiceImpl;
@@ -88,7 +91,13 @@ class UserAuthFlowIntegrationTest {
     private RateLimiterService rateLimiterService;
 
     @MockitoBean
-    private JwtTokenService jwtTokenService;
+    private JwtService jwtService;
+
+    @MockitoBean
+    private RefreshTokenService refreshTokenService;
+
+    @MockitoBean
+    private AuthCookieService authCookieService;
 
     @MockitoBean
     private JwtDecoder jwtDecoder;
@@ -148,13 +157,25 @@ class UserAuthFlowIntegrationTest {
                 .thenReturn(Optional.of(registeredUser));
 
         LoginRequest loginRequest = new LoginRequest("amandi.arangala@swiftdrop.lk", "StrongPassword123!");
-        when(jwtTokenService.createAccessToken(registeredUser)).thenReturn("signed-token");
-        when(jwtTokenService.expiresIn()).thenReturn(900L);
+        when(jwtService.generateAccessToken(registeredUser)).thenReturn("signed-token");
+        when(jwtService.getAccessTokenTtl()).thenReturn(java.time.Duration.ofMinutes(15));
+        when(refreshTokenService.issueRefreshToken(registeredUser)).thenReturn("sample-raw-refresh-token");
+        when(authCookieService.createRefreshTokenCookie("sample-raw-refresh-token")).thenReturn(
+                ResponseCookie.from("refreshToken", "sample-raw-refresh-token")
+                        .httpOnly(true)
+                        .secure(true)
+                        .sameSite("Strict")
+                        .path("/api/v1/auth")
+                        .maxAge(java.time.Duration.ofSeconds(604800))
+                        .build()
+        );
 
         mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(loginRequest)))
                 .andExpect(status().isOk())
+                .andExpect(header().exists(HttpHeaders.SET_COOKIE))
+                .andExpect(header().string(HttpHeaders.SET_COOKIE, containsString("refreshToken=sample-raw-refresh-token")))
                 .andExpect(jsonPath("$.accessToken").value("signed-token"))
                 .andExpect(jsonPath("$.user.id").value(registeredUser.getId().toString()))
                 .andExpect(jsonPath("$.user.email").value("amandi.arangala@swiftdrop.lk"))

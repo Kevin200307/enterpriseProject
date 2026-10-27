@@ -13,7 +13,9 @@ import lk.ac.mrt.swiftdrop.identity_service.error.GlobalExceptionHandler;
 import lk.ac.mrt.swiftdrop.identity_service.error.InvalidCredentialsException;
 import lk.ac.mrt.swiftdrop.identity_service.error.RateLimitExceededException;
 import lk.ac.mrt.swiftdrop.identity_service.error.UserSuspendedException;
+import lk.ac.mrt.swiftdrop.identity_service.service.AuthCookieService;
 import lk.ac.mrt.swiftdrop.identity_service.service.AuthService;
+import lk.ac.mrt.swiftdrop.identity_service.service.LoginResult;
 import lk.ac.mrt.swiftdrop.identity_service.service.UserService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -22,6 +24,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseCookie;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -55,10 +58,13 @@ class AuthControllerLoginTest {
     private AuthService authService;
 
     @MockitoBean
+    private AuthCookieService authCookieService;
+
+    @MockitoBean
     private JwtDecoder jwtDecoder;
 
     @Test
-    @DisplayName("POST /api/v1/auth/login - 200 OK with authenticated user profile")
+    @DisplayName("POST /api/v1/auth/login - 200 OK with authenticated user profile and refresh cookie")
     void shouldLoginSuccessfully() throws Exception {
         UUID userId = UUID.randomUUID();
         LoginRequest request = new LoginRequest("amandi.arangala@swiftdrop.lk", "Password123!");
@@ -75,12 +81,28 @@ class AuthControllerLoginTest {
                 Instant.now()
         );
 
-        when(authService.login(any(LoginRequest.class))).thenReturn(new AuthResponse("signed-token", 900, userResponse));
+        when(authService.login(any(LoginRequest.class))).thenReturn(
+                new LoginResult(new AuthResponse("signed-token", 900, userResponse), "sample-raw-refresh-token")
+        );
+        when(authCookieService.createRefreshTokenCookie("sample-raw-refresh-token")).thenReturn(
+                ResponseCookie.from("refreshToken", "sample-raw-refresh-token")
+                        .httpOnly(true)
+                        .secure(true)
+                        .sameSite("Strict")
+                        .path("/api/v1/auth")
+                        .maxAge(java.time.Duration.ofSeconds(604800))
+                        .build()
+        );
 
         mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
+                .andExpect(header().exists(HttpHeaders.SET_COOKIE))
+                .andExpect(header().string(HttpHeaders.SET_COOKIE, containsString("refreshToken=sample-raw-refresh-token")))
+                .andExpect(header().string(HttpHeaders.SET_COOKIE, containsString("HttpOnly")))
+                .andExpect(header().string(HttpHeaders.SET_COOKIE, containsString("SameSite=Strict")))
+                .andExpect(header().string(HttpHeaders.SET_COOKIE, containsString("Path=/api/v1/auth")))
                 .andExpect(jsonPath("$.accessToken").value("signed-token"))
                 .andExpect(jsonPath("$.tokenType").value("Bearer"))
                 .andExpect(jsonPath("$.expiresIn").value(900))

@@ -74,6 +74,7 @@ public class JwtServiceImpl implements JwtService {
 
         JwtClaimsSet.Builder claimsBuilder = JwtClaimsSet.builder()
                 .issuer(jwtProperties.issuer())
+                .audience(List.of(jwtProperties.audience()))
                 .subject(user.getId().toString())
                 .claim("email", user.getEmail())
                 .claim("roles", roles)

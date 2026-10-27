@@ -12,10 +12,14 @@ import lk.ac.mrt.swiftdrop.identity_service.api.dto.LoginRequest;
 import lk.ac.mrt.swiftdrop.identity_service.api.dto.AuthResponse;
 import lk.ac.mrt.swiftdrop.identity_service.api.dto.RegisterRequest;
 import lk.ac.mrt.swiftdrop.identity_service.api.dto.UserResponse;
+import lk.ac.mrt.swiftdrop.identity_service.service.AuthCookieService;
 import lk.ac.mrt.swiftdrop.identity_service.service.AuthService;
+import lk.ac.mrt.swiftdrop.identity_service.service.LoginResult;
 import lk.ac.mrt.swiftdrop.identity_service.service.UserService;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -35,10 +39,12 @@ public class AuthController {
 
     private final UserService userService;
     private final AuthService authService;
+    private final AuthCookieService authCookieService;
 
-    public AuthController(UserService userService, AuthService authService) {
+    public AuthController(UserService userService, AuthService authService, AuthCookieService authCookieService) {
         this.userService = userService;
         this.authService = authService;
+        this.authCookieService = authCookieService;
     }
 
     @PostMapping(path = "/register", consumes = MediaType.APPLICATION_JSON_VALUE)
@@ -72,13 +78,14 @@ public class AuthController {
     @PostMapping(path = "/login", consumes = MediaType.APPLICATION_JSON_VALUE)
     @Operation(
             summary = "Authenticate user with email and password",
-            description = "Validates user credentials with anti-timing attack defenses and rate limiting. Returns the authenticated user profile."
+            description = "Validates user credentials with anti-timing attack defenses and rate limiting. Issues RS256 access token in body and refresh token in HttpOnly cookie."
     )
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "200",
                     description = "Successfully authenticated",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = UserResponse.class))
+                    headers = @Header(name = "Set-Cookie", description = "HttpOnly, Secure, SameSite=Strict refresh token cookie", schema = @Schema(type = "string")),
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = AuthResponse.class))
             ),
             @ApiResponse(
                     responseCode = "400",
@@ -102,7 +109,10 @@ public class AuthController {
             )
     })
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
-        AuthResponse response = authService.login(request);
-        return ResponseEntity.ok(response);
+        LoginResult result = authService.login(request);
+        ResponseCookie cookie = authCookieService.createRefreshTokenCookie(result.rawRefreshToken());
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, cookie.toString())
+                .body(result.authResponse());
     }
 }

@@ -77,6 +77,7 @@ class JwtServiceTest {
 
         // Payload claims
         assertThat(jwt.getIssuer().toString()).isEqualTo("http://identity-service:8080");
+        assertThat(jwt.getAudience()).containsExactly("swiftdrop");
         assertThat(jwt.getSubject()).isEqualTo(userId.toString());
         assertThat(jwt.getClaimAsString("email")).isEqualTo("amandi.arangala@swiftdrop.lk");
         assertThat(jwt.getClaimAsStringList("roles")).containsExactly("CUSTOMER");
