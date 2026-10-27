@@ -46,6 +46,13 @@ class JwtContractTest {
         assertThat(decoded.getClaimAsStringList("roles")).containsExactly("CUSTOMER");
         assertThat(tokens.expiresIn()).isEqualTo(900);
 
+        var serviceToken = config.jwtDecoder(rsaKey,properties).decode(tokens.createServiceToken(
+            lk.ac.mrt.swiftdrop.identity_service.api.DispatchServiceTokenController.SUBJECT,"dispatch.internal"));
+        assertThat(serviceToken.getClaimAsString("client_id")).isEqualTo("dispatch-service");
+        assertThat(serviceToken.getClaimAsString("scope")).isEqualTo("dispatch.internal");
+        assertThat(serviceToken.getClaimAsStringList("roles")).isEmpty();
+        assertThat(java.time.Duration.between(serviceToken.getIssuedAt(),serviceToken.getExpiresAt()).toSeconds()).isEqualTo(300);
+
         var jwks = new JwksController(rsaKey).jwks().getBody();
         assertThat(jwks).isNotNull();
         @SuppressWarnings("unchecked")
