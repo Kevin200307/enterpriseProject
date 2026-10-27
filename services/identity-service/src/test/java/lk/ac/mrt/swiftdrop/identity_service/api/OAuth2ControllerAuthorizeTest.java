@@ -4,6 +4,9 @@ import lk.ac.mrt.swiftdrop.contracts.error.ErrorCode;
 import lk.ac.mrt.swiftdrop.identity_service.config.GoogleOAuth2Properties;
 import lk.ac.mrt.swiftdrop.identity_service.config.SecurityConfig;
 import lk.ac.mrt.swiftdrop.identity_service.error.GlobalExceptionHandler;
+import lk.ac.mrt.swiftdrop.identity_service.service.AuthCookieService;
+import lk.ac.mrt.swiftdrop.identity_service.service.GoogleOAuth2Service;
+import lk.ac.mrt.swiftdrop.identity_service.service.OAuth2AccountService;
 import lk.ac.mrt.swiftdrop.identity_service.service.OAuth2StateService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -36,6 +39,15 @@ class OAuth2ControllerAuthorizeTest {
 
     @MockitoBean
     private GoogleOAuth2Properties googleOAuth2Properties;
+
+    @MockitoBean
+    private GoogleOAuth2Service googleOAuth2Service;
+
+    @MockitoBean
+    private OAuth2AccountService oAuth2AccountService;
+
+    @MockitoBean
+    private AuthCookieService authCookieService;
 
     @MockitoBean
     private JwtDecoder jwtDecoder;

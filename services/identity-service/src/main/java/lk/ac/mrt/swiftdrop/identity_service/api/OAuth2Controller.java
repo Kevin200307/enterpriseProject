@@ -2,17 +2,28 @@ package lk.ac.mrt.swiftdrop.identity_service.api;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.headers.Header;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.NotBlank;
+import lk.ac.mrt.swiftdrop.identity_service.api.dto.AuthResponse;
 import lk.ac.mrt.swiftdrop.identity_service.api.dto.GoogleAuthorizeResponse;
 import lk.ac.mrt.swiftdrop.identity_service.config.GoogleOAuth2Properties;
+import lk.ac.mrt.swiftdrop.identity_service.error.InvalidOAuthStateException;
+import lk.ac.mrt.swiftdrop.identity_service.service.AuthCookieService;
+import lk.ac.mrt.swiftdrop.identity_service.service.GoogleOAuth2Service;
+import lk.ac.mrt.swiftdrop.identity_service.service.GoogleUserClaims;
+import lk.ac.mrt.swiftdrop.identity_service.service.LoginResult;
+import lk.ac.mrt.swiftdrop.identity_service.service.OAuth2AccountService;
+import lk.ac.mrt.swiftdrop.identity_service.service.OAuth2StateData;
 import lk.ac.mrt.swiftdrop.identity_service.service.OAuth2StateService;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -24,7 +35,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 import java.util.Objects;
 
 /**
- * REST controller managing OAuth 2.0 / OIDC sign-in workflows 
+ * REST controller managing OAuth 2.0 / OIDC sign-in workflows.
  * Exposes endpoints for authorization URL generation and callback processing.
  */
 @RestController
@@ -35,13 +46,22 @@ public class OAuth2Controller {
 
     private final GoogleOAuth2Properties googleOAuth2Properties;
     private final OAuth2StateService oAuth2StateService;
+    private final GoogleOAuth2Service googleOAuth2Service;
+    private final OAuth2AccountService oAuth2AccountService;
+    private final AuthCookieService authCookieService;
 
     public OAuth2Controller(
             GoogleOAuth2Properties googleOAuth2Properties,
-            OAuth2StateService oAuth2StateService
+            OAuth2StateService oAuth2StateService,
+            GoogleOAuth2Service googleOAuth2Service,
+            OAuth2AccountService oAuth2AccountService,
+            AuthCookieService authCookieService
     ) {
         this.googleOAuth2Properties = Objects.requireNonNull(googleOAuth2Properties, "googleOAuth2Properties must not be null");
         this.oAuth2StateService = Objects.requireNonNull(oAuth2StateService, "oAuth2StateService must not be null");
+        this.googleOAuth2Service = Objects.requireNonNull(googleOAuth2Service, "googleOAuth2Service must not be null");
+        this.oAuth2AccountService = Objects.requireNonNull(oAuth2AccountService, "oAuth2AccountService must not be null");
+        this.authCookieService = Objects.requireNonNull(authCookieService, "authCookieService must not be null");
     }
 
     @GetMapping(path = "/google/authorize")
@@ -91,5 +111,93 @@ public class OAuth2Controller {
                 .toUriString();
 
         return ResponseEntity.ok(new GoogleAuthorizeResponse(authorizationUrl, state));
+    }
+
+    @GetMapping(path = "/callback/google")
+    @Operation(
+            summary = "Process Google OAuth 2.0 PKCE callback",
+            description = "Validates the PKCE state and code_verifier, exchanges the authorization code for Google tokens, verifies the ID token, links or provisions the user account, and issues SwiftDrop JWT access and refresh tokens."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Successfully authenticated via Google OAuth 2.0",
+                    headers = @Header(name = "Set-Cookie", description = "HttpOnly, Secure, SameSite=Strict refresh token cookie", schema = @Schema(type = "string")),
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = AuthResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Missing or invalid callback parameters (RFC 7807)",
+                    content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Invalid or expired state, PKCE mismatch, Google token exchange failure, or invalid ID token (RFC 7807)",
+                    content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "User account has been suspended (RFC 7807)",
+                    content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "Account linking conflict: Google sub or email already bound to another account (RFC 7807)",
+                    content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class))
+            )
+    })
+    public ResponseEntity<AuthResponse> processGoogleCallback(
+            @Parameter(description = "Authorization code issued by Google", required = true)
+            @RequestParam(name = "code")
+            @NotBlank(message = "code must not be blank")
+            String code,
+
+            @Parameter(description = "Cryptographically secure state token verifying session integrity", required = true)
+            @RequestParam(name = "state")
+            @NotBlank(message = "state must not be blank")
+            String state,
+
+            @Parameter(description = "Plaintext PKCE code verifier generated by the SPA client", required = true)
+            @RequestParam(name = "codeVerifier")
+            @NotBlank(message = "codeVerifier must not be blank")
+            String codeVerifier,
+
+            @Parameter(description = "Optional redirect URI (defaults to configured callback URI)")
+            @RequestParam(name = "redirectUri", required = false)
+            String redirectUri
+    ) {
+        String effectiveRedirectUri = (redirectUri != null && !redirectUri.isBlank())
+                ? redirectUri.trim()
+                : googleOAuth2Properties.redirectUri();
+
+        // 1. Consume and validate state parameter (enforces strict single-use)
+        OAuth2StateData stateData = oAuth2StateService.consumeState(state.trim());
+
+        // 2. Validate RFC 7636 PKCE S256 code challenge against the unhashed verifier
+        if (!oAuth2StateService.validatePkce(codeVerifier.trim(), stateData.codeChallenge())) {
+            throw new InvalidOAuthStateException("PKCE code_verifier does not match code_challenge");
+        }
+
+        // 3. Validate redirect_uri matches the authorization request
+        if (!effectiveRedirectUri.equals(stateData.redirectUri())) {
+            throw new InvalidOAuthStateException("OAuth2 redirect_uri mismatch");
+        }
+
+        // 4. Exchange authorization code with Google and verify OIDC ID token
+        GoogleUserClaims userClaims = googleOAuth2Service.exchangeAndVerify(
+                code.trim(),
+                codeVerifier.trim(),
+                effectiveRedirectUri
+        );
+
+        // 5. Link account or provision user, then issue SwiftDrop access and refresh tokens
+        LoginResult loginResult = oAuth2AccountService.authenticateGoogleUser(userClaims);
+
+        // 6. Set HttpOnly, Secure, SameSite=Strict refresh cookie
+        ResponseCookie refreshCookie = authCookieService.createRefreshTokenCookie(loginResult.rawRefreshToken());
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, refreshCookie.toString())
+                .body(loginResult.authResponse());
     }
 }
