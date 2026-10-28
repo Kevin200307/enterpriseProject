@@ -1,3 +1,59 @@
 spring:
   application:
     name: parcel-service
+  datasource:
+    url: ${PARCEL_DB_URL}
+    username: ${PARCEL_DB_USERNAME}
+    password: ${PARCEL_DB_PASSWORD}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          audiences: ${JWT_AUDIENCE:swiftdrop}
+          issuer-uri: ${JWT_ISSUER_URI:http://identity-service:8080}
+          jwk-set-uri: ${JWT_JWK_SET_URI:http://identity-service:8080/.well-known/jwks.json}
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 6MB
+  rabbitmq:
+    port: ${RABBITMQ_PORT:5672}
+    host: ${RABBITMQ_HOST:localhost}
+    username: ${RABBITMQ_USERNAME:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+    publisher-confirm-type: correlated
+    publisher-returns: true
+    template:
+      mandatory: true
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never
+parcel:
+  storage:
+    endpoint: ${MINIO_ENDPOINT:http://localhost:9000}
+    public-endpoint: ${MINIO_PUBLIC_ENDPOINT:http://localhost:9000}
+    access-key: ${MINIO_ACCESS_KEY}
+    secret-key: ${MINIO_SECRET_KEY}
+    bucket: ${MINIO_PROOF_BUCKET:parcel-proofs}
+    region: ${MINIO_REGION:us-east-1}
+  pricing:
+    base-url: ${PRICING_SERVICE_URL:http://pricing-service:8080}
+    estimate-path: ${PRICING_ESTIMATE_PATH:/api/v1/pricing/estimate}
+  outbox:
+    enabled: true
+    delay-ms: 500
+logging:
+  level:
+    org.springframework.web: INFO
+    org.hibernate.SQL: INFO
