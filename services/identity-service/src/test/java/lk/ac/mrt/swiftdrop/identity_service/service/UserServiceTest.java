@@ -31,6 +31,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -336,6 +337,139 @@ class UserServiceTest {
                 .isInstanceOf(IllegalArgumentException.class);
 
         assertThatThrownBy(() -> userService.updateUserStatus(validId, null, validId))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    @DisplayName("Should successfully update user roles")
+    void shouldUpdateUserRolesSuccessfully() {
+        UUID targetUserId = UUID.randomUUID();
+        UUID adminId = UUID.randomUUID();
+        User user = new User("courier@swiftdrop.lk", "hash", "Courier", "+94771111111");
+        user.setId(targetUserId);
+        user.addRole(customerRole);
+
+        RoleEntity courierRole = new RoleEntity(Role.COURIER, "Courier role");
+
+        when(userRepository.findById(targetUserId)).thenReturn(Optional.of(user));
+        when(roleRepository.findByRole(Role.CUSTOMER)).thenReturn(Optional.of(customerRole));
+        when(roleRepository.findByRole(Role.COURIER)).thenReturn(Optional.of(courierRole));
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        UserResponse response = userService.updateUserRoles(
+                targetUserId,
+                Set.of(Role.CUSTOMER, Role.COURIER),
+                adminId
+        );
+
+        assertThat(response.roles()).containsExactlyInAnyOrder(Role.CUSTOMER, Role.COURIER);
+        verify(userRepository).save(user);
+    }
+
+    @Test
+    @DisplayName("Should throw ConflictException when admin attempts to remove their own ADMIN role")
+    void shouldPreventAdminFromRemovingOwnAdminRole() {
+        UUID adminId = UUID.randomUUID();
+
+        assertThatThrownBy(() -> userService.updateUserRoles(adminId, Set.of(Role.CUSTOMER), adminId))
+                .isInstanceOf(ConflictException.class)
+                .hasMessage("You cannot remove your own admin access");
+
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Should allow admin to update own roles when ADMIN role is retained")
+    void shouldAllowAdminToUpdateOwnRolesWhenAdminRetained() {
+        UUID adminId = UUID.randomUUID();
+        User adminUser = new User("admin@swiftdrop.lk", "hash", "Admin", "+94771111111");
+        adminUser.setId(adminId);
+        RoleEntity adminRole = new RoleEntity(Role.ADMIN, "Admin role");
+        RoleEntity dispatcherRole = new RoleEntity(Role.DISPATCHER, "Dispatcher role");
+        adminUser.addRole(adminRole);
+
+        when(userRepository.findById(adminId)).thenReturn(Optional.of(adminUser));
+        when(roleRepository.findByRole(Role.ADMIN)).thenReturn(Optional.of(adminRole));
+        when(roleRepository.findByRole(Role.DISPATCHER)).thenReturn(Optional.of(dispatcherRole));
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        UserResponse response = userService.updateUserRoles(
+                adminId,
+                Set.of(Role.ADMIN, Role.DISPATCHER),
+                adminId
+        );
+
+        assertThat(response.roles()).containsExactlyInAnyOrder(Role.ADMIN, Role.DISPATCHER);
+        verify(userRepository).save(adminUser);
+    }
+
+    @Test
+    @DisplayName("Should allow admin to remove ADMIN role from another user")
+    void shouldAllowAdminToRemoveAdminRoleFromAnotherUser() {
+        UUID otherUserId = UUID.randomUUID();
+        UUID adminId = UUID.randomUUID();
+        User otherUser = new User("exadmin@swiftdrop.lk", "hash", "Ex Admin", "+94771111111");
+        otherUser.setId(otherUserId);
+        RoleEntity adminRole = new RoleEntity(Role.ADMIN, "Admin role");
+        otherUser.addRole(adminRole);
+
+        when(userRepository.findById(otherUserId)).thenReturn(Optional.of(otherUser));
+        when(roleRepository.findByRole(Role.CUSTOMER)).thenReturn(Optional.of(customerRole));
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        UserResponse response = userService.updateUserRoles(
+                otherUserId,
+                Set.of(Role.CUSTOMER),
+                adminId
+        );
+
+        assertThat(response.roles()).containsExactly(Role.CUSTOMER);
+        verify(userRepository).save(otherUser);
+    }
+
+    @Test
+    @DisplayName("Should throw ResourceNotFoundException when user not found on update roles")
+    void shouldThrowWhenUserNotFoundOnUpdateRoles() {
+        UUID targetUserId = UUID.randomUUID();
+        UUID adminId = UUID.randomUUID();
+
+        when(userRepository.findById(targetUserId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> userService.updateUserRoles(targetUserId, Set.of(Role.CUSTOMER), adminId))
+                .isInstanceOf(ResourceNotFoundException.class);
+
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Should throw ResourceNotFoundException when role does not exist in repository")
+    void shouldThrowWhenRoleNotFoundInRepository() {
+        UUID targetUserId = UUID.randomUUID();
+        UUID adminId = UUID.randomUUID();
+        User user = new User("user@swiftdrop.lk", "hash", "User", "+94771111111");
+        user.setId(targetUserId);
+
+        when(userRepository.findById(targetUserId)).thenReturn(Optional.of(user));
+        when(roleRepository.findByRole(Role.DISPATCHER)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> userService.updateUserRoles(targetUserId, Set.of(Role.DISPATCHER), adminId))
+                .isInstanceOf(ResourceNotFoundException.class);
+
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Should throw IllegalArgumentException when userId is null or roles set is empty")
+    void shouldThrowWhenRolesArgumentsAreInvalid() {
+        UUID validId = UUID.randomUUID();
+
+        assertThatThrownBy(() -> userService.updateUserRoles(null, Set.of(Role.CUSTOMER), validId))
+                .isInstanceOf(IllegalArgumentException.class);
+
+        assertThatThrownBy(() -> userService.updateUserRoles(validId, null, validId))
+                .isInstanceOf(IllegalArgumentException.class);
+
+        assertThatThrownBy(() -> userService.updateUserRoles(validId, Set.of(), validId))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 }

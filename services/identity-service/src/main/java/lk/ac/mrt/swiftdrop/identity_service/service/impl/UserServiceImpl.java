@@ -22,7 +22,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashSet;
 import java.util.Locale;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -153,6 +155,36 @@ public class UserServiceImpl implements UserService {
         } else {
             log.info("Updated status for user [userId={}] to {}", userId, newStatus);
         }
+
+        return UserResponse.fromEntity(savedUser);
+    }
+
+    @Override
+    public UserResponse updateUserRoles(UUID userId, Set<Role> newRoles, UUID currentAdminId) {
+        if (userId == null) {
+            throw new IllegalArgumentException("User ID must not be null");
+        }
+        if (newRoles == null || newRoles.isEmpty()) {
+            throw new IllegalArgumentException("Roles set must not be empty");
+        }
+        if (currentAdminId != null && currentAdminId.equals(userId) && !newRoles.contains(Role.ADMIN)) {
+            log.warn("Admin [adminId={}] attempted to remove their own ADMIN role", currentAdminId);
+            throw new ConflictException("You cannot remove your own admin access");
+        }
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", userId));
+
+        Set<RoleEntity> roleEntities = new HashSet<>();
+        for (Role role : newRoles) {
+            RoleEntity roleEntity = roleRepository.findByRole(role)
+                    .orElseThrow(() -> new ResourceNotFoundException("Role", role.name()));
+            roleEntities.add(roleEntity);
+        }
+
+        user.setRoles(roleEntities);
+        User savedUser = userRepository.save(user);
+        log.info("Updated roles for user [userId={}] to {}", userId, newRoles);
 
         return UserResponse.fromEntity(savedUser);
     }

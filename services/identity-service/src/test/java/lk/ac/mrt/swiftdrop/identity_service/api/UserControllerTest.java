@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lk.ac.mrt.swiftdrop.contracts.domain.Role;
 import lk.ac.mrt.swiftdrop.contracts.error.ErrorCode;
 import lk.ac.mrt.swiftdrop.identity_service.api.dto.UpdateProfileRequest;
+import lk.ac.mrt.swiftdrop.identity_service.api.dto.UpdateUserRolesRequest;
 import lk.ac.mrt.swiftdrop.identity_service.api.dto.UpdateUserStatusRequest;
 import lk.ac.mrt.swiftdrop.identity_service.api.dto.UserResponse;
 import lk.ac.mrt.swiftdrop.identity_service.config.SecurityConfig;
@@ -327,6 +328,110 @@ class UserControllerTest {
         String invalidPayload = "{\"status\": null}";
 
         mockMvc.perform(patch("/api/v1/users/" + USER_ID_STRING + "/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(invalidPayload))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.errorCode").value(ErrorCode.VALIDATION_FAILED.name()));
+    }
+
+    @Test
+    @WithMockUser(username = ADMIN_ID_STRING, roles = {"ADMIN"})
+    @DisplayName("PATCH /api/v1/users/{id}/roles - 200 OK when ADMIN updates user roles")
+    void shouldUpdateUserRolesAsAdmin() throws Exception {
+        UpdateUserRolesRequest request = new UpdateUserRolesRequest(Set.of(Role.COURIER, Role.CUSTOMER));
+        UserResponse response = new UserResponse(
+                USER_ID,
+                "courier@swiftdrop.lk",
+                "Swift Courier",
+                "+94771234567",
+                UserStatus.ACTIVE,
+                Set.of(Role.COURIER, Role.CUSTOMER),
+                false,
+                Instant.now(),
+                Instant.now()
+        );
+
+        when(userService.updateUserRoles(eq(USER_ID), eq(Set.of(Role.COURIER, Role.CUSTOMER)), eq(ADMIN_ID)))
+                .thenReturn(response);
+
+        mockMvc.perform(patch("/api/v1/users/" + USER_ID_STRING + "/roles")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(USER_ID_STRING))
+                .andExpect(jsonPath("$.roles", hasItems("COURIER", "CUSTOMER")));
+    }
+
+    @Test
+    @WithMockUser(username = ADMIN_ID_STRING, roles = {"ADMIN"})
+    @DisplayName("PATCH /api/v1/users/{id}/roles - 409 Conflict when ADMIN removes their own ADMIN role")
+    void shouldReturn409WhenAdminRemovesOwnAdminRole() throws Exception {
+        UpdateUserRolesRequest request = new UpdateUserRolesRequest(Set.of(Role.CUSTOMER));
+
+        when(userService.updateUserRoles(eq(ADMIN_ID), eq(Set.of(Role.CUSTOMER)), eq(ADMIN_ID)))
+                .thenThrow(new ConflictException("You cannot remove your own admin access"));
+
+        mockMvc.perform(patch("/api/v1/users/" + ADMIN_ID_STRING + "/roles")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.status").value(409))
+                .andExpect(jsonPath("$.errorCode").value(ErrorCode.CONFLICT.name()))
+                .andExpect(jsonPath("$.detail").value("You cannot remove your own admin access"));
+    }
+
+    @Test
+    @WithMockUser(username = USER_ID_STRING, roles = {"CUSTOMER"})
+    @DisplayName("PATCH /api/v1/users/{id}/roles - 403 Forbidden for non-ADMIN user")
+    void shouldReturn403WhenNonAdminUpdatesRoles() throws Exception {
+        UpdateUserRolesRequest request = new UpdateUserRolesRequest(Set.of(Role.COURIER));
+
+        mockMvc.perform(patch("/api/v1/users/" + USER_ID_STRING + "/roles")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.status").value(403))
+                .andExpect(jsonPath("$.errorCode").value(ErrorCode.ACCESS_DENIED.name()));
+    }
+
+    @Test
+    @DisplayName("PATCH /api/v1/users/{id}/roles - 401 Unauthorized when request is unauthenticated")
+    void shouldReturn401WhenUpdateRolesUnauthenticated() throws Exception {
+        UpdateUserRolesRequest request = new UpdateUserRolesRequest(Set.of(Role.COURIER));
+
+        mockMvc.perform(patch("/api/v1/users/" + USER_ID_STRING + "/roles")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status").value(401))
+                .andExpect(jsonPath("$.errorCode").value(ErrorCode.UNAUTHENTICATED.name()));
+    }
+
+    @Test
+    @WithMockUser(username = ADMIN_ID_STRING, roles = {"ADMIN"})
+    @DisplayName("PATCH /api/v1/users/{id}/roles - 404 Not Found when user does not exist")
+    void shouldReturn404WhenUserNotFoundOnUpdateRoles() throws Exception {
+        UpdateUserRolesRequest request = new UpdateUserRolesRequest(Set.of(Role.COURIER));
+
+        when(userService.updateUserRoles(eq(USER_ID), eq(Set.of(Role.COURIER)), eq(ADMIN_ID)))
+                .thenThrow(new ResourceNotFoundException("User", USER_ID));
+
+        mockMvc.perform(patch("/api/v1/users/" + USER_ID_STRING + "/roles")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.errorCode").value(ErrorCode.RESOURCE_NOT_FOUND.name()));
+    }
+
+    @Test
+    @WithMockUser(username = ADMIN_ID_STRING, roles = {"ADMIN"})
+    @DisplayName("PATCH /api/v1/users/{id}/roles - 400 Bad Request when request body has empty roles set")
+    void shouldReturn400WhenRolesIsEmpty() throws Exception {
+        String invalidPayload = "{\"roles\": []}";
+
+        mockMvc.perform(patch("/api/v1/users/" + USER_ID_STRING + "/roles")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(invalidPayload))
                 .andExpect(status().isBadRequest())

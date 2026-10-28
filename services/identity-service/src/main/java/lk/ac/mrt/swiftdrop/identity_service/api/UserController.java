@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lk.ac.mrt.swiftdrop.identity_service.api.dto.UpdateProfileRequest;
+import lk.ac.mrt.swiftdrop.identity_service.api.dto.UpdateUserRolesRequest;
 import lk.ac.mrt.swiftdrop.identity_service.api.dto.UpdateUserStatusRequest;
 import lk.ac.mrt.swiftdrop.identity_service.api.dto.UserResponse;
 import lk.ac.mrt.swiftdrop.identity_service.config.SecurityUtils;
@@ -136,6 +137,56 @@ public class UserController {
     ) {
         UUID currentAdminId = SecurityUtils.extractUserId(authentication);
         UserResponse response = userService.updateUserStatus(userId, request.status(), currentAdminId);
+        return ResponseEntity.ok(response);
+    }
+
+    @PatchMapping(value = "/{id}/roles", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(
+            summary = "Update user assigned roles",
+            description = "Updates the assigned system roles for the specified user. " +
+                    "Admins cannot remove their own ADMIN role (lockout guard). Restricted to ADMIN users."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "User roles successfully updated",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = UserResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Invalid request payload or empty roles set (RFC 7807)",
+                    content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Unauthenticated - valid authentication required (RFC 7807)",
+                    content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "Access denied - ADMIN role required (RFC 7807)",
+                    content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "User or specified role not found (RFC 7807)",
+                    content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "Conflict - Admin cannot remove their own ADMIN role (RFC 7807)",
+                    content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class))
+            )
+    })
+    public ResponseEntity<UserResponse> updateUserRoles(
+            @Parameter(description = "UUID of the user whose roles are being updated")
+            @PathVariable("id") UUID userId,
+            @Valid @RequestBody UpdateUserRolesRequest request,
+            Authentication authentication
+    ) {
+        UUID currentAdminId = SecurityUtils.extractUserId(authentication);
+        UserResponse response = userService.updateUserRoles(userId, request.roles(), currentAdminId);
         return ResponseEntity.ok(response);
     }
 

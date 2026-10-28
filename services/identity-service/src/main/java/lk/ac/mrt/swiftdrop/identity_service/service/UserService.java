@@ -1,5 +1,6 @@
 package lk.ac.mrt.swiftdrop.identity_service.service;
 
+import lk.ac.mrt.swiftdrop.contracts.domain.Role;
 import lk.ac.mrt.swiftdrop.identity_service.api.dto.RegisterRequest;
 import lk.ac.mrt.swiftdrop.identity_service.api.dto.UpdateProfileRequest;
 import lk.ac.mrt.swiftdrop.identity_service.api.dto.UserResponse;
@@ -7,6 +8,7 @@ import lk.ac.mrt.swiftdrop.identity_service.domain.UserStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -62,4 +64,16 @@ public interface UserService {
      * @return updated user profile response
      */
     UserResponse updateUserStatus(UUID userId, UserStatus newStatus, UUID currentAdminId);
+
+    /**
+     * Updates an existing user's assigned system roles (ADMIN only).
+     * Validates that all requested roles exist in the system.
+     * Prevents admin lockout: an admin cannot remove their own ADMIN role.
+     *
+     * @param userId the ID of the user whose roles are being modified
+     * @param newRoles the set of roles to assign
+     * @param currentAdminId the ID of the authenticated administrator performing the update (may be null)
+     * @return updated user profile response
+     */
+    UserResponse updateUserRoles(UUID userId, Set<Role> newRoles, UUID currentAdminId);
 }
