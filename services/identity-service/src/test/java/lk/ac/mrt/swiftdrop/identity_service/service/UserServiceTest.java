@@ -475,6 +475,42 @@ class UserServiceTest {
     }
 
     @Test
+    @DisplayName("Should add MERCHANT role without replacing existing roles")
+    void shouldGrantMerchantRoleAndPreserveExistingRoles() {
+        UUID userId = UUID.randomUUID();
+        User user = new User("merchant@swiftdrop.lk", "hash", "Merchant", "+94770000000");
+        user.setId(userId);
+        user.addRole(customerRole);
+        RoleEntity merchantRole = new RoleEntity(Role.MERCHANT, "Merchant role");
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(roleRepository.findByRole(Role.MERCHANT)).thenReturn(Optional.of(merchantRole));
+        when(userRepository.save(user)).thenReturn(user);
+
+        UserResponse response = userService.grantMerchantRole(userId);
+
+        assertThat(response.roles()).containsExactlyInAnyOrder(Role.CUSTOMER, Role.MERCHANT);
+        verify(userRepository).save(user);
+    }
+
+    @Test
+    @DisplayName("Should grant MERCHANT role idempotently")
+    void shouldGrantMerchantRoleIdempotently() {
+        UUID userId = UUID.randomUUID();
+        User user = new User("merchant@swiftdrop.lk", "hash", "Merchant", "+94770000000");
+        user.setId(userId);
+        user.addRole(customerRole);
+        user.addRole(new RoleEntity(Role.MERCHANT, "Merchant role"));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+
+        UserResponse response = userService.grantMerchantRole(userId);
+
+        assertThat(response.roles()).contains(Role.CUSTOMER, Role.MERCHANT);
+        verify(userRepository, never()).save(any());
+        verify(roleRepository, never()).findByRole(Role.MERCHANT);
+    }
+
+    @Test
     @DisplayName("Should batch lookup users by IDs successfully")
     void shouldBatchLookupUsersSuccessfully() {
         UUID id1 = UUID.randomUUID();

@@ -20,7 +20,7 @@ public final class DashboardController {
 		this.dashboardService = dashboardService;
 	}
 
-	@GetMapping
+	@GetMapping("/summary")
 	Mono<DashboardResponse> getDashboard(
 			JwtAuthenticationToken authentication,
 			@RequestHeader(REQUEST_ID_HEADER) String requestId) {

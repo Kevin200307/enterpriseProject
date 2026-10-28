@@ -44,7 +44,7 @@ public class InternalUserLookupController {
     }
 
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
-    @PreAuthorize("hasAnyRole('ADMIN', 'SERVICE') or hasAuthority('SCOPE_internal') or (authentication instanceof T(org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken) and (authentication.token.claims['client_id'] != null or authentication.token.claims['scope'] != null))")
+    @PreAuthorize("authentication instanceof T(org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken) and ((authentication.token.claims['client_id'] == 'dispatch-service' and authentication.token.claims['scope'] == 'dispatch.internal') or (authentication.token.claims['client_id'] == 'notification-service' and authentication.token.claims['scope'] == 'notification.internal') or (authentication.token.claims['client_id'] == 'merchant-service' and authentication.token.claims['scope'] == 'merchant.internal'))")
     @Operation(
             summary = "Batch lookup users by IDs",
             description = "Resolves user details (id, fullName, email, phone, status, roles) for a list of UUIDs. Restricted to internal services."
@@ -79,7 +79,7 @@ public class InternalUserLookupController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'SERVICE') or hasAuthority('SCOPE_internal') or (authentication instanceof T(org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken) and (authentication.token.claims['client_id'] != null or authentication.token.claims['scope'] != null))")
+    @PreAuthorize("authentication instanceof T(org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken) and ((authentication.token.claims['client_id'] == 'dispatch-service' and authentication.token.claims['scope'] == 'dispatch.internal') or (authentication.token.claims['client_id'] == 'notification-service' and authentication.token.claims['scope'] == 'notification.internal') or (authentication.token.claims['client_id'] == 'merchant-service' and authentication.token.claims['scope'] == 'merchant.internal'))")
     @Operation(
             summary = "Lookup a single user by ID",
             description = "Resolves single user details (id, fullName, email, phone, status, roles). Restricted to internal services."

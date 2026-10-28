@@ -46,6 +46,7 @@ class GatewayRoutesTests {
 				"tracking-websocket",
 				"tracking-sockjs",
 				"identity-api",
+				"parcel-proof-upload",
 				"parcel-api",
 				"pricing-api",
 				"dispatch-api",
@@ -107,6 +108,7 @@ class GatewayRoutesTests {
 		assertRoute("identity-api", "http://identity-service:8080",
 				"/api/v1/auth/**", "/api/v1/users/**");
 		assertRoute("parcel-api", "http://parcel-service:8080", "/api/v1/parcels/**");
+		assertRoute("parcel-proof-upload", "http://parcel-service:8080", "/api/v1/parcels/*/proofs");
 		assertRoute("pricing-api", "http://pricing-service:8080", "/api/v1/pricing/**");
 		assertRoute("dispatch-api", "http://dispatch-service:8080",
 				"/api/v1/dispatch/**", "/api/v1/couriers/**");
@@ -135,6 +137,7 @@ class GatewayRoutesTests {
 	void givesEveryServiceAnIndependentCircuitBreaker() {
 		assertCircuitBreaker("identity-api", "identityService");
 		assertCircuitBreaker("parcel-api", "parcelService");
+		assertCircuitBreaker("parcel-proof-upload", "parcelUploadService");
 		assertCircuitBreaker("pricing-api", "pricingService");
 		assertCircuitBreaker("dispatch-api", "dispatchService");
 		assertCircuitBreaker("merchant-api", "merchantService");

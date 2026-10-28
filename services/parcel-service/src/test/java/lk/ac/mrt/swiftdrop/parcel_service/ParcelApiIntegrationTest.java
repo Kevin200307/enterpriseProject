@@ -51,7 +51,7 @@ class ParcelApiIntegrationTest {
 
     private List<lk.ac.mrt.swiftdrop.parcel_service.domain.OutboxEvent> statusEvents() {
         return outbox.findAll().stream().filter(e -> e.getRoutingKey().equals(
-            lk.ac.mrt.swiftdrop.contracts.messaging.RoutingKeys.PARCEL_STATUS_CHANGED_V1)).toList();
+            lk.ac.mrt.swiftdrop.contracts.messaging.RoutingKeys.PARCEL_STATUS_CHANGED_V2)).toList();
     }
 
     @Test void internalAssignmentIsServiceOnlyIdempotentAndPublishesVersionedSnapshot() throws Exception {
@@ -127,12 +127,41 @@ class ParcelApiIntegrationTest {
         assertThat(outbox.count()).isEqualTo(2);
         var envelope = mapper.readTree(statusEvents().getFirst().getPayload());
         assertThat(envelope.path("eventType").asString()).isEqualTo("parcel.status.changed");
+        assertThat(envelope.path("version").asInt()).isEqualTo(2);
+        assertThat(envelope.path("payload").path("customerUserId").asString()).isEqualTo(customer.toString());
         assertThat(envelope.path("payload").path("toStatus").asString()).isEqualTo("CREATED");
         verify(pricing, times(1)).estimate(any(), any());
         mvc.perform(post("/api/v1/parcels").with(as(customer,"CUSTOMER"))
             .header("Idempotency-Key", "booking-001").contentType(MediaType.APPLICATION_JSON)
             .content(mapper.writeValueAsString(booking("Galle"))))
             .andExpect(status().isConflict()).andExpect(jsonPath("$.errorCode").value("CONFLICT"));
+    }
+
+    @Test void ownerCancellationIsIdempotentAndWritesHistoryAndV2Outbox() throws Exception {
+        var parcel = book("cancel-001");
+
+        mvc.perform(post("/api/v1/parcels/{id}/cancel", parcel.id()).with(as(customer, "CUSTOMER")))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("CANCELLED"));
+        mvc.perform(post("/api/v1/parcels/{id}/cancel", parcel.id()).with(as(customer, "CUSTOMER")))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("CANCELLED"));
+
+        assertThat(history.findByParcelIdOrderByOccurredAtAsc(parcel.id())).hasSize(2);
+        assertThat(statusEvents()).hasSize(2);
+        var event = mapper.readTree(statusEvents().getLast().getPayload());
+        assertThat(event.path("version").asInt()).isEqualTo(2);
+        assertThat(event.path("payload").path("toStatus").asString()).isEqualTo("CANCELLED");
+    }
+
+    @Test void cancellationRejectsOtherCustomersAndParcelsAfterPickup() throws Exception {
+        var parcel = book("cancel-002");
+        mvc.perform(post("/api/v1/parcels/{id}/cancel", parcel.id())
+                        .with(as(UUID.randomUUID(), "CUSTOMER")))
+                .andExpect(status().isForbidden());
+
+        assign(parcel.id());
+        transition(parcel.id(), ParcelStatus.PICKED_UP, null, null).andExpect(status().isOk());
+        mvc.perform(post("/api/v1/parcels/{id}/cancel", parcel.id()).with(as(customer, "CUSTOMER")))
+                .andExpect(status().isConflict());
     }
     @Test
     @org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable(named="PARCEL_LIVE_BROKER_TESTS",matches="true")
@@ -144,7 +173,7 @@ class ParcelApiIntegrationTest {
         admin.declareQueue(new org.springframework.amqp.core.Queue(queue,false,false,false));
         admin.declareBinding(new org.springframework.amqp.core.Binding(queue,
             org.springframework.amqp.core.Binding.DestinationType.QUEUE,exchange,
-            lk.ac.mrt.swiftdrop.contracts.messaging.RoutingKeys.PARCEL_STATUS_CHANGED_V1,null));
+            lk.ac.mrt.swiftdrop.contracts.messaging.RoutingKeys.PARCEL_STATUS_CHANGED_V2,null));
         var transaction = new org.springframework.transaction.support.TransactionTemplate(transactions);
         String dispatchQueue = queue+"-dispatch";
         admin.declareQueue(new org.springframework.amqp.core.Queue(dispatchQueue,false,false,false));

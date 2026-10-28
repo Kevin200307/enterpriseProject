@@ -154,8 +154,8 @@ class AdminBootstrapServiceTest {
     }
 
     @Test
-    @DisplayName("Should skip bootstrap execution when bootstrap email is blank")
-    void shouldSkipWhenBootstrapEmailIsBlank() {
+    @DisplayName("Should fail fast when enabled bootstrap email is blank")
+    void shouldFailWhenBootstrapEmailIsBlank() {
         AdminBootstrapProperties blankEmailProperties = mock(AdminBootstrapProperties.class);
         when(blankEmailProperties.enabled()).thenReturn(true);
         when(blankEmailProperties.bootstrapEmail()).thenReturn("   ");
@@ -167,9 +167,25 @@ class AdminBootstrapServiceTest {
                 blankEmailProperties
         );
 
-        blankEmailService.run(args);
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> blankEmailService.run(args))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("ADMIN_BOOTSTRAP_EMAIL");
 
         verify(userRepository, never()).findByEmailIgnoreCase(any());
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Should fail fast when enabled bootstrap password is blank")
+    void shouldFailWhenBootstrapPasswordIsBlank() {
+        AdminBootstrapProperties properties = new AdminBootstrapProperties(
+                true, "admin@swiftdrop.lk", " ", "Admin", "+94770000001");
+        AdminBootstrapService service = new AdminBootstrapService(
+                userRepository, roleRepository, passwordEncoder, properties);
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.run(args))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("ADMIN_BOOTSTRAP_PASSWORD");
         verify(userRepository, never()).save(any());
     }
 }

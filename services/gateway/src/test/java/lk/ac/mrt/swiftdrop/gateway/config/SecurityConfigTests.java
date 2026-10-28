@@ -144,6 +144,15 @@ class SecurityConfigTests {
 	}
 
 	@Test
+	void internalServiceRoutesAreNeverReachableThroughGateway() {
+		client.mutateWith(mockJwt().jwt(jwt -> jwt.subject("user-123")))
+				.get().uri("/api/v1/internal/users/123")
+				.exchange().expectStatus().isForbidden()
+				.expectHeader().contentType(MediaType.APPLICATION_PROBLEM_JSON)
+				.expectBody().jsonPath("$.errorCode").isEqualTo("ACCESS_DENIED");
+	}
+
+	@Test
 	void documentationIsPublic() {
 		client.get()
 				.uri("/v3/api-docs")
@@ -168,7 +177,7 @@ class SecurityConfigTests {
 				.header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "POST")
 				.header(
 						HttpHeaders.ACCESS_CONTROL_REQUEST_HEADERS,
-						"authorization,content-type,x-request-id")
+						"authorization,content-type,x-request-id,idempotency-key")
 				.exchange()
 				.expectStatus().isOk()
 				.expectHeader().valueEquals(
@@ -183,7 +192,7 @@ class SecurityConfigTests {
 				.expectHeader().value(
 						HttpHeaders.ACCESS_CONTROL_ALLOW_HEADERS,
 						value -> org.assertj.core.api.Assertions.assertThat(value.toLowerCase())
-								.contains("authorization", "content-type", "x-request-id"));
+								.contains("authorization", "content-type", "x-request-id", "idempotency-key"));
 	}
 
 	@Test

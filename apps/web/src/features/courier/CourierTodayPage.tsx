@@ -42,16 +42,16 @@ export function CourierTodayPage() {
       photo?: File
     }) => {
       // Proof first: if the upload fails nothing has changed and the courier can simply retry.
-      const proofUrl = photo
-        ? (await parcelsApi.uploadProof(a.parcelId, photo)).proofUrl
+      const proofId = photo
+        ? (await parcelsApi.uploadProof(a.parcelId, photo)).id
         : undefined
-      return parcelsApi.updateStatus(a.parcelId, { ...change, proofUrl })
+      return parcelsApi.updateStatus(a.parcelId, { ...change, proofId })
     },
     onMutate: async ({ a, change }) => {
       await qc.cancelQueries({ queryKey: qk.courier.today })
       const previous = qc.getQueryData<Assignment[]>(qk.courier.today)
       qc.setQueryData<Assignment[]>(qk.courier.today, (old) =>
-        old?.map((x) => (x.id === a.id ? { ...x, status: change.toStatus } : x)),
+        old?.map((x) => (x.id === a.id ? { ...x, status: change.status } : x)),
       )
       return { previous }
     },
@@ -70,12 +70,12 @@ export function CourierTodayPage() {
   const onAction = (a: Assignment, action: CourierAction) => {
     if (action.to === 'DELIVERED' || action.to === 'FAILED')
       return setPending({ a, kind: action.to })
-    advance.mutate({ a, change: { toStatus: action.to } })
+    advance.mutate({ a, change: { status: action.to } })
   }
   const onDelivered = ({ photo, note }: DeliveredPayload) =>
-    pending && advance.mutate({ a: pending.a, change: { toStatus: 'DELIVERED', note }, photo })
-  const onFailed = (failureReason: string) =>
-    pending && advance.mutate({ a: pending.a, change: { toStatus: 'FAILED', failureReason } })
+    pending && advance.mutate({ a: pending.a, change: { status: 'DELIVERED', note }, photo })
+  const onFailed = (failedReason: string) =>
+    pending && advance.mutate({ a: pending.a, change: { status: 'FAILED', failedReason } })
 
   const groups = useMemo(() => groupManifest(list.data ?? []), [list.data])
   const counts = useMemo(() => {

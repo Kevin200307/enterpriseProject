@@ -6,7 +6,8 @@ import java.util.*;
 import lk.ac.mrt.swiftdrop.contracts.domain.ParcelStatus;
 import lk.ac.mrt.swiftdrop.contracts.error.ErrorCode;
 import lk.ac.mrt.swiftdrop.contracts.domain.TrackingNumber;
-import lk.ac.mrt.swiftdrop.contracts.events.ParcelStatusChangedV1;
+import lk.ac.mrt.swiftdrop.contracts.events.ParcelStatusChangedV2;
+import lk.ac.mrt.swiftdrop.contracts.messaging.RoutingKeys;
 import lk.ac.mrt.swiftdrop.contracts.events.ParcelTrackingSnapshotV1;
 import lk.ac.mrt.swiftdrop.parcel_service.api.*;
 import lk.ac.mrt.swiftdrop.parcel_service.api.ParcelDtos.*;
@@ -156,6 +157,28 @@ public class ParcelService {
         return ParcelView.of(parcel);
     }
 
+    @Transactional
+    public ParcelView cancel(UUID id, Actor actor) {
+        Parcel parcel = find(id);
+        boolean owner = actor.has("CUSTOMER") && parcel.getMerchantId() == null
+                && parcel.getCustomerId().equals(actor.id());
+        boolean merchantOwner = actor.has("MERCHANT") && parcel.getMerchantId() != null
+                && parcel.getMerchantId().equals(requireMerchant(actor));
+        if (!owner && !merchantOwner && !actor.has("ADMIN")) {
+            throw new ParcelException(ErrorCode.ACCESS_DENIED, "Only the owner or an administrator can cancel this parcel");
+        }
+        if (parcel.getStatus() == ParcelStatus.CANCELLED) {
+            return ParcelView.of(parcel);
+        }
+        ParcelStateMachine.validate(parcel.getStatus(), ParcelStatus.CANCELLED);
+        Instant now = clock.instant();
+        ParcelStatus previous = parcel.getStatus();
+        parcel.changeStatus(ParcelStatus.CANCELLED, now);
+        recordChange(parcel, previous, actor, "Parcel cancelled", null, null, now);
+        parcels.flush();
+        return ParcelView.of(parcel);
+    }
+
     public Parcel readable(UUID id, Actor actor) {
         Parcel p = find(id);
         if (actor.manages() || actor.has("CUSTOMER") && p.getMerchantId() == null && p.getCustomerId().equals(actor.id())
@@ -178,9 +201,11 @@ public class ParcelService {
     private void recordChange(Parcel p, ParcelStatus from, Actor actor, String note,
                               UUID proofId, String failedReason, Instant now) {
         history.save(new StatusHistory(p.getId(), from, p.getStatus(), actor.id(), note, proofId, failedReason, now));
-        var envelope = new ParcelStatusChangedV1(p.getId(), p.getTrackingNumber(), from,
-            p.getStatus(), actor.id(), p.getMerchantId()).toEnvelope("parcel-service");
-        outbox.save(new OutboxEvent(envelope.eventId(), mapper.writeValueAsString(envelope), now));
+        var envelope = new ParcelStatusChangedV2(p.getId(), p.getTrackingNumber(), p.getCustomerId(),
+            p.getMerchantId(), p.getAssigneeId(), from, p.getStatus(), actor.id(), failedReason,
+            proofId).toEnvelope("parcel-service");
+        outbox.save(new OutboxEvent(envelope.eventId(), mapper.writeValueAsString(envelope), now,
+            RoutingKeys.PARCEL_STATUS_CHANGED_V2));
         parcels.flush();
         dispatchEvents.write(p,note,now);
     }

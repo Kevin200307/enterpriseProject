@@ -229,7 +229,7 @@ describe('all parcels', () => {
     expect(body).toBeUndefined()
     await userEvent.type(within(dialog).getByLabelText('Failure reason'), 'Refused')
     await userEvent.click(within(dialog).getByRole('button', { name: 'Update status' }))
-    await waitFor(() => expect(body).toEqual({ toStatus: 'FAILED', failureReason: 'Refused' }))
+    await waitFor(() => expect(body).toEqual({ status: 'FAILED', failedReason: 'Refused' }))
   })
 
   it('says a final-state parcel cannot be changed', async () => {

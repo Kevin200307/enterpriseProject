@@ -1,7 +1,7 @@
 package lk.ac.mrt.swiftdrop.notification_service.listener;
 
 import lk.ac.mrt.swiftdrop.contracts.events.EventEnvelope;
-import lk.ac.mrt.swiftdrop.contracts.events.ParcelStatusChangedV1;
+import lk.ac.mrt.swiftdrop.contracts.events.ParcelStatusChangedV2;
 import lk.ac.mrt.swiftdrop.contracts.messaging.Queues;
 import lk.ac.mrt.swiftdrop.notification_service.service.NotificationService;
 import lombok.RequiredArgsConstructor;
@@ -20,8 +20,8 @@ public class ParcelStatusNotificationListener {
      * Consumes parcel status changed events from RabbitMQ queue.
      * Queue: notification.parcel.status.changed.v1
      */
-    @RabbitListener(queues = Queues.NOTIFICATION_PARCEL_STATUS_CHANGED)
-    public void onParcelStatusChanged(EventEnvelope<ParcelStatusChangedV1> envelope) {
+    @RabbitListener(queues = Queues.NOTIFICATION_PARCEL_STATUS_CHANGED_V2)
+    public void onParcelStatusChanged(EventEnvelope<ParcelStatusChangedV2> envelope) {
         log.info("Received parcel status changed event: eventId={}, trackingNumber={}, toStatus={}",
                 envelope.eventId(),
                 envelope.payload().trackingNumber(),

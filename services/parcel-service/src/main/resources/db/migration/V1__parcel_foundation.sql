@@ -22,7 +22,7 @@ CREATE TABLE parcels (
     weight_kg NUMERIC(10,3) NOT NULL CHECK (weight_kg > 0 AND weight_kg <= 1000),
     fee NUMERIC(12,2) NOT NULL CHECK (fee >= 0),
     currency VARCHAR(3) NOT NULL,
-    status VARCHAR(30) NOT NULL CHECK (status IN ('CREATED','PICKED_UP','IN_TRANSIT','OUT_FOR_DELIVERY','DELIVERED','FAILED')),
+    status VARCHAR(30) NOT NULL CONSTRAINT parcels_status_check CHECK (status IN ('CREATED','PICKED_UP','IN_TRANSIT','OUT_FOR_DELIVERY','DELIVERED','FAILED')),
     booking_key VARCHAR(100) NOT NULL,
     request_hash VARCHAR(64) NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL,

@@ -55,8 +55,10 @@ public class AdminBootstrapService implements ApplicationRunner {
 
         String email = properties.bootstrapEmail();
         if (email == null || email.isBlank()) {
-            log.warn("Admin bootstrap email is empty. Skipping admin user provisioning.");
-            return;
+            throw new IllegalStateException("Admin bootstrap is enabled but ADMIN_BOOTSTRAP_EMAIL is missing");
+        }
+        if (properties.bootstrapPassword() == null || properties.bootstrapPassword().isBlank()) {
+            throw new IllegalStateException("Admin bootstrap is enabled but ADMIN_BOOTSTRAP_PASSWORD is missing");
         }
 
         String normalizedEmail = email.trim().toLowerCase(Locale.ROOT);

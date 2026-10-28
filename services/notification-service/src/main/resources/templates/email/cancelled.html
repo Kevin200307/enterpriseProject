@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Parcel cancelled</title>
+</head>
+<body>
+<main>
+    <p>Hello <span th:text="${recipientName}">Customer</span>,</p>
+    <p>Your parcel booking <strong th:text="${trackingNumber}">SD-00000000</strong> has been cancelled.</p>
+    <p><a th:href="${trackingUrl}">View parcel details</a></p>
+</main>
+</body>
+</html>

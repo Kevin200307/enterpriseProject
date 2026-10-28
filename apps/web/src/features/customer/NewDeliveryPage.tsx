@@ -8,9 +8,10 @@ import { describeError } from '@/api/errorMessages'
 import { applyViolations } from '@/api/formErrors'
 import { pricingApi } from '@/api/endpoints/pricing'
 import { parcelsApi } from '@/api/endpoints/parcels'
+import { merchantApi } from '@/api/endpoints/merchant'
 import { usersApi } from '@/api/endpoints/auth'
 import { qk } from '@/api/queryKeys'
-import type { EstimateInput, Parcel } from '@/api/types'
+import type { EstimateInput } from '@/api/types'
 import { CopyField } from '@/components/common/CopyField'
 import { FormField } from '@/components/common/FormField'
 import { PageHeader } from '@/components/common/PageHeader'
@@ -36,7 +37,7 @@ import { readSavedDetails } from './savedDetails'
 export function NewDeliveryPage({ merchant = false }: { merchant?: boolean }) {
   const cityListId = useId()
   const qc = useQueryClient()
-  const [created, setCreated] = useState<Parcel>()
+  const [created, setCreated] = useState<{ id?: string; trackingNumber: string }>()
   const [formError, setFormError] = useState<string>()
   const [reference, setReference] = useState('')
   const [refError, setRefError] = useState<string>()
@@ -88,15 +89,24 @@ export function NewDeliveryPage({ merchant = false }: { merchant?: boolean }) {
   const blocked = isReady && (!settled || estimate.isFetching || !!estimate.error)
 
   // --- submit --------------------------------------------------------------
-  const book = useMutation({
-    mutationFn: (v: BookingForm) =>
-      parcelsApi.create({
+  const book = useMutation<{ id?: string; trackingNumber: string }, unknown, BookingForm>({
+    mutationFn: (v: BookingForm) => {
+      if (merchant) {
+        return merchantApi.createOrder({
+          merchantRef: reference.trim(),
+          pickup: merchantAddress(v.pickup, estimate.data?.zoneFrom),
+          dropoff: merchantAddress(v.dropoff, estimate.data?.zoneTo),
+          size: v.size,
+          weightKg: Number(v.weightKg),
+        })
+      }
+      return parcelsApi.create({
         ...v,
         weightKg: Number(v.weightKg),
         pickup: clean(v.pickup),
         dropoff: clean(v.dropoff),
-        merchantRef: merchant ? reference.trim() : undefined,
-      }),
+      })
+    },
     onSuccess: (parcel) => {
       setCreated(parcel)
       void qc.invalidateQueries({ queryKey: qk.parcels.all })
@@ -327,4 +337,9 @@ export function NewDeliveryPage({ merchant = false }: { merchant?: boolean }) {
 
 function clean(a: BookingForm['pickup']) {
   return { ...a, line2: a.line2 || undefined }
+}
+
+function merchantAddress(a: BookingForm['pickup'], zone?: string) {
+  const { line2: _line2, ...address } = a
+  return { ...address, zone: zone ?? a.city }
 }

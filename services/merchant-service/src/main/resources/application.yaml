@@ -37,3 +37,8 @@ logging:
 # Identity service URL for role grant calls
 identity-service:
   url: ${IDENTITY_SERVICE_URL:http://identity-service:8080}
+parcel-service:
+  url: ${PARCEL_SERVICE_URL:http://parcel-service:8080}
+merchant:
+  webhook:
+    master-key: ${WEBHOOK_MASTER_KEY:development-only-webhook-master-key}

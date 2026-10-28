@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.UUID;
 import lk.ac.mrt.swiftdrop.contracts.domain.ParcelStatus;
 import lk.ac.mrt.swiftdrop.contracts.events.EventEnvelope;
-import lk.ac.mrt.swiftdrop.contracts.events.ParcelStatusChangedV1;
+import lk.ac.mrt.swiftdrop.contracts.events.ParcelStatusChangedV2;
 import lk.ac.mrt.swiftdrop.notification_service.channel.ChannelRouter;
 import lk.ac.mrt.swiftdrop.notification_service.channel.NotificationChannelHandler;
 import lk.ac.mrt.swiftdrop.notification_service.domain.NotificationChannel;
@@ -42,22 +42,21 @@ public class NotificationService {
     private boolean notificationsEnabled;
 
     @Transactional
-    public void handleParcelStatusChanged(EventEnvelope<ParcelStatusChangedV1> envelope) {
+    public void handleParcelStatusChanged(EventEnvelope<ParcelStatusChangedV2> envelope) {
         if (!notificationsEnabled) {
             log.info("Global kill switch active (NOTIFICATIONS_ENABLED=false). Skipping event: {}", envelope.eventId());
             return;
         }
 
         UUID eventId = envelope.eventId();
-        ParcelStatusChangedV1 payload = envelope.payload();
+        ParcelStatusChangedV2 payload = envelope.payload();
         String trackingNumber = payload.trackingNumber();
         ParcelStatus toStatus = payload.toStatus();
 
-        // Resolve user reference (actorId or parcelId as fallback)
-        UUID recipientRef = payload.actorId() != null ? payload.actorId() : payload.parcelId();
+        UUID recipientRef = payload.customerUserId();
 
-        log.info("Processing notifications for eventId: {}, trackingNumber: {}, recipientRef: {}, status: {}",
-                eventId, trackingNumber, recipientRef, toStatus);
+        log.info("Processing notifications for eventId: {}, trackingNumber: {}, recipientRef: {}, changedByUserId: {}, status: {}",
+                eventId, trackingNumber, recipientRef, payload.changedByUserId(), toStatus);
 
         // 1. Resolve user details via Identity Service lookup (or resilient fallback)
         IdentityClient.UserLookupDto user = identityClient.lookupUser(recipientRef);
@@ -92,7 +91,7 @@ public class NotificationService {
         }
     }
 
-    private void sendEmail(UUID eventId, ParcelStatusChangedV1 payload, UUID recipientRef, String email, String recipientName, ParcelStatus status) {
+    private void sendEmail(UUID eventId, ParcelStatusChangedV2 payload, UUID recipientRef, String email, String recipientName, ParcelStatus status) {
         String subject = emailService.buildSubject(payload.trackingNumber(), status);
         String body = emailService.buildBody(payload.trackingNumber(), status);
 
@@ -123,7 +122,7 @@ public class NotificationService {
         logRepository.save(notification);
     }
 
-    private void sendSms(UUID eventId, ParcelStatusChangedV1 payload, UUID recipientRef, String phone, String recipientName, ParcelStatus status) {
+    private void sendSms(UUID eventId, ParcelStatusChangedV2 payload, UUID recipientRef, String phone, String recipientName, ParcelStatus status) {
         String message = smsProvider.buildMessage(payload.trackingNumber(), status);
 
         NotificationLog notification = NotificationLog.builder()
@@ -152,7 +151,7 @@ public class NotificationService {
         logRepository.save(notification);
     }
 
-    private void recordSkipped(UUID eventId, ParcelStatusChangedV1 payload, UUID recipientRef, String recipient,
+    private void recordSkipped(UUID eventId, ParcelStatusChangedV2 payload, UUID recipientRef, String recipient,
                                NotificationChannel channel, ParcelStatus status, String reason) {
         logRepository.save(NotificationLog.builder()
                 .eventId(eventId)

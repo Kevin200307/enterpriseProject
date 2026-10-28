@@ -58,7 +58,7 @@ class DashboardIntegrationTests {
 					case FAIL -> response.status(HttpStatus.SERVICE_UNAVAILABLE.value()).send();
 					case TIMEOUT -> response
 							.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-							.sendString(Mono.delay(Duration.ofSeconds(1)).thenReturn("{\"late\":true}"))
+							.sendString(Mono.delay(Duration.ofSeconds(3)).thenReturn("{\"late\":true}"))
 							.then();
 				};
 			})))
@@ -70,7 +70,7 @@ class DashboardIntegrationTests {
 		registry.add("gateway.services.parcel", () -> baseUrl);
 		registry.add("gateway.services.dispatch", () -> baseUrl);
 		registry.add("gateway.services.merchant", () -> baseUrl);
-		registry.add("gateway.dashboard.timeout", () -> "300ms");
+		registry.add("gateway.dashboard.timeout", () -> "2s");
 	}
 
 	@AfterAll
@@ -140,7 +140,7 @@ class DashboardIntegrationTests {
 	@Test
 	void rejectsAnonymousRequests() {
 		client.get()
-				.uri("/api/v1/dashboard")
+				.uri("/api/v1/dashboard/summary")
 				.exchange()
 				.expectStatus().isUnauthorized()
 				.expectHeader().contentType(MediaType.APPLICATION_PROBLEM_JSON)
@@ -151,7 +151,7 @@ class DashboardIntegrationTests {
 	private WebTestClient.ResponseSpec authenticatedRequest(String requestId) {
 		return client.mutateWith(mockJwt().jwt(jwt -> jwt.subject("20f4909a-9dc7-4fc0-a850-2cbb8641cd1d")))
 				.get()
-				.uri("/api/v1/dashboard")
+				.uri("/api/v1/dashboard/summary")
 				.header("X-Request-Id", requestId)
 				.exchange();
 	}

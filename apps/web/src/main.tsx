@@ -5,7 +5,6 @@ import { ErrorBoundary } from '@/app/ErrorBoundary'
 import { Providers } from '@/app/providers'
 import { createRouter } from '@/app/router'
 import { LoadingScreen } from '@/components/common/LoadingScreen'
-import { env } from '@/config/env'
 import { LOADING_THRESHOLD_MS } from '@/hooks/useMinimumLoading'
 import { useEffect, useState } from 'react'
 import './index.css'
@@ -26,12 +25,6 @@ function BootScreen() {
 root.render(<BootScreen />)
 
 async function boot() {
-  // `import.meta.env.PROD` is a build constant: the mock backend is never bundled into a
-  // production build unless that build is the standalone demo, which asks for it by name.
-  if (env.useMocks && (!import.meta.env.PROD || env.demo)) {
-    const { worker } = await import('@/mocks/browser')
-    await worker.start({ onUnhandledRequest: 'bypass' })
-  }
   root.render(
     <StrictMode>
       <ErrorBoundary>

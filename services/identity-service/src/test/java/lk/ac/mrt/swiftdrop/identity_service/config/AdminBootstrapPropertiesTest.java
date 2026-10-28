@@ -17,13 +17,13 @@ class AdminBootstrapPropertiesTest {
     }
 
     @Test
-    @DisplayName("Should populate default values when properties are missing or empty")
-    void shouldDefaultWhenPropertiesAreMissing() {
+    @DisplayName("Should disable bootstrap and leave credentials empty when properties are missing")
+    void shouldDisableBootstrapWhenPropertiesAreMissing() {
         AdminBootstrapProperties properties = new AdminBootstrapProperties(null, null, null, null, null);
 
-        assertThat(properties.enabled()).isTrue();
-        assertThat(properties.bootstrapEmail()).isEqualTo("admin@swiftdrop.lk");
-        assertThat(properties.bootstrapPassword()).isEqualTo("Admin123!Safe");
+        assertThat(properties.enabled()).isFalse();
+        assertThat(properties.bootstrapEmail()).isNull();
+        assertThat(properties.bootstrapPassword()).isNull();
         assertThat(properties.bootstrapName()).isEqualTo("SwiftDrop Platform Administrator");
         assertThat(properties.bootstrapPhone()).isEqualTo("+94770000001");
     }
