@@ -1,0 +1,7 @@
+CREATE DATABASE identity;
+CREATE DATABASE parcel;
+CREATE DATABASE dispatch;
+CREATE DATABASE merchant;
+CREATE DATABASE pricing;
+CREATE DATABASE tracking;
+CREATE DATABASE notification;
