@@ -62,7 +62,11 @@ app:
         jwk-set-uri: https://www.googleapis.com/oauth2/v3/certs
         issuer: https://accounts.google.com
     admin:
+      enabled: ${ADMIN_BOOTSTRAP_ENABLED:true}
       bootstrap-email: ${ADMIN_BOOTSTRAP_EMAIL:admin@swiftdrop.lk}
+      bootstrap-password: ${ADMIN_BOOTSTRAP_PASSWORD:Admin123!Safe}
+      bootstrap-name: ${ADMIN_BOOTSTRAP_NAME:SwiftDrop Platform Administrator}
+      bootstrap-phone: ${ADMIN_BOOTSTRAP_PHONE:+94770000001}
 
 management:
   endpoints:
