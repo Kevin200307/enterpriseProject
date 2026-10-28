@@ -123,6 +123,18 @@ spring:
                   args:
                     name: identityService
                     fallbackUri: forward:/internal/gateway-fallback
+            - id: parcel-proof-upload
+              uri: ${gateway.services.parcel}
+              predicates:
+                - Path=/api/v1/parcels/*/proofs
+                - Method=POST
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: parcelUploadService
+                    fallbackUri: forward:/internal/gateway-fallback
+              metadata:
+                response-timeout: 60000
             - id: parcel-api
               uri: ${gateway.services.parcel}
               predicates:

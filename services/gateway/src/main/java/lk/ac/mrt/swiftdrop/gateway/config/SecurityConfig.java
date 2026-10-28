@@ -86,6 +86,7 @@ public class SecurityConfig {
 										+ "font-src 'self'; connect-src 'self'; frame-ancestors 'none'; "
 										+ "base-uri 'self'; form-action 'self'")))
 				.authorizeExchange(exchanges -> exchanges
+						.pathMatchers("/api/v1/internal/**").denyAll()
 						.pathMatchers("/api/v1/auth/**").permitAll()
 						.pathMatchers(HttpMethod.GET, "/api/v1/tracking/*").permitAll()
 						.pathMatchers(HttpMethod.GET, "/api/v1/tracking/public/*/stream").permitAll()
@@ -117,11 +118,13 @@ public class SecurityConfig {
 				HttpHeaders.CONTENT_TYPE,
 				HttpHeaders.ACCEPT,
 				RequestIdFilter.REQUEST_ID_HEADER,
-				HttpHeaders.IF_MATCH));
+				HttpHeaders.IF_MATCH,
+				"Idempotency-Key"));
 		configuration.setExposedHeaders(List.of(
 				RequestIdFilter.REQUEST_ID_HEADER,
 				HttpHeaders.LOCATION,
-				HttpHeaders.RETRY_AFTER));
+				HttpHeaders.RETRY_AFTER,
+				HttpHeaders.CONTENT_DISPOSITION));
 		configuration.setAllowCredentials(true);
 		configuration.setMaxAge(Duration.ofHours(1));
 
