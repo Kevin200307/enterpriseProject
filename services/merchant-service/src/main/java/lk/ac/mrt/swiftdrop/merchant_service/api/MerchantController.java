@@ -33,10 +33,13 @@ public class MerchantController {
 
     private final MerchantService merchantService;
     private final lk.ac.mrt.swiftdrop.merchant_service.service.ApiKeyService apiKeys;
+    private final lk.ac.mrt.swiftdrop.merchant_service.service.MerchantOrderService orders;
 
-    public MerchantController(MerchantService merchantService, lk.ac.mrt.swiftdrop.merchant_service.service.ApiKeyService apiKeys) {
+    public MerchantController(MerchantService merchantService, lk.ac.mrt.swiftdrop.merchant_service.service.ApiKeyService apiKeys,
+                              lk.ac.mrt.swiftdrop.merchant_service.service.MerchantOrderService orders) {
         this.merchantService = merchantService;
         this.apiKeys = apiKeys;
+        this.orders = orders;
     }
 
     @PostMapping("/register")
@@ -126,6 +129,26 @@ public class MerchantController {
     @DeleteMapping("/me/api-keys/{keyId}")
     public ApiKeyDtos.View revokeApiKey(@PathVariable UUID keyId, @AuthenticationPrincipal Jwt jwt) {
         return apiKeys.revoke(UUID.fromString(jwt.getSubject()), keyId);
+    }
+
+    @PostMapping("/orders")
+    public MerchantOrderDtos.View createOrder(@Valid @RequestBody MerchantOrderDtos.Create request,
+                                               @AuthenticationPrincipal Jwt jwt) {
+        return orders.create(UUID.fromString(jwt.getSubject()), request, jwt.getTokenValue());
+    }
+
+    @GetMapping("/orders")
+    public Page<MerchantOrderDtos.View> listOrders(@RequestParam(required=false) String q,
+                                                    @RequestParam(defaultValue="0") int page,
+                                                    @RequestParam(defaultValue="20") int size,
+                                                    @AuthenticationPrincipal Jwt jwt) {
+        return orders.list(UUID.fromString(jwt.getSubject()), q,
+                PageRequest.of(page, Math.min(Math.max(size, 1), 100), Sort.by(Sort.Direction.DESC, "createdAt")));
+    }
+
+    @GetMapping("/orders/{orderId}")
+    public MerchantOrderDtos.View getOrder(@PathVariable UUID orderId, @AuthenticationPrincipal Jwt jwt) {
+        return orders.get(UUID.fromString(jwt.getSubject()), orderId);
     }
 
     @ExceptionHandler(MerchantAlreadyExistsException.class)
