@@ -23,6 +23,11 @@ management:
 spring:
   application:
     name: gateway
+  webflux:
+    multipart:
+      max-in-memory-size: 6MB
+      max-disk-usage-per-part: 6MB
+      max-parts: 10
   data:
     redis:
       host: ${SPRING_DATA_REDIS_HOST:redis}

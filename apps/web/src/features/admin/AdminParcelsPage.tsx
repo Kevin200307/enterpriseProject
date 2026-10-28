@@ -33,8 +33,8 @@ function StatusDialog({ parcel, onClose }: { parcel: Parcel; onClose: () => void
   const save = useMutation({
     mutationFn: () =>
       parcelsApi.updateStatus(parcel.id, {
-        toStatus: to as ParcelStatus,
-        failureReason: needsReason ? reason.trim() : undefined,
+        status: to as ParcelStatus,
+        failedReason: needsReason ? reason.trim() : undefined,
       }),
     onSuccess: () => {
       toast.success(`${parcel.trackingNumber} is now ${statusMeta(to).label.toLowerCase()}`)

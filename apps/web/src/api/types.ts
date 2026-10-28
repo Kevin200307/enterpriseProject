@@ -110,10 +110,17 @@ export interface Assignment {
 }
 
 export interface StatusChange {
-  toStatus: ParcelStatus
+  status: ParcelStatus
   note?: string
-  failureReason?: string
-  proofUrl?: string
+  failedReason?: string
+  proofId?: string
+}
+
+export interface DeliveryProof {
+  id: string
+  contentType: string
+  sizeBytes: number
+  createdAt: string
 }
 
 /** A parcel waiting for a courier (DSP-2). */

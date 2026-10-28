@@ -1,5 +1,5 @@
 import { api, requestBlob } from '../client'
-import type { CreateParcelInput, HistoryEntry, Page, Parcel, StatusChange } from '../types'
+import type { CreateParcelInput, DeliveryProof, HistoryEntry, Page, Parcel, StatusChange } from '../types'
 
 export interface ParcelFilters {
   status?: string[]
@@ -30,7 +30,7 @@ export const parcelsApi = {
   uploadProof: (id: string, file: File) => {
     const body = new FormData()
     body.append('file', file)
-    return api.post<{ proofUrl: string }>(`/api/v1/parcels/${id}/proof`, body)
+    return api.post<DeliveryProof>(`/api/v1/parcels/${id}/proofs`, body)
   },
   receipt: (id: string) => requestBlob(`/api/v1/parcels/${id}/receipt`),
 }

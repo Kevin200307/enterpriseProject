@@ -203,7 +203,7 @@ export const parcelHandlers = [
     }),
   ),
   http.post(
-    `${base}/api/v1/parcels/:id/proof`,
+    `${base}/api/v1/parcels/:id/proofs`,
     guard(['COURIER'], async ({ params }) => {
       const p = parcels.find((x) => x.id === param(params, 'id'))
       return p ? HttpResponse.json({ proofUrl: proofImage(p.trackingNumber) }) : notFound()
