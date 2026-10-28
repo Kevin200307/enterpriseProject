@@ -161,6 +161,15 @@ public class MerchantController {
         return webhooks.configure(UUID.fromString(jwt.getSubject()), request.url());
     }
 
+    @GetMapping("/me/webhook/deliveries")
+    public Page<lk.ac.mrt.swiftdrop.merchant_service.service.WebhookService.DeliveryView> webhookHistory(
+            @RequestParam(defaultValue="0") int page, @RequestParam(defaultValue="20") int size,
+            @AuthenticationPrincipal Jwt jwt){ return webhooks.history(UUID.fromString(jwt.getSubject()), PageRequest.of(page,Math.min(Math.max(size,1),100),Sort.by(Sort.Direction.DESC,"createdAt"))); }
+
+    @PostMapping("/me/webhook/deliveries/{deliveryId}/replay")
+    public lk.ac.mrt.swiftdrop.merchant_service.service.WebhookService.DeliveryView replayWebhook(
+            @PathVariable UUID deliveryId,@AuthenticationPrincipal Jwt jwt){ return webhooks.replay(UUID.fromString(jwt.getSubject()),deliveryId); }
+
     @ExceptionHandler(MerchantAlreadyExistsException.class)
     @ResponseStatus(HttpStatus.CONFLICT)
     public ProblemDetail handleMerchantAlreadyExists(MerchantAlreadyExistsException ex) {
