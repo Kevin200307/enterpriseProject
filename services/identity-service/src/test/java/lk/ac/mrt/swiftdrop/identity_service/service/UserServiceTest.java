@@ -7,10 +7,12 @@ import lk.ac.mrt.swiftdrop.identity_service.api.dto.UserResponse;
 import lk.ac.mrt.swiftdrop.identity_service.domain.RoleEntity;
 import lk.ac.mrt.swiftdrop.identity_service.domain.User;
 import lk.ac.mrt.swiftdrop.identity_service.domain.UserStatus;
+import lk.ac.mrt.swiftdrop.identity_service.error.ConflictException;
 import lk.ac.mrt.swiftdrop.identity_service.error.DuplicateEmailException;
 import lk.ac.mrt.swiftdrop.identity_service.error.ResourceNotFoundException;
 import lk.ac.mrt.swiftdrop.identity_service.repository.RoleRepository;
 import lk.ac.mrt.swiftdrop.identity_service.repository.UserRepository;
+import lk.ac.mrt.swiftdrop.identity_service.service.RefreshTokenService;
 import lk.ac.mrt.swiftdrop.identity_service.service.impl.UserServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -49,6 +51,9 @@ class UserServiceTest {
 
     @Mock
     private PasswordEncoder passwordEncoder;
+
+    @Mock
+    private RefreshTokenService refreshTokenService;
 
     @InjectMocks
     private UserServiceImpl userService;
@@ -251,5 +256,86 @@ class UserServiceTest {
 
         assertThat(result.getTotalElements()).isEqualTo(1);
         verify(userRepository).findByStatus(UserStatus.ACTIVE, pageable);
+    }
+
+    @Test
+    @DisplayName("Should suspend user and immediately revoke all active refresh tokens")
+    void shouldSuspendUserAndRevokeTokens() {
+        UUID targetUserId = UUID.randomUUID();
+        UUID adminId = UUID.randomUUID();
+        User user = new User("courier@swiftdrop.lk", "hash", "Courier", "+94771111111");
+        user.setId(targetUserId);
+        user.setStatus(UserStatus.ACTIVE);
+        user.addRole(customerRole);
+
+        when(userRepository.findById(targetUserId)).thenReturn(Optional.of(user));
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        UserResponse response = userService.updateUserStatus(targetUserId, UserStatus.SUSPENDED, adminId);
+
+        assertThat(response.status()).isEqualTo(UserStatus.SUSPENDED);
+        verify(userRepository).save(user);
+        verify(refreshTokenService).revokeAllForUser(targetUserId);
+    }
+
+    @Test
+    @DisplayName("Should reactivate suspended user without revoking tokens")
+    void shouldReactivateUserWithoutRevokingTokens() {
+        UUID targetUserId = UUID.randomUUID();
+        UUID adminId = UUID.randomUUID();
+        User user = new User("user@swiftdrop.lk", "hash", "User", "+94771111111");
+        user.setId(targetUserId);
+        user.setStatus(UserStatus.SUSPENDED);
+        user.addRole(customerRole);
+
+        when(userRepository.findById(targetUserId)).thenReturn(Optional.of(user));
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        UserResponse response = userService.updateUserStatus(targetUserId, UserStatus.ACTIVE, adminId);
+
+        assertThat(response.status()).isEqualTo(UserStatus.ACTIVE);
+        verify(userRepository).save(user);
+        verify(refreshTokenService, never()).revokeAllForUser(any());
+    }
+
+    @Test
+    @DisplayName("Should throw ConflictException when admin attempts to suspend their own account")
+    void shouldPreventAdminSelfSuspension() {
+        UUID adminId = UUID.randomUUID();
+
+        assertThatThrownBy(() -> userService.updateUserStatus(adminId, UserStatus.SUSPENDED, adminId))
+                .isInstanceOf(ConflictException.class)
+                .hasMessage("You cannot suspend your own account");
+
+        verify(userRepository, never()).findById(any());
+        verify(userRepository, never()).save(any());
+        verify(refreshTokenService, never()).revokeAllForUser(any());
+    }
+
+    @Test
+    @DisplayName("Should throw ResourceNotFoundException when user does not exist on status update")
+    void shouldThrowWhenUserNotFoundOnUpdateStatus() {
+        UUID targetUserId = UUID.randomUUID();
+        UUID adminId = UUID.randomUUID();
+
+        when(userRepository.findById(targetUserId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> userService.updateUserStatus(targetUserId, UserStatus.SUSPENDED, adminId))
+                .isInstanceOf(ResourceNotFoundException.class);
+
+        verify(userRepository, never()).save(any());
+        verify(refreshTokenService, never()).revokeAllForUser(any());
+    }
+
+    @Test
+    @DisplayName("Should throw IllegalArgumentException when userId or status is null")
+    void shouldThrowWhenArgumentsAreNull() {
+        UUID validId = UUID.randomUUID();
+
+        assertThatThrownBy(() -> userService.updateUserStatus(null, UserStatus.ACTIVE, validId))
+                .isInstanceOf(IllegalArgumentException.class);
+
+        assertThatThrownBy(() -> userService.updateUserStatus(validId, null, validId))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 }

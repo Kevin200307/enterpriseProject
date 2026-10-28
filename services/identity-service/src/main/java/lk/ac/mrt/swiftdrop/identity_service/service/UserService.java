@@ -50,4 +50,16 @@ public interface UserService {
      * @return paginated user response
      */
     Page<UserResponse> listUsers(String role, UserStatus status, Pageable pageable);
+
+    /**
+     * Updates an existing user's status (ACTIVE or SUSPENDED) (ADMIN only).
+     * If the status is updated to SUSPENDED, all active refresh tokens for the user are immediately revoked.
+     * Prevents admin self-suspension to avoid administrative lockout.
+     *
+     * @param userId the ID of the user whose status is being modified
+     * @param newStatus the new UserStatus (ACTIVE, SUSPENDED)
+     * @param currentAdminId the ID of the authenticated administrator performing the update (may be null)
+     * @return updated user profile response
+     */
+    UserResponse updateUserStatus(UUID userId, UserStatus newStatus, UUID currentAdminId);
 }

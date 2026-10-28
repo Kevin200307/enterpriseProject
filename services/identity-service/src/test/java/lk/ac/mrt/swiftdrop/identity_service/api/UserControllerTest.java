@@ -4,9 +4,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lk.ac.mrt.swiftdrop.contracts.domain.Role;
 import lk.ac.mrt.swiftdrop.contracts.error.ErrorCode;
 import lk.ac.mrt.swiftdrop.identity_service.api.dto.UpdateProfileRequest;
+import lk.ac.mrt.swiftdrop.identity_service.api.dto.UpdateUserStatusRequest;
 import lk.ac.mrt.swiftdrop.identity_service.api.dto.UserResponse;
 import lk.ac.mrt.swiftdrop.identity_service.config.SecurityConfig;
 import lk.ac.mrt.swiftdrop.identity_service.domain.UserStatus;
+import lk.ac.mrt.swiftdrop.identity_service.error.ConflictException;
 import lk.ac.mrt.swiftdrop.identity_service.error.GlobalExceptionHandler;
 import lk.ac.mrt.swiftdrop.identity_service.error.ResourceNotFoundException;
 import lk.ac.mrt.swiftdrop.identity_service.service.UserService;
@@ -54,6 +56,9 @@ class UserControllerTest {
 
     private static final String USER_ID_STRING = "b1c0e3a6-2d12-4217-91a9-df56e9c9b101";
     private static final UUID USER_ID = UUID.fromString(USER_ID_STRING);
+
+    private static final String ADMIN_ID_STRING = "c2d1e4b7-3e23-4328-82ba-ef67f0d0c202";
+    private static final UUID ADMIN_ID = UUID.fromString(ADMIN_ID_STRING);
 
     @Test
     @WithMockUser(username = USER_ID_STRING, roles = {"CUSTOMER"})
@@ -223,5 +228,109 @@ class UserControllerTest {
                 .andExpect(jsonPath("$.status").value(401))
                 .andExpect(jsonPath("$.errorCode").value(ErrorCode.UNAUTHENTICATED.name()))
                 .andExpect(jsonPath("$.title").value(ErrorCode.UNAUTHENTICATED.title()));
+    }
+
+    @Test
+    @WithMockUser(username = ADMIN_ID_STRING, roles = {"ADMIN"})
+    @DisplayName("PATCH /api/v1/users/{id}/status - 200 OK when ADMIN updates user status")
+    void shouldUpdateUserStatusAsAdmin() throws Exception {
+        UpdateUserStatusRequest request = new UpdateUserStatusRequest(UserStatus.SUSPENDED);
+        UserResponse response = new UserResponse(
+                USER_ID,
+                "courier@swiftdrop.lk",
+                "Swift Courier",
+                "+94771234567",
+                UserStatus.SUSPENDED,
+                Set.of(Role.COURIER),
+                false,
+                Instant.now(),
+                Instant.now()
+        );
+
+        when(userService.updateUserStatus(eq(USER_ID), eq(UserStatus.SUSPENDED), eq(ADMIN_ID)))
+                .thenReturn(response);
+
+        mockMvc.perform(patch("/api/v1/users/" + USER_ID_STRING + "/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(USER_ID_STRING))
+                .andExpect(jsonPath("$.status").value("SUSPENDED"));
+    }
+
+    @Test
+    @WithMockUser(username = ADMIN_ID_STRING, roles = {"ADMIN"})
+    @DisplayName("PATCH /api/v1/users/{id}/status - 409 Conflict when ADMIN suspends their own account")
+    void shouldReturn409WhenAdminSuspendsSelf() throws Exception {
+        UpdateUserStatusRequest request = new UpdateUserStatusRequest(UserStatus.SUSPENDED);
+
+        when(userService.updateUserStatus(eq(ADMIN_ID), eq(UserStatus.SUSPENDED), eq(ADMIN_ID)))
+                .thenThrow(new ConflictException("You cannot suspend your own account"));
+
+        mockMvc.perform(patch("/api/v1/users/" + ADMIN_ID_STRING + "/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.status").value(409))
+                .andExpect(jsonPath("$.errorCode").value(ErrorCode.CONFLICT.name()))
+                .andExpect(jsonPath("$.detail").value("You cannot suspend your own account"));
+    }
+
+    @Test
+    @WithMockUser(username = USER_ID_STRING, roles = {"CUSTOMER"})
+    @DisplayName("PATCH /api/v1/users/{id}/status - 403 Forbidden for non-ADMIN user")
+    void shouldReturn403WhenNonAdminUpdatesStatus() throws Exception {
+        UpdateUserStatusRequest request = new UpdateUserStatusRequest(UserStatus.SUSPENDED);
+
+        mockMvc.perform(patch("/api/v1/users/" + USER_ID_STRING + "/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.status").value(403))
+                .andExpect(jsonPath("$.errorCode").value(ErrorCode.ACCESS_DENIED.name()));
+    }
+
+    @Test
+    @DisplayName("PATCH /api/v1/users/{id}/status - 401 Unauthorized when request is unauthenticated")
+    void shouldReturn401WhenUpdateStatusUnauthenticated() throws Exception {
+        UpdateUserStatusRequest request = new UpdateUserStatusRequest(UserStatus.SUSPENDED);
+
+        mockMvc.perform(patch("/api/v1/users/" + USER_ID_STRING + "/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status").value(401))
+                .andExpect(jsonPath("$.errorCode").value(ErrorCode.UNAUTHENTICATED.name()));
+    }
+
+    @Test
+    @WithMockUser(username = ADMIN_ID_STRING, roles = {"ADMIN"})
+    @DisplayName("PATCH /api/v1/users/{id}/status - 404 Not Found when user does not exist")
+    void shouldReturn404WhenUserNotFoundOnUpdateStatus() throws Exception {
+        UpdateUserStatusRequest request = new UpdateUserStatusRequest(UserStatus.SUSPENDED);
+
+        when(userService.updateUserStatus(eq(USER_ID), eq(UserStatus.SUSPENDED), eq(ADMIN_ID)))
+                .thenThrow(new ResourceNotFoundException("User", USER_ID));
+
+        mockMvc.perform(patch("/api/v1/users/" + USER_ID_STRING + "/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.errorCode").value(ErrorCode.RESOURCE_NOT_FOUND.name()));
+    }
+
+    @Test
+    @WithMockUser(username = ADMIN_ID_STRING, roles = {"ADMIN"})
+    @DisplayName("PATCH /api/v1/users/{id}/status - 400 Bad Request when request body has null status")
+    void shouldReturn400WhenStatusIsNull() throws Exception {
+        String invalidPayload = "{\"status\": null}";
+
+        mockMvc.perform(patch("/api/v1/users/" + USER_ID_STRING + "/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(invalidPayload))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.errorCode").value(ErrorCode.VALIDATION_FAILED.name()));
     }
 }

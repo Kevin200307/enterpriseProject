@@ -7,10 +7,12 @@ import lk.ac.mrt.swiftdrop.identity_service.api.dto.UserResponse;
 import lk.ac.mrt.swiftdrop.identity_service.domain.RoleEntity;
 import lk.ac.mrt.swiftdrop.identity_service.domain.User;
 import lk.ac.mrt.swiftdrop.identity_service.domain.UserStatus;
+import lk.ac.mrt.swiftdrop.identity_service.error.ConflictException;
 import lk.ac.mrt.swiftdrop.identity_service.error.DuplicateEmailException;
 import lk.ac.mrt.swiftdrop.identity_service.error.ResourceNotFoundException;
 import lk.ac.mrt.swiftdrop.identity_service.repository.RoleRepository;
 import lk.ac.mrt.swiftdrop.identity_service.repository.UserRepository;
+import lk.ac.mrt.swiftdrop.identity_service.service.RefreshTokenService;
 import lk.ac.mrt.swiftdrop.identity_service.service.UserService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,7 +27,7 @@ import java.util.UUID;
 
 /**
  * Production implementation of UserService.
- * Handles customer registration, password encryption, and profile updates.
+ * Handles customer registration, password encryption, profile updates, and admin user management.
  */
 @Service
 @Transactional
@@ -36,15 +38,18 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
+    private final RefreshTokenService refreshTokenService;
 
     public UserServiceImpl(
             UserRepository userRepository,
             RoleRepository roleRepository,
-            PasswordEncoder passwordEncoder
+            PasswordEncoder passwordEncoder,
+            RefreshTokenService refreshTokenService
     ) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
+        this.refreshTokenService = refreshTokenService;
     }
 
     @Override
@@ -121,5 +126,34 @@ public class UserServiceImpl implements UserService {
         }
 
         return users.map(UserResponse::fromEntity);
+    }
+
+    @Override
+    public UserResponse updateUserStatus(UUID userId, UserStatus newStatus, UUID currentAdminId) {
+        if (userId == null) {
+            throw new IllegalArgumentException("User ID must not be null");
+        }
+        if (newStatus == null) {
+            throw new IllegalArgumentException("User status must not be null");
+        }
+        if (currentAdminId != null && currentAdminId.equals(userId) && newStatus == UserStatus.SUSPENDED) {
+            log.warn("Admin [adminId={}] attempted to suspend their own account", currentAdminId);
+            throw new ConflictException("You cannot suspend your own account");
+        }
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", userId));
+
+        user.setStatus(newStatus);
+        User savedUser = userRepository.save(user);
+
+        if (newStatus == UserStatus.SUSPENDED) {
+            refreshTokenService.revokeAllForUser(userId);
+            log.info("Suspended user [userId={}] and revoked all active refresh tokens", userId);
+        } else {
+            log.info("Updated status for user [userId={}] to {}", userId, newStatus);
+        }
+
+        return UserResponse.fromEntity(savedUser);
     }
 }
