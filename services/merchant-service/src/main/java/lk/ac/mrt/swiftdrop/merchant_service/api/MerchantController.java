@@ -34,12 +34,15 @@ public class MerchantController {
     private final MerchantService merchantService;
     private final lk.ac.mrt.swiftdrop.merchant_service.service.ApiKeyService apiKeys;
     private final lk.ac.mrt.swiftdrop.merchant_service.service.MerchantOrderService orders;
+    private final lk.ac.mrt.swiftdrop.merchant_service.service.WebhookService webhooks;
 
     public MerchantController(MerchantService merchantService, lk.ac.mrt.swiftdrop.merchant_service.service.ApiKeyService apiKeys,
-                              lk.ac.mrt.swiftdrop.merchant_service.service.MerchantOrderService orders) {
+                              lk.ac.mrt.swiftdrop.merchant_service.service.MerchantOrderService orders,
+                              lk.ac.mrt.swiftdrop.merchant_service.service.WebhookService webhooks) {
         this.merchantService = merchantService;
         this.apiKeys = apiKeys;
         this.orders = orders;
+        this.webhooks = webhooks;
     }
 
     @PostMapping("/register")
@@ -149,6 +152,13 @@ public class MerchantController {
     @GetMapping("/orders/{orderId}")
     public MerchantOrderDtos.View getOrder(@PathVariable UUID orderId, @AuthenticationPrincipal Jwt jwt) {
         return orders.get(UUID.fromString(jwt.getSubject()), orderId);
+    }
+
+    public record WebhookRequest(@jakarta.validation.constraints.NotBlank String url) {}
+    @PutMapping("/me/webhook")
+    public lk.ac.mrt.swiftdrop.merchant_service.service.WebhookService.SecretResponse configureWebhook(
+            @Valid @RequestBody WebhookRequest request, @AuthenticationPrincipal Jwt jwt) {
+        return webhooks.configure(UUID.fromString(jwt.getSubject()), request.url());
     }
 
     @ExceptionHandler(MerchantAlreadyExistsException.class)
