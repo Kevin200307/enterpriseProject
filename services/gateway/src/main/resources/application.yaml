@@ -1,3 +1,236 @@
+server:
+  port: ${SERVER_PORT:8080}
+  netty:
+    idle-timeout: 10m
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-components: always
+      show-details: never
+      status:
+        order: down,out-of-service,degraded,up,unknown
+        http-mapping:
+          degraded: 200
+  health:
+    redis:
+      enabled: false
+
 spring:
   application:
     name: gateway
+  data:
+    redis:
+      host: ${SPRING_DATA_REDIS_HOST:redis}
+      port: ${SPRING_DATA_REDIS_PORT:6379}
+      password: ${SPRING_DATA_REDIS_PASSWORD:${REDIS_PASSWORD:}}
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: ${IDENTITY_JWKS_URI:http://identity-service:8080/.well-known/jwks.json}
+          issuer-uri: ${IDENTITY_ISSUER_URI:http://identity-service:8080}
+          audiences: ${JWT_AUDIENCE:swiftdrop}
+  cloud:
+    gateway:
+      server:
+        webflux:
+          httpclient:
+            connect-timeout: 2000
+            response-timeout: 10s
+          routes:
+            - id: identity-openapi
+              uri: ${gateway.services.identity}
+              predicates:
+                - Path=/docs/services/identity/v3/api-docs
+              filters:
+                - SetPath=/v3/api-docs
+            - id: parcel-openapi
+              uri: ${gateway.services.parcel}
+              predicates:
+                - Path=/docs/services/parcel/v3/api-docs
+              filters:
+                - SetPath=/v3/api-docs
+            - id: pricing-openapi
+              uri: ${gateway.services.pricing}
+              predicates:
+                - Path=/docs/services/pricing/v3/api-docs
+              filters:
+                - SetPath=/v3/api-docs
+            - id: dispatch-openapi
+              uri: ${gateway.services.dispatch}
+              predicates:
+                - Path=/docs/services/dispatch/v3/api-docs
+              filters:
+                - SetPath=/v3/api-docs
+            - id: merchant-openapi
+              uri: ${gateway.services.merchant}
+              predicates:
+                - Path=/docs/services/merchant/v3/api-docs
+              filters:
+                - SetPath=/v3/api-docs
+            - id: tracking-openapi
+              uri: ${gateway.services.tracking}
+              predicates:
+                - Path=/docs/services/tracking/v3/api-docs
+              filters:
+                - SetPath=/v3/api-docs
+            - id: notification-openapi
+              uri: ${gateway.services.notification}
+              predicates:
+                - Path=/docs/services/notification/v3/api-docs
+              filters:
+                - SetPath=/v3/api-docs
+            - id: assistant-openapi
+              uri: ${gateway.services.ai-assistant}
+              predicates:
+                - Path=/docs/services/assistant/v3/api-docs
+              filters:
+                - SetPath=/v3/api-docs
+            - id: tracking-sse
+              uri: ${gateway.services.tracking}
+              predicates:
+                - Path=/api/v1/tracking/public/*/stream
+                - Method=GET
+              filters:
+                - AddResponseHeader=X-Accel-Buffering,no
+              metadata:
+                response-timeout: -1
+            - id: tracking-websocket
+              uri: ${TRACKING_WEBSOCKET_URL:ws://tracking-service:8080}
+              predicates:
+                - Path=/ws,/ws/**
+                - Header=Upgrade,(?i)websocket
+            - id: tracking-sockjs
+              uri: ${gateway.services.tracking}
+              predicates:
+                - Path=/ws,/ws/**
+            - id: identity-api
+              uri: ${gateway.services.identity}
+              predicates:
+                - Path=/api/v1/auth/**,/api/v1/users/**
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: identityService
+                    fallbackUri: forward:/internal/gateway-fallback
+            - id: parcel-api
+              uri: ${gateway.services.parcel}
+              predicates:
+                - Path=/api/v1/parcels/**
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: parcelService
+                    fallbackUri: forward:/internal/gateway-fallback
+            - id: pricing-api
+              uri: ${gateway.services.pricing}
+              predicates:
+                - Path=/api/v1/pricing/**
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: pricingService
+                    fallbackUri: forward:/internal/gateway-fallback
+            - id: dispatch-api
+              uri: ${gateway.services.dispatch}
+              predicates:
+                - Path=/api/v1/dispatch/**,/api/v1/couriers/**
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: dispatchService
+                    fallbackUri: forward:/internal/gateway-fallback
+            - id: merchant-api
+              uri: ${gateway.services.merchant}
+              predicates:
+                - Path=/api/v1/merchants/**
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: merchantService
+                    fallbackUri: forward:/internal/gateway-fallback
+            - id: tracking-api
+              uri: ${gateway.services.tracking}
+              predicates:
+                - Path=/api/v1/tracking/**
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: trackingService
+                    fallbackUri: forward:/internal/gateway-fallback
+            - id: notification-api
+              uri: ${gateway.services.notification}
+              predicates:
+                - Path=/api/v1/notifications/**
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: notificationService
+                    fallbackUri: forward:/internal/gateway-fallback
+            - id: assistant-api
+              uri: ${gateway.services.ai-assistant}
+              predicates:
+                - Path=/api/v1/assistant/**
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: assistantService
+                    fallbackUri: forward:/internal/gateway-fallback
+
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        sliding-window-type: count-based
+        sliding-window-size: 20
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        permitted-number-of-calls-in-half-open-state: 3
+        wait-duration-in-open-state: 30s
+  timelimiter:
+    configs:
+      default:
+        timeout-duration: 10s
+        cancel-running-future: true
+
+springdoc:
+  swagger-ui:
+    path: /docs
+    disable-swagger-default-url: true
+    urls:
+      - name: Identity Service
+        url: /docs/services/identity/v3/api-docs
+      - name: Parcel Service
+        url: /docs/services/parcel/v3/api-docs
+      - name: Pricing Service
+        url: /docs/services/pricing/v3/api-docs
+      - name: Dispatch Service
+        url: /docs/services/dispatch/v3/api-docs
+      - name: Merchant Service
+        url: /docs/services/merchant/v3/api-docs
+      - name: Tracking Service
+        url: /docs/services/tracking/v3/api-docs
+      - name: Notification Service
+        url: /docs/services/notification/v3/api-docs
+      - name: AI Assistant Service
+        url: /docs/services/assistant/v3/api-docs
+
+gateway:
+  browser:
+    origin: ${WEB_ORIGIN:http://localhost:5173}
+  dashboard:
+    timeout: ${DASHBOARD_UPSTREAM_TIMEOUT:2s}
+  services:
+    identity: ${IDENTITY_SERVICE_URL:http://identity-service:8080}
+    parcel: ${PARCEL_SERVICE_URL:http://parcel-service:8080}
+    pricing: ${PRICING_SERVICE_URL:http://pricing-service:8080}
+    dispatch: ${DISPATCH_SERVICE_URL:http://dispatch-service:8080}
+    merchant: ${MERCHANT_SERVICE_URL:http://merchant-service:8080}
+    tracking: ${TRACKING_SERVICE_URL:http://tracking-service:8080}
+    notification: ${NOTIFICATION_SERVICE_URL:http://notification-service:8080}
+    ai-assistant: ${AI_ASSISTANT_SERVICE_URL:http://ai-assistant-service:8080}

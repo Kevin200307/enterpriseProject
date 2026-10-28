@@ -61,7 +61,7 @@ export const sseTransport: Transport = {
       queueMicrotask(h.onFail)
       return () => {}
     }
-    const es = new EventSource(`${env.apiBaseUrl}/api/v1/tracking/${encodeURIComponent(tn)}/stream`)
+    const es = new EventSource(`${env.apiBaseUrl}/api/v1/tracking/public/${encodeURIComponent(tn)}/stream`)
     es.onopen = h.onOpen
     es.onmessage = (e) => {
       const t = parse(e.data as string)

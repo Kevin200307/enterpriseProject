@@ -1,0 +1,35 @@
+# Disposable, loopback-only infrastructure for parcel acceptance tests.
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: parcel_test
+      POSTGRES_USER: parcel_test
+      POSTGRES_PASSWORD: parcel-test-only-password
+    ports: ["127.0.0.1:0:5432"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U parcel_test -d parcel_test"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+  rabbitmq:
+    image: rabbitmq:3-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: parcel_test
+      RABBITMQ_DEFAULT_PASS: parcel-test-only-password
+    ports: ["127.0.0.1:0:5672"]
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 3s
+      timeout: 5s
+      retries: 30
+  minio:
+    build:
+      context: ../..
+      dockerfile: infra/minio/Dockerfile
+      target: server
+    command: server /data
+    environment:
+      MINIO_ROOT_USER: parcel_test
+      MINIO_ROOT_PASSWORD: parcel-test-only-password
+    ports: ["127.0.0.1:0:9000"]
