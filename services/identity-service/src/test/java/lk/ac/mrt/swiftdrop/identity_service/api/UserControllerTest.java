@@ -15,6 +15,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -22,6 +25,7 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -160,5 +164,64 @@ class UserControllerTest {
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.status").value(401))
                 .andExpect(jsonPath("$.errorCode").value(ErrorCode.UNAUTHENTICATED.name()));
+    }
+
+    @Test
+    @WithMockUser(roles = {"ADMIN"})
+    @DisplayName("GET /api/v1/users - 200 OK with paginated users for ADMIN")
+    void shouldListUsersForAdmin() throws Exception {
+        UserResponse userResponse = new UserResponse(
+                USER_ID,
+                "courier@swiftdrop.lk",
+                "Swift Courier",
+                "+94771234567",
+                UserStatus.ACTIVE,
+                Set.of(Role.COURIER),
+                false,
+                Instant.now(),
+                Instant.now()
+        );
+        PageImpl<UserResponse> page = new PageImpl<>(List.of(userResponse), PageRequest.of(0, 10), 1);
+
+        when(userService.listUsers(eq("COURIER"), eq(UserStatus.ACTIVE), any(Pageable.class)))
+                .thenReturn(page);
+
+        mockMvc.perform(get("/api/v1/users")
+                        .param("role", "COURIER")
+                        .param("status", "ACTIVE")
+                        .param("page", "0")
+                        .param("size", "10")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].id").value(USER_ID_STRING))
+                .andExpect(jsonPath("$.content[0].email").value("courier@swiftdrop.lk"))
+                .andExpect(jsonPath("$.content[0].fullName").value("Swift Courier"))
+                .andExpect(jsonPath("$.content[0].roles[0]").value("COURIER"))
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.size").value(10))
+                .andExpect(jsonPath("$.number").value(0));
+    }
+
+    @Test
+    @WithMockUser(roles = {"CUSTOMER"})
+    @DisplayName("GET /api/v1/users - 403 Forbidden for non-ADMIN user")
+    void shouldReturn403WhenNonAdminListsUsers() throws Exception {
+        mockMvc.perform(get("/api/v1/users")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.status").value(403))
+                .andExpect(jsonPath("$.errorCode").value(ErrorCode.ACCESS_DENIED.name()))
+                .andExpect(jsonPath("$.title").value(ErrorCode.ACCESS_DENIED.title()));
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/users - 401 Unauthorized when request is unauthenticated")
+    void shouldReturn401WhenListUsersUnauthenticated() throws Exception {
+        mockMvc.perform(get("/api/v1/users")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status").value(401))
+                .andExpect(jsonPath("$.errorCode").value(ErrorCode.UNAUTHENTICATED.name()))
+                .andExpect(jsonPath("$.title").value(ErrorCode.UNAUTHENTICATED.title()));
     }
 }

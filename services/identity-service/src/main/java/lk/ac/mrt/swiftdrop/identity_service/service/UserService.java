@@ -3,6 +3,9 @@ package lk.ac.mrt.swiftdrop.identity_service.service;
 import lk.ac.mrt.swiftdrop.identity_service.api.dto.RegisterRequest;
 import lk.ac.mrt.swiftdrop.identity_service.api.dto.UpdateProfileRequest;
 import lk.ac.mrt.swiftdrop.identity_service.api.dto.UserResponse;
+import lk.ac.mrt.swiftdrop.identity_service.domain.UserStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.util.UUID;
 
@@ -37,4 +40,14 @@ public interface UserService {
      * @return the updated user profile
      */
     UserResponse updateProfile(UUID userId, UpdateProfileRequest request);
+
+    /**
+     * Retrieves a paginated list of users with optional role and status filters (ADMIN only).
+     *
+     * @param role optional role name filter (e.g. "ADMIN", "CUSTOMER")
+     * @param status optional user status filter (e.g. ACTIVE, SUSPENDED)
+     * @param pageable pagination parameters (page, size, sort)
+     * @return paginated user response
+     */
+    Page<UserResponse> listUsers(String role, UserStatus status, Pageable pageable);
 }

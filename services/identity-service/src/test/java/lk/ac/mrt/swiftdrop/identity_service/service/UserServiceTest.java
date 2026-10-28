@@ -20,9 +20,14 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -156,5 +161,95 @@ class UserServiceTest {
         assertThat(response.fullName()).isEqualTo("New Name");
         assertThat(response.phone()).isEqualTo("+94772222222");
         verify(userRepository).save(user);
+    }
+
+    @Test
+    @DisplayName("Should list users without filters by delegating to findAll")
+    void shouldListUsersWithoutFilters() {
+        Pageable pageable = PageRequest.of(0, 10);
+        User user = new User("user@swiftdrop.lk", "hash", "Test User", "+94771111111");
+        user.setId(UUID.randomUUID());
+        user.addRole(customerRole);
+
+        when(userRepository.findAll(pageable)).thenReturn(new PageImpl<>(List.of(user), pageable, 1));
+
+        Page<UserResponse> result = userService.listUsers(null, null, pageable);
+
+        assertThat(result.getTotalElements()).isEqualTo(1);
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getContent().get(0).email()).isEqualTo("user@swiftdrop.lk");
+        verify(userRepository).findAll(pageable);
+    }
+
+    @Test
+    @DisplayName("Should list users filtered by role normalized to uppercase")
+    void shouldListUsersFilteredByRole() {
+        Pageable pageable = PageRequest.of(0, 10);
+        User user = new User("customer@swiftdrop.lk", "hash", "Customer User", "+94771111111");
+        user.setId(UUID.randomUUID());
+        user.addRole(customerRole);
+
+        when(userRepository.findByRoles_Id("CUSTOMER", pageable))
+                .thenReturn(new PageImpl<>(List.of(user), pageable, 1));
+
+        Page<UserResponse> result = userService.listUsers("customer", null, pageable);
+
+        assertThat(result.getTotalElements()).isEqualTo(1);
+        assertThat(result.getContent().get(0).email()).isEqualTo("customer@swiftdrop.lk");
+        verify(userRepository).findByRoles_Id("CUSTOMER", pageable);
+    }
+
+    @Test
+    @DisplayName("Should list users filtered by status")
+    void shouldListUsersFilteredByStatus() {
+        Pageable pageable = PageRequest.of(0, 10);
+        User user = new User("active@swiftdrop.lk", "hash", "Active User", "+94771111111");
+        user.setId(UUID.randomUUID());
+        user.addRole(customerRole);
+
+        when(userRepository.findByStatus(UserStatus.ACTIVE, pageable))
+                .thenReturn(new PageImpl<>(List.of(user), pageable, 1));
+
+        Page<UserResponse> result = userService.listUsers(null, UserStatus.ACTIVE, pageable);
+
+        assertThat(result.getTotalElements()).isEqualTo(1);
+        assertThat(result.getContent().get(0).email()).isEqualTo("active@swiftdrop.lk");
+        verify(userRepository).findByStatus(UserStatus.ACTIVE, pageable);
+    }
+
+    @Test
+    @DisplayName("Should list users filtered by both role and status")
+    void shouldListUsersFilteredByRoleAndStatus() {
+        Pageable pageable = PageRequest.of(0, 10);
+        User user = new User("admin@swiftdrop.lk", "hash", "Admin User", "+94771111111");
+        user.setId(UUID.randomUUID());
+        RoleEntity adminRole = new RoleEntity(Role.ADMIN, "Admin role");
+        user.addRole(adminRole);
+
+        when(userRepository.findByRoles_IdAndStatus("ADMIN", UserStatus.ACTIVE, pageable))
+                .thenReturn(new PageImpl<>(List.of(user), pageable, 1));
+
+        Page<UserResponse> result = userService.listUsers(" admin ", UserStatus.ACTIVE, pageable);
+
+        assertThat(result.getTotalElements()).isEqualTo(1);
+        assertThat(result.getContent().get(0).email()).isEqualTo("admin@swiftdrop.lk");
+        verify(userRepository).findByRoles_IdAndStatus("ADMIN", UserStatus.ACTIVE, pageable);
+    }
+
+    @Test
+    @DisplayName("Should treat empty or whitespace-only role as null filter")
+    void shouldTreatBlankRoleAsNull() {
+        Pageable pageable = PageRequest.of(0, 10);
+        User user = new User("user@swiftdrop.lk", "hash", "User", "+94771111111");
+        user.setId(UUID.randomUUID());
+        user.addRole(customerRole);
+
+        when(userRepository.findByStatus(UserStatus.ACTIVE, pageable))
+                .thenReturn(new PageImpl<>(List.of(user), pageable, 1));
+
+        Page<UserResponse> result = userService.listUsers("   ", UserStatus.ACTIVE, pageable);
+
+        assertThat(result.getTotalElements()).isEqualTo(1);
+        verify(userRepository).findByStatus(UserStatus.ACTIVE, pageable);
     }
 }

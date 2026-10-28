@@ -1,6 +1,7 @@
 package lk.ac.mrt.swiftdrop.identity_service.api;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -11,15 +12,21 @@ import jakarta.validation.Valid;
 import lk.ac.mrt.swiftdrop.identity_service.api.dto.UpdateProfileRequest;
 import lk.ac.mrt.swiftdrop.identity_service.api.dto.UserResponse;
 import lk.ac.mrt.swiftdrop.identity_service.config.SecurityUtils;
+import lk.ac.mrt.swiftdrop.identity_service.domain.UserStatus;
 import lk.ac.mrt.swiftdrop.identity_service.service.UserService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
@@ -38,6 +45,45 @@ public class UserController {
 
     public UserController(UserService userService) {
         this.userService = userService;
+    }
+
+    @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(
+            summary = "List users with pagination and filtering",
+            description = "Retrieves a paginated list of users. Filterable by role and status. Restricted to ADMIN users."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Paginated list of users successfully retrieved",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = Page.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Unauthenticated - valid authentication required (RFC 7807)",
+                    content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "Access denied - ADMIN role required (RFC 7807)",
+                    content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class))
+            )
+    })
+    public ResponseEntity<Page<UserResponse>> listUsers(
+            @Parameter(description = "Optional filter by user role (e.g. CUSTOMER, ADMIN, COURIER)")
+            @RequestParam(name = "role", required = false)
+            String role,
+
+            @Parameter(description = "Optional filter by user status (ACTIVE, SUSPENDED)")
+            @RequestParam(name = "status", required = false)
+            UserStatus status,
+
+            @PageableDefault(size = 20)
+            Pageable pageable
+    ) {
+        Page<UserResponse> page = userService.listUsers(role, status, pageable);
+        return ResponseEntity.ok(page);
     }
 
     @GetMapping("/me")

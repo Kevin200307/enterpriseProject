@@ -6,6 +6,7 @@ import lk.ac.mrt.swiftdrop.identity_service.api.dto.UpdateProfileRequest;
 import lk.ac.mrt.swiftdrop.identity_service.api.dto.UserResponse;
 import lk.ac.mrt.swiftdrop.identity_service.domain.RoleEntity;
 import lk.ac.mrt.swiftdrop.identity_service.domain.User;
+import lk.ac.mrt.swiftdrop.identity_service.domain.UserStatus;
 import lk.ac.mrt.swiftdrop.identity_service.error.DuplicateEmailException;
 import lk.ac.mrt.swiftdrop.identity_service.error.ResourceNotFoundException;
 import lk.ac.mrt.swiftdrop.identity_service.repository.RoleRepository;
@@ -13,6 +14,8 @@ import lk.ac.mrt.swiftdrop.identity_service.repository.UserRepository;
 import lk.ac.mrt.swiftdrop.identity_service.service.UserService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -99,5 +102,24 @@ public class UserServiceImpl implements UserService {
         User updatedUser = userRepository.save(user);
         log.info("Updated profile for user [userId={}]", userId);
         return UserResponse.fromEntity(updatedUser);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<UserResponse> listUsers(String role, UserStatus status, Pageable pageable) {
+        Page<User> users;
+        String normalizedRole = (role != null && !role.isBlank()) ? role.trim().toUpperCase(Locale.ROOT) : null;
+
+        if (normalizedRole != null && status != null) {
+            users = userRepository.findByRoles_IdAndStatus(normalizedRole, status, pageable);
+        } else if (normalizedRole != null) {
+            users = userRepository.findByRoles_Id(normalizedRole, pageable);
+        } else if (status != null) {
+            users = userRepository.findByStatus(status, pageable);
+        } else {
+            users = userRepository.findAll(pageable);
+        }
+
+        return users.map(UserResponse::fromEntity);
     }
 }
