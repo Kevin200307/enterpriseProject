@@ -1,6 +1,7 @@
 import { api } from '../client'
 import type {
   ApiKey,
+  CreateMerchantOrderInput,
   CreatedApiKey,
   MerchantApplication,
   WebhookDelivery,
@@ -18,6 +19,10 @@ export const merchantApi = {
       q: f.q,
       page: f.page ?? 0,
       size: 20,
+    }),
+  createOrder: (input: CreateMerchantOrderInput, idempotencyKey = crypto.randomUUID()) =>
+    api.post<MerchantOrder>('/api/v1/merchants/orders', input, {
+      headers: { 'Idempotency-Key': idempotencyKey },
     }),
   apiKeys: () => api.get<ApiKey[]>('/api/v1/merchants/me/api-keys'),
   createApiKey: (label: string, scopes: string[]) =>

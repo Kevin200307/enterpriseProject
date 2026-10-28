@@ -185,8 +185,9 @@ describe('merchant new order', () => {
         }),
       ),
       http.post(
-        `${API}/api/v1/parcels`,
+        `${API}/api/v1/merchants/orders`,
         async ({ request }) => (
+          expect(request.headers.get('Idempotency-Key')).toBeTruthy(),
           (body = (await request.json()) as Record<string, unknown>),
           HttpResponse.json({ id: 'p', trackingNumber: 'SD-ABCD2345' }, { status: 201 })
         ),

@@ -7,27 +7,11 @@ React 18 + TypeScript + Vite + Tailwind SPA for all SwiftDrop personas. Plan: [d
 ```bash
 cd apps/web
 npm install
-npm run dev        # http://localhost:5173 — OFFLINE DEMO: an in-browser mock backend, no services needed
-npm run dev:live   # talk to a real gateway on :8081 instead (demo logins are hidden)
+npm run dev        # http://localhost:5173, connected to the Gateway on :8081
 ```
 
-`npm run dev` loads `.env.development` (`VITE_USE_MOCKS=true`). Production builds and the Docker image never include the
-mock backend or the demo logins.
-
-### Demo logins (offline demo only)
-
-Open `/login` and click a role to go straight in, or type the email with the shared password **`Demo1234`**.
-
-| Role | Email | What you can do |
-|---|---|---|
-| Customer | `customer@swiftdrop.demo` | Book, track, cancel, download a receipt |
-| Merchant | `merchant@swiftdrop.demo` | Orders, API keys (copy-once), webhook and delivery log |
-| Courier | `courier@swiftdrop.demo` | Today's manifest, one-tap status, proof photo |
-| Dispatcher | `dispatcher@swiftdrop.demo` | Dispatch board, workload, couriers, parcels |
-| Admin | `admin@swiftdrop.demo` | Everything, plus users, merchants, zones, pricing, reports |
-
-These accounts exist only inside the browser mock. The data resets on every page reload. Try tracking
-`SD-P5V7JG3L` (out for delivery) on `/track`.
+Set `VITE_API_BASE_URL` and `VITE_WS_URL` only when the Gateway is not available at
+`http://localhost:8081`. Browser builds do not contain an in-memory API or demo accounts.
 
 | Script | Purpose |
 |---|---|

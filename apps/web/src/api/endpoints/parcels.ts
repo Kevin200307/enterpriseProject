@@ -23,7 +23,10 @@ export const parcelsApi = {
     api.get<Parcel>(`/api/v1/parcels/by-tracking/${encodeURIComponent(tn)}`),
   get: (id: string) => api.get<Parcel>(`/api/v1/parcels/${id}`),
   history: (id: string) => api.get<HistoryEntry[]>(`/api/v1/parcels/${id}/history`),
-  create: (input: CreateParcelInput) => api.post<Parcel>('/api/v1/parcels', input),
+  create: (input: CreateParcelInput, idempotencyKey = crypto.randomUUID()) =>
+    api.post<Parcel>('/api/v1/parcels', input, {
+      headers: { 'Idempotency-Key': idempotencyKey },
+    }),
   cancel: (id: string) => api.post<Parcel>(`/api/v1/parcels/${id}/cancel`),
   updateStatus: (id: string, change: StatusChange) =>
     api.patch<Parcel>(`/api/v1/parcels/${id}/status`, change),

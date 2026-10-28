@@ -254,11 +254,20 @@ export interface MerchantProfile {
 }
 
 export interface MerchantOrder {
+  id?: string
   merchantRef: string
   trackingNumber: string
   status: ParcelStatus
   destinationCity: string
   createdAt: string
+}
+
+export interface CreateMerchantOrderInput {
+  merchantRef: string
+  pickup: Omit<Address, 'line2'> & { zone: string }
+  dropoff: Omit<Address, 'line2'> & { zone: string }
+  size: PackageSize
+  weightKg: number
 }
 
 export interface MerchantApplication {
@@ -290,10 +299,10 @@ export interface WebhookDelivery {
   trackingNumber: string
   url: string
   attempts: number
-  lastStatus?: number | null
+  lastStatus?: string | number | null
   state: WebhookState
   nextRetryAt?: string | null
-  history?: { at: string; status?: number | null; error?: string | null }[]
+  history?: { at: string; status?: string | number | null; error?: string | null }[]
 }
 
 export interface ToolCall {

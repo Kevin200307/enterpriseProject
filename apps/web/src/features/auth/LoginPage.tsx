@@ -9,7 +9,7 @@ import {
   Lock,
   Mail,
 } from 'lucide-react'
-import { Suspense, lazy, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { isApiError } from '@/api/ApiError'
@@ -22,15 +22,9 @@ import { FormField } from '@/components/common/FormField'
 import { LoadingScreen } from '@/components/common/LoadingScreen'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { env } from '@/config/env'
 import { GoogleButton } from './GoogleButton'
 import { waitForLoginMinimum } from './loginLoading'
 import { loginSchema, type LoginInput } from './schemas'
-
-const DemoAccounts =
-  import.meta.env.PROD && import.meta.env.VITE_DEMO_MODE !== 'true'
-    ? null
-    : lazy(() => import('./DemoAccounts'))
 
 export function LoginPage() {
   const { status, claims, signInWithToken } = useAuth()
@@ -184,12 +178,6 @@ export function LoginPage() {
         </div>
 
         <GoogleButton returnTo={returnTo ?? undefined} />
-
-        {DemoAccounts && env.useMocks && (
-          <Suspense fallback={null}>
-            <DemoAccounts returnTo={returnTo ?? undefined} />
-          </Suspense>
-        )}
 
         <p className="text-center text-xs text-muted-foreground">
           New to SwiftDrop?{' '}
