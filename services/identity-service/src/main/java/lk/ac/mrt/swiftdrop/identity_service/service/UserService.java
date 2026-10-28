@@ -81,6 +81,12 @@ public interface UserService {
     UserResponse updateUserRoles(UUID userId, Set<Role> newRoles, UUID currentAdminId);
 
     /**
+     * Idempotently adds the MERCHANT role without replacing existing roles.
+     * Intended only for the trusted merchant-service approval workflow.
+     */
+    UserResponse grantMerchantRole(UUID userId);
+
+    /**
      * Batch lookups users by their IDs for internal inter-service communication.
      *
      * @param userIds collection of user UUIDs

@@ -193,6 +193,26 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public UserResponse grantMerchantRole(UUID userId) {
+        if (userId == null) {
+            throw new IllegalArgumentException("User ID must not be null");
+        }
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", userId));
+        if (user.hasRole(Role.MERCHANT)) {
+            return UserResponse.fromEntity(user);
+        }
+
+        RoleEntity merchantRole = roleRepository.findByRole(Role.MERCHANT)
+                .orElseThrow(() -> new ResourceNotFoundException("Role", Role.MERCHANT.name()));
+        user.addRole(merchantRole);
+        User savedUser = userRepository.save(user);
+        log.info("Granted MERCHANT role to user [userId={}]", userId);
+        return UserResponse.fromEntity(savedUser);
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public List<UserLookupResponse> lookupUsers(Collection<UUID> userIds) {
         if (userIds == null || userIds.isEmpty()) {
