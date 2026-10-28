@@ -51,8 +51,22 @@ app:
     rate-limit:
       max-failed-login-attempts: 5 # 5 wrong attempts rate-limited 
       window-seconds: 60
+    oauth2:
+      google:
+        client-id: ${GOOGLE_CLIENT_ID:mock-google-client-id.apps.googleusercontent.com}
+        client-secret: ${GOOGLE_CLIENT_SECRET:mock-google-client-secret}
+        redirect-uri: ${GOOGLE_REDIRECT_URI:http://localhost:5173/oauth/callback}
+        authorization-uri: https://accounts.google.com/o/oauth2/v2/auth
+        token-uri: https://oauth2.googleapis.com/token
+        user-info-uri: https://openidconnect.googleapis.com/v1/userinfo
+        jwk-set-uri: https://www.googleapis.com/oauth2/v3/certs
+        issuer: https://accounts.google.com
     admin:
+      enabled: ${ADMIN_BOOTSTRAP_ENABLED:true}
       bootstrap-email: ${ADMIN_BOOTSTRAP_EMAIL:admin@swiftdrop.lk}
+      bootstrap-password: ${ADMIN_BOOTSTRAP_PASSWORD:Admin123!Safe}
+      bootstrap-name: ${ADMIN_BOOTSTRAP_NAME:SwiftDrop Platform Administrator}
+      bootstrap-phone: ${ADMIN_BOOTSTRAP_PHONE:+94770000001}
 
 management:
   endpoints:

@@ -113,14 +113,176 @@ The notification delivery architecture adheres strictly to the **Strategy Patter
   - `GET /api/v1/notifications/me`: Retrieves notification delivery history for the currently authenticated user (`recipientRef`).
   - Supports resolution via `X-User-Id` gateway header or `userId` query parameter.
 
+---
 
+## 2. Identity & Authentication Service (`services/identity-service`)
+**Owner:** Amandi Arangala (`@AmandiArangala`)  
+**Assigned Issues:** `[IDN-1]`, `[IDN-2]`, `[IDN-3]`, `[IDN-4]`
 
+### 2.1 Architecture & Role
+The **Identity & Authentication Service** is the central authority for authentication, token issuance, cryptographic verification, and user management across the SwiftDrop microservices ecosystem.
+- **Stateless Authorization:** Issues RS256-signed JSON Web Tokens (JWT) for access authentication and manages cryptographically secure opaque refresh tokens stored in HTTP-only cookies.
+- **Asymmetric Cryptography:** Signs access tokens using an RSA private key (`IDENTITY_JWT_PRIVATE_KEY`) and publishes public keys via a standard JWKS endpoint (`GET /.well-known/jwks.json`), allowing the API Gateway and downstream resource servers to independently verify token validity without shared secrets or network calls per request.
 
-# Dispatch security evidence
+---
 
+### 2.2 RS256 JWT Access Token Contract (§4.3)
+All microservices authenticate inbound requests by validating the RS256 Bearer JWT.
+
+- **Token Lifetime:** 15 minutes (`900` seconds).
+- **Algorithm:** `RS256` (RSA Signature with SHA-256).
+- **Header:**
+  ```json
+  {
+    "alg": "RS256",
+    "typ": "JWT",
+    "kid": "swiftdrop-v1"
+  }
+  ```
+- **Standard Claims (§4.3):**
+  | Claim | Type | Description | Example |
+  |---|---|---|---|
+  | `sub` | `string` (UUID) | Unique user identifier | `"c6891141-b656-403b-a0c9-e144b24836ed"` |
+  | `roles` | `string[]` | Assigned system roles from `lk.ac.mrt.swiftdrop.contracts.domain.Role` | `["CUSTOMER"]` |
+  | `email` | `string` | User's verified email address (lowercased) | `"amandi.arangala@swiftdrop.lk"` |
+  | `merchantId` | `string` (UUID, optional) | Associated merchant ID for `MERCHANT_ADMIN` users | `"8f192b9d-4e94-4d82-b7e3-0c46b5a8e102"` |
+  | `iss` | `string` | Token issuer URL | `"http://identity-service:8080"` |
+  | `aud` | `string[]` | Token audience | `["swiftdrop"]` |
+  | `iat` | `numericDate` | Issuance timestamp (epoch seconds) | `1700000000` |
+  | `exp` | `numericDate` | Expiration timestamp (`iat + 900`) | `1700000900` |
+
+---
+
+### 2.3 Public JWKS & Downstream Resource Server Configuration
+Downstream services (Gateway, Parcel, Pricing, Dispatch, Tracking, etc.) configure Spring Security OAuth 2.0 Resource Server to validate tokens using the JWKS URL without contacting the Identity database.
+
+#### JWKS Endpoint:
+- **URL:** `GET /.well-known/jwks.json`
+- **Security:** Public, unauthenticated.
+- **Caching:** `Cache-Control: max-age=86400, public` (24-hour cache TTL).
+- **Example Response:**
+  ```json
+  {
+    "keys": [
+      {
+        "kty": "RSA",
+        "e": "AQAB",
+        "use": "sig",
+        "kid": "swiftdrop-v1",
+        "alg": "RS256",
+        "n": "u1P..."
+      }
+    ]
+  }
+  ```
+
+#### Downstream Service `application.yaml` Configuration:
+```yaml
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: ${IDENTITY_JWKS_URI:http://identity-service:8080/.well-known/jwks.json}
+```
+
+#### Downstream Role Converter Mapping:
+```java
+@Bean
+public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    var roles = new JwtGrantedAuthoritiesConverter();
+    roles.setAuthoritiesClaimName("roles");
+    roles.setAuthorityPrefix("ROLE_");
+
+    var converter = new JwtAuthenticationConverter();
+    converter.setJwtGrantedAuthoritiesConverter(roles);
+
+    return http
+            .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .oauth2ResourceServer(oauth -> oauth.jwt(jwt -> jwt.jwtAuthenticationConverter(converter)))
+            .build();
+}
+```
+
+---
+
+### 2.4 Refresh Token Lifecycle, Atomic Rotation & Replay Mitigation (§4.3)
+- **Token Format:** Cryptographically strong 256-bit opaque random token (URL-safe Base64 encoded).
+- **Storage:** Persisted exclusively as SHA-256 digests in PostgreSQL (`refresh_tokens.token_hash`). Raw tokens are never logged or persisted.
+- **TTL:** 7 days (`604800` seconds).
+- **Atomic Rotation (`POST /api/v1/auth/refresh`):**
+  - Consumes `refreshToken` cookie.
+  - Generates a new RS256 access token and a new refresh token.
+  - Atomically marks the presenting refresh token as revoked (`revoked_at = NOW()`) and sets `replaced_by = new_token_id`.
+  - Sets the new rotated refresh token in the response cookie.
+- **Automatic Replay Attack Detection:**
+  - If a client presents an already revoked refresh token (indicating token theft or replay), the service flags a security alert, **immediately revokes the entire token family/chain for that user**, and rejects the request with HTTP `401 Unauthorized` (`ErrorCode.UNAUTHENTICATED`).
+- **Account Suspension Check:**
+  - Attempting to rotate tokens for an account with status `SUSPENDED` is rejected with HTTP `403 Forbidden` (`ErrorCode.ACCESS_DENIED`).
+
+---
+
+### 2.5 Logout & Cookie Transport Security
+- **Cookie Security Policy:**
+  - `Name`: `refreshToken`
+  - `Path`: `/api/v1/auth` (covers `/api/v1/auth/refresh` and `/api/v1/auth/logout`)
+  - `HttpOnly`: `true` (prohibits JavaScript access; mitigates XSS token extraction)
+  - `Secure`: `true` (enforces HTTPS transmission)
+  - `SameSite`: `Strict` (prohibits cross-site request forgery attacks)
+- **Logout Endpoint (`POST /api/v1/auth/logout`):**
+  - Revokes the presenting refresh token in the database.
+  - Clears the cookie from the user's browser by emitting `Set-Cookie: refreshToken=; Max-Age=0; Path=/api/v1/auth; HttpOnly; Secure; SameSite=Strict`.
+  - Idempotent: returns HTTP `204 No Content` even if the cookie is expired or absent.
+
+---
+
+### 2.6 Credential Hygiene & Anti-Timing Attack Defense (IDN-1)
+- **BCrypt Password Hashing:** BCrypt work factor `10` (`2^10 = 1024` rounds) using `SecureRandom`.
+- **Anti-Timing Attack Protection:**
+  - Missing email lookups execute a constant-time pre-computed dummy BCrypt hash verification to eliminate side-channel enumeration attacks.
+  - Invalid email and invalid password return identical RFC 7807 problem details: `401 INVALID_CREDENTIALS`.
+- **Distributed Rate Limiting:**
+  - Redis token bucket / sliding counter limits authentication attempts per email to 5 failed requests per minute, throwing `429 RATE_LIMITED`.
+
+---
+
+## 3. Dispatch Service (`services/dispatch-service`)
+
+### 3.1 Security & Concurrency Verification
 `services/dispatch-service/src/test/java/lk/ac/mrt/swiftdrop/dispatch_service/DispatchAuthorizationTest.java`
 verifies signed JWT claims, anonymous 401, CUSTOMER 403, courier ownership (404 for another courier),
 and rejection of spoofed identity headers/query parameters. `AssignmentConcurrencyTest` proves capacity
 and unique assignment protection with real PostgreSQL. See `services/dispatch-service/README.md` for
 API contracts, service authentication, pending command recovery and RabbitMQ DLQ behavior.
 
+---
+
+## 4. Pricing Service (`services/pricing-service`)
+
+### 4.1 Pricing Strategies & Open-Closed Principle
+Pricing calculations follow an ordered Strategy chain. `PricingEngine` depends only on the strategy interface, so a new contribution can be added without modifying the engine.
+
+```mermaid
+classDiagram
+    class PricingEngine {
+      +calculate(PricingContext) Result
+    }
+    class PricingStrategy {
+      <<interface>>
+      +order() int
+      +apply(PricingContext, PricingBreakdown) PricingBreakdown
+    }
+    class ZoneBandStrategy
+    class WeightSurchargeStrategy
+    class ExpressSurchargeStrategy
+    class PricingContext
+    class PricingBreakdown
+    PricingEngine --> PricingStrategy : ordered list
+    PricingStrategy <|.. ZoneBandStrategy
+    PricingStrategy <|.. WeightSurchargeStrategy
+    PricingStrategy <|.. ExpressSurchargeStrategy
+    PricingEngine ..> PricingContext
+    PricingEngine ..> PricingBreakdown
+```
+
+`ZoneBandStrategy` selects the rule base fee, `WeightSurchargeStrategy` charges only weight above the configured included weight, and `ExpressSurchargeStrategy` adds the configured percentage. Contributions and totals use LKR `BigDecimal` values with two-decimal `HALF_UP` rounding. See `services/pricing-service/README.md` for endpoint and deployment details.

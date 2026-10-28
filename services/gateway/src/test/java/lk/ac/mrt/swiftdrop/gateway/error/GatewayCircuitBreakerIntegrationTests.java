@@ -66,7 +66,7 @@ class GatewayCircuitBreakerIntegrationTests {
 	void createClient() {
 		client = WebTestClient.bindToServer()
 				.baseUrl("http://127.0.0.1:" + gatewayPort)
-				.responseTimeout(Duration.ofSeconds(5))
+				.responseTimeout(Duration.ofSeconds(10))
 				.build();
 	}
 

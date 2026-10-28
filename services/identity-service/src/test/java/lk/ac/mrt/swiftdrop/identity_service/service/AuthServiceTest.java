@@ -48,7 +48,10 @@ class AuthServiceTest {
     private RateLimiterService rateLimiterService;
 
     @Mock
-    private JwtTokenService jwtTokenService;
+    private JwtService jwtService;
+
+    @Mock
+    private RefreshTokenService refreshTokenService;
 
     @InjectMocks
     private AuthServiceImpl authService;
@@ -90,8 +93,8 @@ class AuthServiceTest {
     }
 
     @Test
-    @DisplayName("Should return UserResponse profile on login")
-    void shouldReturnUserResponseOnLogin() {
+    @DisplayName("Should return LoginResult with access token and refresh token on login")
+    void shouldReturnLoginResultOnLogin() {
         LoginRequest request = new LoginRequest("amandi.arangala@swiftdrop.lk", "ValidPassword123!");
 
         when(userRepository.findByEmailIgnoreCase("amandi.arangala@swiftdrop.lk"))
@@ -99,16 +102,19 @@ class AuthServiceTest {
         when(passwordEncoder.matches("ValidPassword123!", activeUser.getPasswordHash()))
                 .thenReturn(true);
 
-        when(jwtTokenService.createAccessToken(activeUser)).thenReturn("signed-token");
-        when(jwtTokenService.expiresIn()).thenReturn(900L);
-        AuthResponse response = authService.login(request);
+        when(jwtService.generateAccessToken(activeUser)).thenReturn("signed-token");
+        when(jwtService.getAccessTokenTtl()).thenReturn(java.time.Duration.ofMinutes(15));
+        when(refreshTokenService.issueRefreshToken(activeUser)).thenReturn("sample-raw-refresh-token");
 
-        assertThat(response).isNotNull();
-        assertThat(response.accessToken()).isEqualTo("signed-token");
-        assertThat(response.expiresIn()).isEqualTo(900L);
-        assertThat(response.user().id()).isEqualTo(activeUser.getId());
-        assertThat(response.user().email()).isEqualTo("amandi.arangala@swiftdrop.lk");
-        assertThat(response.user().roles()).contains(Role.CUSTOMER);
+        LoginResult result = authService.login(request);
+
+        assertThat(result).isNotNull();
+        assertThat(result.rawRefreshToken()).isEqualTo("sample-raw-refresh-token");
+        assertThat(result.authResponse().accessToken()).isEqualTo("signed-token");
+        assertThat(result.authResponse().expiresIn()).isEqualTo(900L);
+        assertThat(result.authResponse().user().id()).isEqualTo(activeUser.getId());
+        assertThat(result.authResponse().user().email()).isEqualTo("amandi.arangala@swiftdrop.lk");
+        assertThat(result.authResponse().user().roles()).contains(Role.CUSTOMER);
         verify(rateLimiterService).resetAttempts("amandi.arangala@swiftdrop.lk");
     }
 

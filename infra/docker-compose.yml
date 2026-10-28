@@ -153,6 +153,7 @@ services:
       IDENTITY_JWT_PUBLIC_KEY: ${IDENTITY_JWT_PUBLIC_KEY}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-http://localhost:5173/oauth/callback}
       ADMIN_BOOTSTRAP_EMAIL: ${ADMIN_BOOTSTRAP_EMAIL:-admin@swiftdrop.lk}
       DISPATCH_CLIENT_SECRET: ${DISPATCH_CLIENT_SECRET:-}
     depends_on:
@@ -170,6 +171,8 @@ services:
     build:
       context: ..
       dockerfile: services/merchant-service/Dockerfile
+    ports:
+      - "8080:8080"
     environment:
       JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=75
       SPRING_DATASOURCE_URL: ${MERCHANT_DB_URL}
@@ -178,6 +181,8 @@ services:
       SPRING_RABBITMQ_HOST: rabbitmq
       SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USERNAME}
       SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+      IDENTITY_SERVICE_URL: ${IDENTITY_SERVICE_URL:-http://identity-service:8080}
+      IDENTITY_JWKS_URI: ${IDENTITY_JWKS_URI:-http://identity-service:8080/.well-known/jwks.json}
       JWT_ISSUER_URI: ${IDENTITY_ISSUER_URI:-http://identity-service:8080}
       JWT_JWK_SET_URI: ${IDENTITY_JWKS_URI:-http://identity-service:8080/.well-known/jwks.json}
       JWT_AUDIENCE: ${JWT_AUDIENCE:-swiftdrop}
@@ -246,6 +251,11 @@ services:
       SPRING_DATASOURCE_URL: ${PRICING_DB_URL}
       SPRING_DATASOURCE_USERNAME: ${PRICING_DB_USERNAME}
       SPRING_DATASOURCE_PASSWORD: ${PRICING_DB_PASSWORD}
+      IDENTITY_JWKS_URI: ${IDENTITY_JWKS_URI:-http://identity-service:8080/.well-known/jwks.json}
+      IDENTITY_ISSUER_URI: ${IDENTITY_ISSUER_URI:-http://identity-service:8080}
+      JWT_AUDIENCE: ${JWT_AUDIENCE:-swiftdrop}
+      PRICING_INCLUDED_WEIGHT_KG: ${PRICING_INCLUDED_WEIGHT_KG:-1.00}
+      PRICING_EXPRESS_PERCENT: ${PRICING_EXPRESS_PERCENT:-15.00}
 
   tracking-service:
     <<: *defaults
