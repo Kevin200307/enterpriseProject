@@ -3,7 +3,7 @@
 #   docker build -f services/tracking-service/Dockerfile .
 
 ##### Stage 1: build the application #####
-FROM eclipse-temurin:25-jdk-alpine AS build
+FROM eclipse-temurin:21-jdk-alpine AS build
 WORKDIR /build
 
 COPY .mvn/ .mvn/
@@ -22,7 +22,7 @@ RUN --mount=type=cache,target=/root/.m2,sharing=locked \
     && java -Djarmode=tools -jar application.jar extract --layers --destination extracted
 
 ##### Stage 2: runtime image #####
-FROM eclipse-temurin:25-jre-alpine AS runtime
+FROM eclipse-temurin:21-jre-alpine AS runtime
 WORKDIR /app
 
 RUN addgroup -S spring && adduser -S spring -G spring

@@ -7,4 +7,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface HistoryRepository extends JpaRepository<StatusHistory, UUID> {
     Page<StatusHistory> findByParcelId(UUID parcelId, Pageable pageable);
+    java.util.List<StatusHistory> findByParcelIdOrderByOccurredAtAsc(UUID parcelId);
 }

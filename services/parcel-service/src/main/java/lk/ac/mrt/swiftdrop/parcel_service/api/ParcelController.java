@@ -31,6 +31,16 @@ public class ParcelController {
     @GetMapping("/{id}")
     public ParcelView get(@PathVariable UUID id, Authentication auth) { return parcels.get(id, Actor.from(auth)); }
 
+    @GetMapping("/by-tracking/{trackingNumber}")
+    public lk.ac.mrt.swiftdrop.contracts.events.ParcelTrackingSnapshotV1 getByTrackingNumber(@PathVariable String trackingNumber) {
+        return parcels.getSnapshotByTrackingNumber(trackingNumber);
+    }
+
+    @GetMapping("/by-tracking/{trackingNumber}/details")
+    public ParcelView getDetailsByTrackingNumber(@PathVariable String trackingNumber) {
+        return parcels.getDetailsByTrackingNumber(trackingNumber);
+    }
+
     @PutMapping("/{id}/assignment")
     public ParcelView assign(@PathVariable UUID id, @Valid @RequestBody AssignmentRequest request, Authentication auth) {
         return parcels.assign(id, request.courierId(), Actor.from(auth));
