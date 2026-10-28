@@ -74,6 +74,20 @@ Parcel Service --RabbitMQ--> Merchant Webhook Consumer
 
 The repository already contains Gateway routes for the main service path groups. The remaining work is primarily contract correction, missing endpoint implementation, event recipient correction, merchant workflow completion, and system-level tests.
 
+### 3.1 Identity Service baseline after PR #69
+
+The Identity Service was extended after the first version of this plan. Treat the following as implemented baseline, not new integration work:
+
+- `GET /api/v1/users` provides ADMIN-only pagination with optional `role` and `status` filters.
+- `PATCH /api/v1/users/{id}/status` provides ADMIN-only activation/suspension, revokes refresh tokens on suspension, and prevents self-suspension.
+- `PATCH /api/v1/users/{id}/roles` replaces a user's roles and prevents an administrator from removing their own `ADMIN` role.
+- `GET /api/v1/internal/users/lookup?id={uuid}` resolves one user for an internal caller.
+- `POST /api/v1/internal/users/lookup` resolves multiple users from `{ "userIds": [...] }`; the alias `ids` is also accepted.
+- Runtime admin bootstrap is idempotent and configurable under `app.security.admin` / `ADMIN_BOOTSTRAP_*`.
+- The Identity Service contains an RBAC/authorization integration-test suite that can be copied as a pattern by other resource servers.
+
+These features still require Gateway contract checks and cross-service acceptance tests. The internal lookup authorization must also be narrowed to explicit trusted service scopes before production use; the current expression accepts any JWT containing a `client_id` or `scope` claim.
+
 ## 4. Confirmed Missing or Incorrect Implementations
 
 ### 4.1 Notification recipient is incorrect
@@ -129,7 +143,7 @@ Missing functions:
 
 Some entities and repositories exist, but they do not form a working merchant workflow.
 
-### 4.3 Merchant approval uses a missing Identity endpoint
+### 4.3 Merchant approval still needs a dedicated internal Identity endpoint
 
 Merchant approval calls this internal operation:
 
@@ -137,13 +151,14 @@ Merchant approval calls this internal operation:
 POST /api/v1/internal/users/{userId}/roles
 ```
 
-Identity Service does not currently expose a compatible implementation. Merchant approval can therefore fail while attempting to grant the `MERCHANT` role.
+Identity Service now has the public ADMIN-only `PATCH /api/v1/users/{id}/roles` endpoint, but it still does not expose the internal merchant-specific operation expected by Merchant Service. Merchant approval can therefore still fail while attempting to grant the `MERCHANT` role. Do not call the public admin endpoint with a service credential because it replaces the entire role set and is intended for a human administrator.
 
 Required implementation:
 
 - Add a secured internal Identity Service endpoint for assigning the merchant role and merchant ID.
 - Require a service token with an internal audience or scope.
 - Make the operation idempotent.
+- Preserve all existing roles while adding `MERCHANT`; do not reuse the replace-all public role operation.
 - Ensure a user receives refreshed JWT claims after approval.
 - Add rollback or reconciliation behavior when merchant approval succeeds but role assignment temporarily fails.
 
@@ -154,9 +169,9 @@ Required implementation:
 | Dashboard summary | `GET /api/v1/dashboard/summary` | `GET /api/v1/dashboard` | Standardize on `/dashboard/summary` |
 | Upload proof | `POST /api/v1/parcels/{id}/proof` | `POST /api/v1/parcels/{id}/proofs` | Standardize on `/proofs` and update frontend |
 | Cancel parcel | `POST /api/v1/parcels/{id}/cancel` | Missing | Implement endpoint and transition |
-| Admin users | `GET /api/v1/users` | Missing | Implement admin user search/list |
-| User status | `PATCH /api/v1/users/{id}/status` | Missing | Implement with ADMIN authorization |
-| User roles | `PATCH /api/v1/users/{id}/roles` | Missing | Implement with ADMIN authorization |
+| Admin users | `GET /api/v1/users` | Implemented with `role`, `status`, and pageable parameters | Connect frontend and add Gateway acceptance test |
+| User status | `PATCH /api/v1/users/{id}/status` | Implemented; ADMIN only, self-suspension guarded | Connect frontend and verify refresh-token revocation |
+| User roles | `PATCH /api/v1/users/{id}/roles` | Implemented; ADMIN only, replaces role set | Connect frontend; keep separate from internal merchant role grant |
 | Merchant orders | `/api/v1/merchants/orders` | Missing | Implement |
 | Merchant API keys | `/api/v1/merchants/me/api-keys` | Missing | Implement |
 | Merchant webhook | `/api/v1/merchants/me/webhook` | Missing | Implement |
@@ -272,15 +287,22 @@ Completion criteria:
 
 ### 6.2 Identity Service
 
-Implement:
+Already implemented:
 
 - Admin user listing with filters and pagination
 - User status update
 - User role update
-- Internal merchant-role assignment
 - Internal user/contact lookup for trusted services
+- Idempotent runtime bootstrap of the initial administrator
+- RBAC and authorization test template
+
+Remaining integration work:
+
+- Internal merchant-role assignment that adds `MERCHANT` without deleting existing roles
 - Service-token validation
 - Merchant ID claim support
+- Restrict internal lookup to named clients and exact scopes; remove the generic `client_id != null` / `scope != null` allowance
+- Disable bootstrap by default outside local development and require secrets supplied by the environment; never retain the documented fallback password in a deployed environment
 - Tests for expired, invalid, wrong-audience, and insufficient-role tokens
 
 Public routes:
@@ -302,8 +324,9 @@ PATCH /api/v1/users/{id}/roles
 Internal routes must not be exposed through the Gateway:
 
 ```text
-GET  /api/v1/internal/users/{id}
-POST /api/v1/internal/users/{id}/roles
+GET  /api/v1/internal/users/lookup?id={userId}
+POST /api/v1/internal/users/lookup
+POST /api/v1/internal/users/{id}/merchant-role
 ```
 
 ### 6.3 Pricing Service
@@ -815,52 +838,114 @@ Build at least these automated scenarios:
 - Duplicate/out-of-order event handling
 - Service outage behavior
 
-## 12. Implementation Order
+## 12. Commit-wise Development Plan for a Lower-Cost Model
 
-### Phase 1: Contract freeze
+Execute these commits in order. Give the model only this document, the files named by the current commit, and the immediately preceding diff. Do not ask it to redesign later commits. Each commit must be independently reviewable and must leave existing tests green.
 
-- Produce the final endpoint inventory.
-- Resolve frontend/backend path differences.
-- Define status V2 and notification events.
-- Define the merchant webhook payload.
+For every commit, use this instruction: **inspect first, change only the stated scope, preserve existing public contracts unless this step explicitly changes one, add focused tests, run the narrowest relevant test command, and report changed files plus test results.**
 
-### Phase 2: Critical correctness
+### Commit 1 - `docs(contracts): freeze endpoint and event inventory`
 
-- Correct notification recipients.
-- Implement internal Identity role assignment.
-- Implement cancellation.
-- Standardize proof upload.
-- Correct dashboard and receipt routes.
+Scope: documentation and shared contract tests only. Inventory every frontend call and backend controller; choose the dashboard, proof, receipt, cancellation, merchant, and internal Identity paths specified in this plan. Record method, role, request, response, and error status. Define `ParcelStatusChangedV2` and the merchant webhook v1 payload without changing runtime consumers.
 
-### Phase 3: Merchant completion
+Verify: shared-contract serialization tests and a search proving every frontend API path appears in the inventory.
 
-- API keys
-- Merchant orders
-- Webhook configuration
-- Event consumer
-- Retry, DLQ, history, and replay
+### Commit 2 - `feat(identity): add scoped idempotent merchant role grant`
 
-### Phase 4: Gateway completion
+Scope: Identity Service only. Add `POST /api/v1/internal/users/{id}/merchant-role`; require the exact Merchant Service client/scope, add `MERCHANT` without replacing other roles, persist merchant ID if the domain supports it, and return a stable DTO. Do not modify the public ADMIN role endpoint.
 
-- Final route configuration
-- Security validation
-- CORS
-- Trusted headers
-- SSE/WebSocket behavior
-- Multipart behavior
-- Failure responses
+Verify: tests for success, repeated request, preserved roles, missing user, wrong client, wrong scope, and ordinary user token.
 
-### Phase 5: Workflow verification
+### Commit 3 - `fix(identity): harden internal lookup and bootstrap configuration`
 
-- Service tests
-- Contract tests
-- Gateway acceptance tests
-- Full workflow tests
-- Frontend connected smoke tests
+Scope: Identity Service security/configuration only. Replace permissive internal-lookup authorization with explicit allowed service scopes. Make deployed profiles fail safely when bootstrap credentials are absent and disable bootstrap by default outside local development. Preserve local developer configuration through an explicit local profile.
 
-### Phase 6: AI Assistant
+Verify: authorization tests for each allowed/denied caller and bootstrap enabled/disabled/idempotent tests. Never print secrets.
 
-Implement and integrate the AI Assistant only after all non-AI workflows pass. Its tools must call existing Gateway/domain contracts rather than bypassing authorization or reading service databases directly.
+### Commit 4 - `feat(contracts): publish parcel status v2 contract`
+
+Scope: common contracts plus producer/consumer compatibility tests. Add `customerUserId`, `merchantId`, `assigneeUserId`, `changedByUserId`, failure reason, and proof ID as defined in section 4.1. Keep V1 compatibility; do not switch business logic yet.
+
+Verify: JSON round-trip, V1 compatibility, unknown-field, routing-key, and privacy tests.
+
+### Commit 5 - `fix(parcel): emit status v2 and implement cancellation`
+
+Scope: Parcel Service only. Emit V2 transactionally through the outbox and implement owner/admin/authorized-merchant cancellation before pickup. Add history and idempotency. Do not modify downstream consumers in this commit.
+
+Verify: legal/illegal transition tests, ownership tests, repeated cancellation, and atomic parcel/history/outbox persistence.
+
+### Commit 6 - `fix(notification): resolve the actual notification recipient`
+
+Scope: Notification Service only. Consume status V2, use `customerUserId` for preferences and customer delivery, keep `changedByUserId` for audit only, and make `(event, channel, recipient)` idempotent. Use the secured Identity lookup contract.
+
+Verify: courier actor never becomes recipient, duplicate event suppression, preference handling, retry, and missing-user behavior.
+
+### Commit 7 - `fix(parcel-web): align proof receipt and dashboard contracts`
+
+Scope: Parcel Service, Gateway dashboard adapter, and the smallest corresponding frontend client changes. Standardize plural `/proofs`, the selected receipt URL, `/dashboard/summary`, multipart limits, and RFC 7807 errors. Avoid unrelated UI work.
+
+Verify: controller tests, multipart Gateway test, receipt authorization test, and frontend API-client tests.
+
+### Commit 8 - `feat(merchant): integrate approval and API key lifecycle`
+
+Scope: Merchant Service only. Call the new scoped Identity merchant-role grant with retry/reconciliation. Implement API-key create/list/revoke with one-time plaintext display, hashed storage, scopes, and constant-time verification.
+
+Verify: approval retry/idempotency, role-grant failure state, key hashing, scope rejection, revocation, and cross-merchant isolation.
+
+### Commit 9 - `feat(merchant): implement merchant parcel orders`
+
+Scope: Merchant Service and its Parcel Service client only. Implement create/list/get with merchant ownership, idempotency key, stable DTOs, and fee snapshot behavior. Do not add webhooks yet.
+
+Verify: duplicate booking, ownership isolation, validation, upstream failure mapping, and pagination.
+
+### Commit 10 - `feat(merchant): add webhook configuration and signed delivery`
+
+Scope: Merchant Service only. Add webhook URL and secret rotation, consume parcel events, create one logical delivery per event, sign the timestamp plus raw body with HMAC-SHA256, and persist attempts.
+
+Verify: signature fixture, duplicate event, disabled endpoint, secret rotation, private-address/unsafe URL rejection, and successful delivery.
+
+### Commit 11 - `feat(merchant): add webhook retry history and replay`
+
+Scope: Merchant Service only. Add bounded exponential retry, terminal/DLQ state, delivery history, and authorized manual replay. Replay must create an auditable attempt without duplicating the logical event.
+
+Verify: retry schedule, max attempts, restart recovery, replay authorization, and cross-merchant isolation.
+
+### Commit 12 - `fix(gateway): finalize public routes and security boundaries`
+
+Scope: Gateway only. Register final public routes, ensure `/api/v1/internal/**` is unreachable, validate issuer/audience/time claims, remove spoofed trusted headers, set exact CORS, preserve request IDs, and return RFC 7807 errors. Configure multipart, SSE, and WebSocket behavior separately.
+
+Verify: route-table tests; 401 versus 403 versus 503 tests; internal-route denial; CORS preflight; spoofed-header removal; upload, SSE, and WebSocket proxy tests.
+
+### Commit 13 - `test(integration): add non-AI service contract suites`
+
+Scope: tests and test fixtures only. Apply the Identity RBAC suite pattern to Parcel, Dispatch, Merchant, Tracking, Notification, and Pricing. Add event compatibility, duplicate/out-of-order, service-token, and ownership matrices.
+
+Verify: run the non-AI Maven test suite; no production behavior changes are allowed in this commit.
+
+### Commit 14 - `test(e2e): add gateway customer-to-delivery workflows`
+
+Scope: end-to-end harness only. Cover customer booking, dispatch assignment, courier delivery with proof, tracking, notification, merchant webhook, cancellation, failed delivery/reattempt, and controlled dependency outage through the public Gateway.
+
+Verify: one command starts isolated dependencies and runs all workflows twice to expose idempotency defects. No shared external database is required.
+
+### Commit 15 - `feat(web): remove mocks and complete connected smoke flows`
+
+Scope: React API wiring and smoke tests only. Remove obsolete mocks for completed endpoints, use Gateway URLs exclusively, render RFC 7807 errors, refresh claims after role changes, and verify role-specific navigation.
+
+Verify: frontend unit tests plus browser smoke tests for customer, dispatcher, courier, merchant, and admin.
+
+### Deferred commit - AI Assistant
+
+Implement the AI Assistant only after commits 1-15 pass. Its tools must call existing Gateway/domain contracts rather than bypassing authorization or reading service databases directly.
+
+### Token-saving execution rules
+
+- Start a fresh lower-model session per commit; provide only relevant source directories and failing test output.
+- Ask for one commit only. Do not include future implementation details beyond the dependency it consumes.
+- Prefer targeted commands such as the affected Maven module with `-am` or the affected frontend test file before running the full suite.
+- If a test fails, provide only the failure, the changed diff, and the directly involved files on the repair turn.
+- Require the model to stop when scope expansion is needed and record the dependency instead of editing another service opportunistically.
+- Review and commit each green step before starting the next so rollback and context remain small.
 
 ## 13. Definition of Done
 
