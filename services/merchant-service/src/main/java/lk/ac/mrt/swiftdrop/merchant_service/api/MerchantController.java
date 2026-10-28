@@ -32,9 +32,11 @@ import java.util.UUID;
 public class MerchantController {
 
     private final MerchantService merchantService;
+    private final lk.ac.mrt.swiftdrop.merchant_service.service.ApiKeyService apiKeys;
 
-    public MerchantController(MerchantService merchantService) {
+    public MerchantController(MerchantService merchantService, lk.ac.mrt.swiftdrop.merchant_service.service.ApiKeyService apiKeys) {
         this.merchantService = merchantService;
+        this.apiKeys = apiKeys;
     }
 
     @PostMapping("/register")
@@ -108,6 +110,22 @@ public class MerchantController {
     public MerchantResponse getMyMerchant(@AuthenticationPrincipal Jwt jwt) {
         UUID ownerUserId = UUID.fromString(jwt.getSubject());
         return merchantService.getMerchantByOwnerUserId(ownerUserId);
+    }
+
+    @PostMapping("/me/api-keys")
+    public ApiKeyDtos.Created createApiKey(@Valid @RequestBody ApiKeyDtos.CreateRequest request,
+                                            @AuthenticationPrincipal Jwt jwt) {
+        return apiKeys.create(UUID.fromString(jwt.getSubject()), request);
+    }
+
+    @GetMapping("/me/api-keys")
+    public java.util.List<ApiKeyDtos.View> listApiKeys(@AuthenticationPrincipal Jwt jwt) {
+        return apiKeys.list(UUID.fromString(jwt.getSubject()));
+    }
+
+    @DeleteMapping("/me/api-keys/{keyId}")
+    public ApiKeyDtos.View revokeApiKey(@PathVariable UUID keyId, @AuthenticationPrincipal Jwt jwt) {
+        return apiKeys.revoke(UUID.fromString(jwt.getSubject()), keyId);
     }
 
     @ExceptionHandler(MerchantAlreadyExistsException.class)

@@ -27,11 +27,13 @@ public class MerchantService {
     private final MerchantRepository merchantRepository;
     private final WebClient.Builder webClientBuilder;
     private final String identityServiceUrl;
+    private final String identityServiceToken;
 
     public MerchantService(MerchantRepository merchantRepository, WebClient.Builder webClientBuilder) {
         this.merchantRepository = merchantRepository;
         this.webClientBuilder = webClientBuilder;
         this.identityServiceUrl = System.getenv().getOrDefault("IDENTITY_SERVICE_URL", "http://identity-service:8080");
+        this.identityServiceToken = System.getenv().getOrDefault("IDENTITY_SERVICE_TOKEN", "");
     }
 
     @Transactional
@@ -75,6 +77,10 @@ public class MerchantService {
         Merchant merchant = merchantRepository.findById(merchantId)
                 .orElseThrow(() -> new IllegalArgumentException("Merchant not found"));
 
+        if (merchant.getStatus() == MerchantStatus.APPROVED) {
+            grantMerchantRole(merchant.getOwnerUserId(), merchant.getId());
+            return toResponse(merchant);
+        }
         if (merchant.getStatus() != MerchantStatus.PENDING) {
             throw new IllegalStateException("Can only approve pending merchants");
         }
@@ -152,23 +158,23 @@ public class MerchantService {
         try {
             WebClient webClient = webClientBuilder.build();
 
-            // TODO: Coordinate with identity-service team for the exact internal endpoint
-            // This is a placeholder based on the plan's IDN-4 requirement
-            String endpoint = String.format("%s/api/v1/internal/users/%s/roles", identityServiceUrl, userId);
-
-            // Request body to grant MERCHANT role and set merchantId claim
-            String requestBody = String.format(
-                "{\"role\": \"MERCHANT\", \"merchantId\": \"%s\"}",
-                merchantId
-            );
-
-            webClient.post()
-                    .uri(endpoint)
-                    .header("Content-Type", "application/json")
-                    .bodyValue(requestBody)
-                    .retrieve()
-                    .bodyToMono(Void.class)
-                    .block();
+            String endpoint = String.format("%s/api/v1/internal/users/%s/merchant-role", identityServiceUrl, userId);
+            if (identityServiceToken.isBlank()) throw new IdentityServiceException("IDENTITY_SERVICE_TOKEN is required");
+            Exception last = null;
+            for (int attempt = 1; attempt <= 3; attempt++) {
+                try {
+                    webClient.post().uri(endpoint).headers(h -> h.setBearerAuth(identityServiceToken))
+                            .retrieve().bodyToMono(Void.class).block();
+                    last = null;
+                    break;
+                } catch (Exception ex) {
+                    last = ex;
+                    if (attempt < 3) try { Thread.sleep(50L * attempt); } catch (InterruptedException interrupted) {
+                        Thread.currentThread().interrupt(); throw new IdentityServiceException("Role grant interrupted", interrupted);
+                    }
+                }
+            }
+            if (last != null) throw last;
 
             log.info("Successfully granted MERCHANT role to user: {} with merchantId: {}", userId, merchantId);
         } catch (WebClientResponseException e) {
