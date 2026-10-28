@@ -23,7 +23,7 @@ public class InternalMerchantRoleController {
     }
 
     @PostMapping("/{id}/merchant-role")
-    @PreAuthorize("authentication.token.claims['client_id'] == 'merchant-service' and hasAuthority('SCOPE_merchant.internal')")
+    @PreAuthorize("authentication instanceof T(org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken) and authentication.token.claims['client_id'] == 'merchant-service' and authentication.token.claims['scope'] == 'merchant.internal'")
     public ResponseEntity<UserResponse> grantMerchantRole(@PathVariable UUID id) {
         return ResponseEntity.ok(userService.grantMerchantRole(id));
     }

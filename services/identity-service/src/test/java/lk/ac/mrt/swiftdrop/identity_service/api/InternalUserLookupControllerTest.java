@@ -30,6 +30,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -52,9 +53,8 @@ class InternalUserLookupControllerTest {
     private static final UUID USER_ID = UUID.fromString(USER_ID_STRING);
 
     @Test
-    @WithMockUser(roles = {"ADMIN"})
-    @DisplayName("POST /api/v1/internal/users/lookup - 200 OK for ADMIN caller")
-    void shouldBatchLookupUsersForAdmin() throws Exception {
+    @DisplayName("POST /api/v1/internal/users/lookup - 200 OK for exact dispatch service token")
+    void shouldBatchLookupUsersForDispatchService() throws Exception {
         BatchUserLookupRequest request = new BatchUserLookupRequest(List.of(USER_ID));
         UserLookupResponse response = new UserLookupResponse(
                 USER_ID,
@@ -69,6 +69,7 @@ class InternalUserLookupControllerTest {
         when(userService.lookupUsers(eq(List.of(USER_ID)))).thenReturn(List.of(response));
 
         mockMvc.perform(post("/api/v1/internal/users/lookup")
+                        .with(jwt().jwt(j -> j.claim("client_id", "dispatch-service").claim("scope", "dispatch.internal")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
@@ -81,8 +82,7 @@ class InternalUserLookupControllerTest {
     }
 
     @Test
-    @WithMockUser(authorities = {"SCOPE_internal"})
-    @DisplayName("POST /api/v1/internal/users/lookup - 200 OK for internal service token (SCOPE_internal)")
+    @DisplayName("POST /api/v1/internal/users/lookup - 200 OK for exact notification service token")
     void shouldBatchLookupUsersForInternalService() throws Exception {
         BatchUserLookupRequest request = new BatchUserLookupRequest(List.of(USER_ID));
         UserLookupResponse response = new UserLookupResponse(
@@ -98,6 +98,7 @@ class InternalUserLookupControllerTest {
         when(userService.lookupUsers(any())).thenReturn(List.of(response));
 
         mockMvc.perform(post("/api/v1/internal/users/lookup")
+                        .with(jwt().jwt(j -> j.claim("client_id", "notification-service").claim("scope", "notification.internal")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
@@ -146,9 +147,8 @@ class InternalUserLookupControllerTest {
     }
 
     @Test
-    @WithMockUser(roles = {"ADMIN"})
-    @DisplayName("GET /api/v1/internal/users/lookup - 200 OK for single user lookup")
-    void shouldLookupSingleUserForAdmin() throws Exception {
+    @DisplayName("GET /api/v1/internal/users/lookup - 200 OK for scoped merchant service lookup")
+    void shouldLookupSingleUserForMerchantService() throws Exception {
         UserLookupResponse response = new UserLookupResponse(
                 USER_ID,
                 "single@swiftdrop.lk",
@@ -162,6 +162,7 @@ class InternalUserLookupControllerTest {
         when(userService.lookupUser(USER_ID)).thenReturn(response);
 
         mockMvc.perform(get("/api/v1/internal/users/lookup")
+                        .with(jwt().jwt(j -> j.claim("client_id", "merchant-service").claim("scope", "merchant.internal")))
                         .param("id", USER_ID_STRING)
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
@@ -181,9 +182,7 @@ class InternalUserLookupControllerTest {
         mockMvc.perform(get("/api/v1/internal/users/lookup")
                         .param("id", USER_ID_STRING)
                         .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.status").value(404))
-                .andExpect(jsonPath("$.errorCode").value(ErrorCode.RESOURCE_NOT_FOUND.name()));
+                .andExpect(status().isForbidden());
     }
 
     @Test

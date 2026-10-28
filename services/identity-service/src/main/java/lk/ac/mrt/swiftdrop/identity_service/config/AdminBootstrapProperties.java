@@ -16,13 +16,7 @@ public record AdminBootstrapProperties(
 ) {
     public AdminBootstrapProperties {
         if (enabled == null) {
-            enabled = true;
-        }
-        if (bootstrapEmail == null || bootstrapEmail.isBlank()) {
-            bootstrapEmail = "admin@swiftdrop.lk";
-        }
-        if (bootstrapPassword == null || bootstrapPassword.isBlank()) {
-            bootstrapPassword = "Admin123!Safe";
+            enabled = false;
         }
         if (bootstrapName == null || bootstrapName.isBlank()) {
             bootstrapName = "SwiftDrop Platform Administrator";
