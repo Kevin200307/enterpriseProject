@@ -49,6 +49,10 @@ public class ParcelController {
     public ParcelView status(@PathVariable UUID id, @Valid @RequestBody StatusRequest request, Authentication auth) {
         return parcels.changeStatus(id, request, Actor.from(auth));
     }
+    @PostMapping("/{id}/cancel")
+    public ParcelView cancel(@PathVariable UUID id, Authentication auth) {
+        return parcels.cancel(id, Actor.from(auth));
+    }
     @GetMapping("/{id}/history")
     public PageView<HistoryView> history(@PathVariable UUID id, @RequestParam(defaultValue="0") int page,
         @RequestParam(defaultValue="20") int size, Authentication auth) {

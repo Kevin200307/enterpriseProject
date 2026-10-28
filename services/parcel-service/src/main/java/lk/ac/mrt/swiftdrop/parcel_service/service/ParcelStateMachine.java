@@ -7,12 +7,13 @@ import lk.ac.mrt.swiftdrop.parcel_service.api.ParcelException;
 
 public final class ParcelStateMachine {
     private static final Map<ParcelStatus, Set<ParcelStatus>> TRANSITIONS = Map.of(
-        ParcelStatus.CREATED, Set.of(ParcelStatus.PICKED_UP),
+        ParcelStatus.CREATED, Set.of(ParcelStatus.PICKED_UP, ParcelStatus.CANCELLED),
         ParcelStatus.PICKED_UP, Set.of(ParcelStatus.IN_TRANSIT),
         ParcelStatus.IN_TRANSIT, Set.of(ParcelStatus.OUT_FOR_DELIVERY),
         ParcelStatus.OUT_FOR_DELIVERY, Set.of(ParcelStatus.DELIVERED, ParcelStatus.FAILED),
         ParcelStatus.FAILED, Set.of(ParcelStatus.OUT_FOR_DELIVERY),
-        ParcelStatus.DELIVERED, Set.of());
+        ParcelStatus.DELIVERED, Set.of(),
+        ParcelStatus.CANCELLED, Set.of());
     private ParcelStateMachine() {}
     public static void validate(ParcelStatus from, ParcelStatus to) {
         if (to == null || !TRANSITIONS.get(from).contains(to)) {
