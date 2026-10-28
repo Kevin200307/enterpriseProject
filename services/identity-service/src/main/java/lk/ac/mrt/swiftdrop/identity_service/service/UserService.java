@@ -3,11 +3,14 @@ package lk.ac.mrt.swiftdrop.identity_service.service;
 import lk.ac.mrt.swiftdrop.contracts.domain.Role;
 import lk.ac.mrt.swiftdrop.identity_service.api.dto.RegisterRequest;
 import lk.ac.mrt.swiftdrop.identity_service.api.dto.UpdateProfileRequest;
+import lk.ac.mrt.swiftdrop.identity_service.api.dto.UserLookupResponse;
 import lk.ac.mrt.swiftdrop.identity_service.api.dto.UserResponse;
 import lk.ac.mrt.swiftdrop.identity_service.domain.UserStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -76,4 +79,20 @@ public interface UserService {
      * @return updated user profile response
      */
     UserResponse updateUserRoles(UUID userId, Set<Role> newRoles, UUID currentAdminId);
+
+    /**
+     * Batch lookups users by their IDs for internal inter-service communication.
+     *
+     * @param userIds collection of user UUIDs
+     * @return list of user lookup responses
+     */
+    List<UserLookupResponse> lookupUsers(Collection<UUID> userIds);
+
+    /**
+     * Lookups a single user by their ID for internal inter-service communication.
+     *
+     * @param userId user UUID
+     * @return user lookup response
+     */
+    UserLookupResponse lookupUser(UUID userId);
 }

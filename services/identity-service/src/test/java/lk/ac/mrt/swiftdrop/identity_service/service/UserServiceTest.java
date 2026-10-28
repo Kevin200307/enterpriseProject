@@ -3,6 +3,7 @@ package lk.ac.mrt.swiftdrop.identity_service.service;
 import lk.ac.mrt.swiftdrop.contracts.domain.Role;
 import lk.ac.mrt.swiftdrop.identity_service.api.dto.RegisterRequest;
 import lk.ac.mrt.swiftdrop.identity_service.api.dto.UpdateProfileRequest;
+import lk.ac.mrt.swiftdrop.identity_service.api.dto.UserLookupResponse;
 import lk.ac.mrt.swiftdrop.identity_service.api.dto.UserResponse;
 import lk.ac.mrt.swiftdrop.identity_service.domain.RoleEntity;
 import lk.ac.mrt.swiftdrop.identity_service.domain.User;
@@ -470,6 +471,84 @@ class UserServiceTest {
                 .isInstanceOf(IllegalArgumentException.class);
 
         assertThatThrownBy(() -> userService.updateUserRoles(validId, Set.of(), validId))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    @DisplayName("Should batch lookup users by IDs successfully")
+    void shouldBatchLookupUsersSuccessfully() {
+        UUID id1 = UUID.randomUUID();
+        UUID id2 = UUID.randomUUID();
+
+        User user1 = new User("user1@swiftdrop.lk", "hash", "User One", "+94771111111");
+        user1.setId(id1);
+        user1.addRole(customerRole);
+
+        User user2 = new User("user2@swiftdrop.lk", "hash", "User Two", "+94772222222");
+        user2.setId(id2);
+        RoleEntity courierRole = new RoleEntity(Role.COURIER, "Courier role");
+        user2.addRole(courierRole);
+
+        when(userRepository.findAllByIdIn(List.of(id1, id2))).thenReturn(List.of(user1, user2));
+
+        List<UserLookupResponse> results = userService.lookupUsers(List.of(id1, id2));
+
+        assertThat(results).hasSize(2);
+        assertThat(results.get(0).id()).isEqualTo(id1);
+        assertThat(results.get(0).email()).isEqualTo("user1@swiftdrop.lk");
+        assertThat(results.get(0).fullName()).isEqualTo("User One");
+        assertThat(results.get(0).name()).isEqualTo("User One");
+        assertThat(results.get(0).roles()).containsExactly("CUSTOMER");
+
+        assertThat(results.get(1).id()).isEqualTo(id2);
+        assertThat(results.get(1).email()).isEqualTo("user2@swiftdrop.lk");
+        assertThat(results.get(1).fullName()).isEqualTo("User Two");
+        assertThat(results.get(1).name()).isEqualTo("User Two");
+        assertThat(results.get(1).roles()).containsExactly("COURIER");
+    }
+
+    @Test
+    @DisplayName("Should return empty list when batch lookup given empty or null collection")
+    void shouldReturnEmptyListWhenLookupUsersGivenEmptyOrNull() {
+        assertThat(userService.lookupUsers(null)).isEmpty();
+        assertThat(userService.lookupUsers(List.of())).isEmpty();
+        verify(userRepository, never()).findAllByIdIn(any());
+    }
+
+    @Test
+    @DisplayName("Should lookup single user by ID successfully")
+    void shouldLookupSingleUserSuccessfully() {
+        UUID userId = UUID.randomUUID();
+        User user = new User("single@swiftdrop.lk", "hash", "Single User", "+94773333333");
+        user.setId(userId);
+        user.addRole(customerRole);
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+
+        UserLookupResponse response = userService.lookupUser(userId);
+
+        assertThat(response.id()).isEqualTo(userId);
+        assertThat(response.email()).isEqualTo("single@swiftdrop.lk");
+        assertThat(response.fullName()).isEqualTo("Single User");
+        assertThat(response.name()).isEqualTo("Single User");
+        assertThat(response.phone()).isEqualTo("+94773333333");
+        assertThat(response.status()).isEqualTo(UserStatus.ACTIVE);
+    }
+
+    @Test
+    @DisplayName("Should throw ResourceNotFoundException when single user lookup not found")
+    void shouldThrowWhenSingleUserNotFound() {
+        UUID userId = UUID.randomUUID();
+        when(userRepository.findById(userId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> userService.lookupUser(userId))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    @DisplayName("Should throw IllegalArgumentException when single user lookup given null ID")
+    void shouldThrowWhenLookupUserGivenNullId() {
+        assertThatThrownBy(() -> userService.lookupUser(null))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 }

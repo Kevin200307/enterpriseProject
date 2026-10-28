@@ -3,6 +3,7 @@ package lk.ac.mrt.swiftdrop.identity_service.service.impl;
 import lk.ac.mrt.swiftdrop.contracts.domain.Role;
 import lk.ac.mrt.swiftdrop.identity_service.api.dto.RegisterRequest;
 import lk.ac.mrt.swiftdrop.identity_service.api.dto.UpdateProfileRequest;
+import lk.ac.mrt.swiftdrop.identity_service.api.dto.UserLookupResponse;
 import lk.ac.mrt.swiftdrop.identity_service.api.dto.UserResponse;
 import lk.ac.mrt.swiftdrop.identity_service.domain.RoleEntity;
 import lk.ac.mrt.swiftdrop.identity_service.domain.User;
@@ -22,7 +23,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
@@ -187,5 +190,27 @@ public class UserServiceImpl implements UserService {
         log.info("Updated roles for user [userId={}] to {}", userId, newRoles);
 
         return UserResponse.fromEntity(savedUser);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<UserLookupResponse> lookupUsers(Collection<UUID> userIds) {
+        if (userIds == null || userIds.isEmpty()) {
+            return List.of();
+        }
+        return userRepository.findAllByIdIn(userIds).stream()
+                .map(UserLookupResponse::fromEntity)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public UserLookupResponse lookupUser(UUID userId) {
+        if (userId == null) {
+            throw new IllegalArgumentException("User ID must not be null");
+        }
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", userId));
+        return UserLookupResponse.fromEntity(user);
     }
 }
