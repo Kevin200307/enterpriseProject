@@ -407,6 +407,22 @@ class ParcelApiIntegrationTest {
         assertThat(history.count()).isZero();
         assertThat(outbox.count()).isZero();
     }
+
+    @Test void privacySafeTrackingSnapshotCanBeReadWithoutAuthentication() throws Exception {
+        var parcel = book("public-tracking-snapshot");
+
+        mvc.perform(get("/api/v1/parcels/by-tracking/{trackingNumber}", parcel.trackingNumber()))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.trackingNumber").value(parcel.trackingNumber()))
+            .andExpect(jsonPath("$.originCity").value("Colombo"))
+            .andExpect(jsonPath("$.destinationCity").value("Kandy"))
+            .andExpect(jsonPath("$.timeline[0].status").value("CREATED"))
+            .andExpect(jsonPath("$.customerId").doesNotExist());
+
+        mvc.perform(get("/api/v1/parcels/by-tracking/{trackingNumber}/details", parcel.trackingNumber()))
+            .andExpect(status().isUnauthorized());
+    }
+
     @Test void proofCannotBeForgedOrReadByAnotherCustomer() throws Exception {
         var p = book("booking-005");
         assign(p.id());

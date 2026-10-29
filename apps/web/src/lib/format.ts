@@ -6,7 +6,7 @@ export const formatLKR = (v: number | string) => lkr.format(Number(v))
 export const maskPhone = (p: string) =>
   p.length > 3 ? `${'•'.repeat(p.length - 3)}${p.slice(-3)}` : p
 
-export const TRACKING_NUMBER_RE = /^SD-[A-HJ-NP-Z2-9]{8}$/
+export const TRACKING_NUMBER_RE = /^SD-[0-9A-Z]{8}$/
 
 const TZ = 'Asia/Colombo'
 const dateTime = new Intl.DateTimeFormat('en-GB', {

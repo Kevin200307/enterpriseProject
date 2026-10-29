@@ -10,6 +10,7 @@ import reactor.netty.http.server.HttpServer;
 
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.http.HttpHeaders;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.reactive.server.WebTestClient;
@@ -20,7 +21,13 @@ class GatewayHealthEndpointTests {
 	private static final DisposableServer HEALTHY_SERVICE = HttpServer.create()
 			.host("127.0.0.1")
 			.port(0)
-			.route(routes -> routes.get("/actuator/health", (request, response) -> response.status(200).send()))
+			.route(routes -> routes
+					.get("/actuator/health", (request, response) -> response.status(200).send())
+					.get("/api/v1/tracking/**", (request, response) -> response
+							.header(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "http://localhost:5174")
+							.header(HttpHeaders.ACCESS_CONTROL_ALLOW_CREDENTIALS, "true")
+							.status(200)
+							.send()))
 			.bindNow();
 
 	@LocalServerPort
@@ -39,6 +46,7 @@ class GatewayHealthEndpointTests {
 		registry.add("gateway.services.tracking", () -> serviceUrl);
 		registry.add("gateway.services.notification", () -> serviceUrl);
 		registry.add("gateway.services.ai-assistant", () -> serviceUrl);
+		registry.add("gateway.browser.origins", () -> "http://localhost:5174");
 		registry.add("spring.data.redis.host", () -> "127.0.0.1");
 		registry.add("spring.data.redis.port", () -> "1");
 	}
@@ -73,5 +81,20 @@ class GatewayHealthEndpointTests {
 				.jsonPath("$.components.downstream.components.tracking.status").isEqualTo("UP")
 				.jsonPath("$.components.downstream.components.notification.status").isEqualTo("UP")
 				.jsonPath("$.components.downstream.components.aiAssistant.status").isEqualTo("UP");
+	}
+
+	@Test
+	void deduplicatesCorsHeadersFromProxiedResponses() {
+		client.get()
+				.uri("/api/v1/tracking/SD-00000001")
+				.header(HttpHeaders.ORIGIN, "http://localhost:5174")
+				.exchange()
+				.expectStatus().isOk()
+				.expectHeader().valueEquals(
+						HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN,
+						"http://localhost:5174")
+				.expectHeader().valueEquals(
+						HttpHeaders.ACCESS_CONTROL_ALLOW_CREDENTIALS,
+						"true");
 	}
 }

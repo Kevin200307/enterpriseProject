@@ -92,7 +92,7 @@ describe('login', () => {
     await userEvent.type(await screen.findByLabelText('Email'), 'a@b.lk')
     await userEvent.type(screen.getByLabelText('Password'), 'secret123')
     await userEvent.click(screen.getByRole('button', { name: 'Sign in' }))
-    await waitFor(() => expect(router.state.location.pathname).toBe('/deliveries'))
+    await waitFor(() => expect(router.state.location.pathname).toBe('/home'))
   })
 
   it('disables submit with a countdown when rate limited', async () => {
@@ -169,7 +169,7 @@ describe('google callback', () => {
     )
     oauthPending.save({ verifier: 'v', state: 's' })
     const router = renderApp('/oauth/callback?code=abc&state=s')
-    await waitFor(() => expect(router.state.location.pathname).toBe('/deliveries'))
+    await waitFor(() => expect(router.state.location.pathname).toBe('/home'))
     expect(sessionStorage.getItem('sd-oauth')).toBeNull()
   })
 })

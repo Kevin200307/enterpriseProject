@@ -1,5 +1,6 @@
 package lk.ac.mrt.swiftdrop.gateway.config;
 
+import java.net.URI;
 import java.time.Duration;
 import java.util.List;
 
@@ -111,7 +112,8 @@ public class SecurityConfig {
 	@Bean
 	CorsConfigurationSource gatewayCorsConfigurationSource(GatewayProperties properties) {
 		CorsConfiguration configuration = new CorsConfiguration();
-		configuration.setAllowedOrigins(List.of(properties.browser().origin().toString()));
+		configuration.setAllowedOrigins(
+				properties.browser().origins().stream().map(URI::toString).toList());
 		configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
 		configuration.setAllowedHeaders(List.of(
 				HttpHeaders.AUTHORIZATION,

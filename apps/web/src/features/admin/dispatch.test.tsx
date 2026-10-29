@@ -150,12 +150,12 @@ describe('dispatch board', () => {
     )
     renderApp('/admin/dispatch')
     await screen.findByText('SD-ABCD2345')
+    const zoneSelect = screen.getByRole('button', { name: 'Pickup zone' })
+    await userEvent.click(zoneSelect)
     await waitFor(() =>
-      expect(
-        within(screen.getByLabelText('Pickup zone')).getByRole('option', { name: 'Colombo' }),
-      ).toBeInTheDocument(),
+      expect(screen.getByRole('option', { name: 'Colombo' })).toBeInTheDocument(),
     )
-    await userEvent.selectOptions(screen.getByLabelText('Pickup zone'), 'CMB')
+    await userEvent.click(screen.getByRole('option', { name: 'Colombo' }))
     await waitFor(() => expect(zones[zones.length - 1]).toBe('CMB'))
   })
 

@@ -23,7 +23,7 @@ import tools.jackson.databind.json.JsonMapper;
 @Component
 public class AssistantTools {
     private static final String TRACKING_SCHEMA = """
-        {"type":"object","properties":{"trackingNumber":{"type":"string","pattern":"^SD-[A-HJ-NP-Z2-9]{8}$"}},"required":["trackingNumber"],"additionalProperties":false}
+        {"type":"object","properties":{"trackingNumber":{"type":"string","pattern":"^SD-[0-9A-Z]{8}$"}},"required":["trackingNumber"],"additionalProperties":false}
         """;
     private static final String ESTIMATE_SCHEMA = """
         {"type":"object","properties":{"fromCity":{"type":"string","minLength":1,"maxLength":120},"toCity":{"type":"string","minLength":1,"maxLength":120},"size":{"type":"string","enum":["SMALL","MEDIUM","LARGE"]},"weightKg":{"type":"number","exclusiveMinimum":0},"express":{"type":"boolean"}},"required":["fromCity","toCity","size","weightKg","express"],"additionalProperties":false}

@@ -26,7 +26,7 @@ function getOptions(children: React.ReactNode): Option[] {
 export const Select = React.forwardRef<
   HTMLSelectElement,
   React.SelectHTMLAttributes<HTMLSelectElement>
->(({ className, children, value, defaultValue, onChange, onBlur, ...props }, ref) => {
+>(({ className, children, value, defaultValue, onChange, onBlur, id, ...props }, ref) => {
   const options = getOptions(children)
   const [open, setOpen] = React.useState(false)
   const rootRef = React.useRef<HTMLDivElement>(null)
@@ -87,6 +87,10 @@ export const Select = React.forwardRef<
         disabled={props.disabled}
         aria-label={props['aria-label']}
         aria-labelledby={props['aria-labelledby']}
+        aria-describedby={props['aria-describedby']}
+        aria-invalid={props['aria-invalid']}
+        aria-required={props['aria-required']}
+        id={id}
         aria-haspopup="listbox"
         aria-expanded={open}
         onClick={() => setOpen((current) => !current)}
