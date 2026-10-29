@@ -9,6 +9,8 @@ The mandatory path covers registration/login, idempotent customer booking, publi
 tracking, notification visibility and cancellation. CI may set
 `E2E_DISPATCHER_TOKEN`, `E2E_COURIER_TOKEN`, and `E2E_COURIER_ID` to extend the same
 run through assignment, failed delivery and reattempt using pre-seeded actors.
+Pass the raw JWT access tokens (without a `Bearer ` prefix) for the dispatcher and
+courier; the workflow adds the authorization scheme.
 Merchant webhook delivery is asserted by the merchant integration suite because the
 production SSRF guard correctly rejects webhook destinations on the private Compose
 network; a CI HTTPS sink with a public address can exercise that adapter separately.

@@ -271,7 +271,6 @@ export function NewDeliveryPage({ merchant = false }: { merchant?: boolean }) {
             loading={isReady && (!settled || estimate.isFetching)}
             data={isReady && settled ? estimate.data : undefined}
             error={isReady && settled ? estimate.error : undefined}
-            toCity={wanted.toCity}
           />
           {formError && (
             <p role="alert" className="text-sm text-destructive">

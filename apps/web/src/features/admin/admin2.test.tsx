@@ -148,7 +148,7 @@ describe('couriers', () => {
       expect(within(dialog).getByLabelText('Courier user')).toHaveProperty('tagName', 'INPUT'),
     )
     await userEvent.type(within(dialog).getByLabelText('Courier user'), 'u-77')
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Home zone' }))
+    await userEvent.click(within(dialog).getByRole('combobox', { name: 'Home zone' }))
     await userEvent.click(await within(dialog).findByRole('option', { name: 'Colombo' }))
     await userEvent.clear(within(dialog).getByLabelText('Phone'))
     await userEvent.type(within(dialog).getByLabelText('Phone'), '+94771234567')
@@ -223,7 +223,7 @@ describe('all parcels', () => {
       await screen.findByRole('button', { name: 'Change status of SD-ABCD2345' }),
     )
     const dialog = await screen.findByRole('dialog')
-    await userEvent.click(within(dialog).getByRole('button', { name: 'New status' }))
+    await userEvent.click(within(dialog).getByRole('combobox', { name: 'New status' }))
     const listbox = within(dialog).getByRole('listbox')
     const options = within(listbox)
       .getAllByRole('option')

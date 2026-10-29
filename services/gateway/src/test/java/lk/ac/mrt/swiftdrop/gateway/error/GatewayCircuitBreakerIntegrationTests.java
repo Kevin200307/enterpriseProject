@@ -82,7 +82,7 @@ class GatewayCircuitBreakerIntegrationTests {
 
 	@Test
 	void responseTimeoutReturnsAnUpstreamProblem() {
-		assertUpstreamProblem("/api/v1/pricing/rules", "timeout-request");
+		assertUpstreamProblem("/docs/services/pricing/v3/api-docs", "timeout-request");
 	}
 
 	private void assertUpstreamProblem(String path, String requestId) {

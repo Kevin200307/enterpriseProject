@@ -136,7 +136,7 @@ describe('pricing rules', () => {
     renderApp('/admin/pricing')
     await screen.findAllByText('Colombo → Kandy')
     expect(screen.getAllByRole('row')).toHaveLength(3)
-    await userEvent.click(screen.getByRole('button', { name: 'Size band' }))
+    await userEvent.click(screen.getByRole('combobox', { name: 'Size band' }))
     await userEvent.click(screen.getByRole('option', { name: 'Large' }))
     expect(screen.getAllByRole('row')).toHaveLength(2)
   })

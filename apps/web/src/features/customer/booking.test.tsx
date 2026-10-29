@@ -89,9 +89,11 @@ describe('booking form', () => {
     expect(within(panel).getByText('CMB → KDY')).toBeInTheDocument()
   })
 
-  it('says we do not deliver there yet on a 404 and blocks booking', async () => {
+  it('identifies an unsupported drop-off city on a 404 and blocks booking', async () => {
     server.use(
-      http.post(`${API}/api/v1/pricing/estimate`, () => problem(404, 'RESOURCE_NOT_FOUND')),
+      http.post(`${API}/api/v1/pricing/estimate`, () =>
+        problem(404, 'RESOURCE_NOT_FOUND', { detail: "We don't deliver to Atlantis yet." }),
+      ),
     )
     renderApp('/deliveries/new')
     await screen.findByRole('heading', { name: 'New delivery', level: 1 })
@@ -103,6 +105,44 @@ describe('booking form', () => {
       await screen.findByText(/don't deliver to Atlantis yet/, {}, { timeout: 3000 }),
     ).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Book delivery' })).toBeDisabled()
+  })
+
+  it('identifies an unsupported pickup city on a 404 and blocks booking', async () => {
+    server.use(
+      http.post(`${API}/api/v1/pricing/estimate`, () =>
+        problem(404, 'RESOURCE_NOT_FOUND', { detail: "We don't deliver to Atlantis yet." }),
+      ),
+    )
+    renderApp('/deliveries/new')
+    await screen.findByRole('heading', { name: 'New delivery', level: 1 })
+    await fillAddress(0, 'Atlantis')
+    await fillAddress(1, 'Kandy')
+    await userEvent.type(screen.getByLabelText('Weight (kg)'), '2')
+    await pickSize()
+    expect(
+      await screen.findByText(/don't deliver to Atlantis yet/, {}, { timeout: 3000 }),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Book delivery' })).toBeDisabled()
+  })
+
+  it('does not mislabel a route without pricing as an unsupported city', async () => {
+    server.use(
+      http.post(`${API}/api/v1/pricing/estimate`, () =>
+        problem(404, 'RESOURCE_NOT_FOUND', {
+          detail: 'No price is available for this route and package size.',
+        }),
+      ),
+    )
+    renderApp('/deliveries/new')
+    await screen.findByRole('heading', { name: 'New delivery', level: 1 })
+    await fillAddress(0, 'Colombo')
+    await fillAddress(1, 'Kandy')
+    await userEvent.type(screen.getByLabelText('Weight (kg)'), '2')
+    await pickSize()
+    expect(
+      await screen.findByText('No price is available for this route and package size.', {}, { timeout: 3000 }),
+    ).toBeInTheDocument()
+    expect(screen.queryByText(/don't deliver/)).not.toBeInTheDocument()
   })
 
   it('books the parcel with resolved zones and express choice', async () => {
