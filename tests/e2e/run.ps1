@@ -12,7 +12,12 @@ $e2eCompose = Join-Path $PSScriptRoot "docker-compose.e2e.yml"
 $project = "swiftdrop-e2e"
 $compose = @("compose", "-p", $project, "-f", $baseCompose, "-f", $parcelCompose, "-f", $e2eCompose)
 
-$env:GATEWAY_HOST_PORT = "18081"
+$env:GATEWAY_HOST_PORT = if ($env:E2E_GATEWAY_HOST_PORT) { $env:E2E_GATEWAY_HOST_PORT } else { "18081" }
+$env:RABBITMQ_MANAGEMENT_HOST_PORT = if ($env:E2E_RABBITMQ_MANAGEMENT_HOST_PORT) { $env:E2E_RABBITMQ_MANAGEMENT_HOST_PORT } else { "25673" }
+$env:MINIO_API_HOST_PORT = if ($env:E2E_MINIO_API_HOST_PORT) { $env:E2E_MINIO_API_HOST_PORT } else { "29000" }
+$env:MINIO_CONSOLE_HOST_PORT = if ($env:E2E_MINIO_CONSOLE_HOST_PORT) { $env:E2E_MINIO_CONSOLE_HOST_PORT } else { "29001" }
+$env:MAILPIT_SMTP_PORT = if ($env:E2E_MAILPIT_SMTP_PORT) { $env:E2E_MAILPIT_SMTP_PORT } else { "21025" }
+$env:MAILPIT_UI_PORT = if ($env:E2E_MAILPIT_UI_PORT) { $env:E2E_MAILPIT_UI_PORT } else { "28025" }
 $env:REDIS_PASSWORD = "swiftdrop-e2e"
 $env:RABBITMQ_USERNAME = "swiftdrop"
 $env:RABBITMQ_PASSWORD = "swiftdrop-e2e"
@@ -28,7 +33,11 @@ function Invoke-Compose([string[]]$Arguments) {
 }
 
 try {
-    Invoke-Compose @("up", "-d", "--build", "--wait")
+    Invoke-Compose @("up", "-d", "--build", "--wait", "e2e-postgres", "redis", "rabbitmq", "minio", "mailpit")
+    Invoke-Compose @("up", "-d", "--build", "--wait", "identity-service", "pricing-service")
+    Invoke-Compose @("up", "-d", "--build", "--wait", "parcel-service", "dispatch-service")
+    Invoke-Compose @("up", "-d", "--build", "--wait", "merchant-service", "tracking-service", "notification-service")
+    Invoke-Compose @("up", "-d", "--build", "--wait", "gateway")
     1..2 | ForEach-Object {
         & (Join-Path $PSScriptRoot "workflow.ps1") -GatewayUrl $GatewayUrl -Run $_
         if ($LASTEXITCODE -ne 0) { throw "E2E workflow run $_ failed" }

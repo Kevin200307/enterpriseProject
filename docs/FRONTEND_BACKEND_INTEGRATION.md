@@ -61,6 +61,7 @@ Baseline fixes made while starting this plan:
 - Corrected gateway route tests to expect notification service port `8086`, aligned the circuit-breaker timeout test with a route that has no longer route-specific timeout, and corrected dispatch/merchant context tests that disabled database auto-configuration while requiring JPA repositories.
 - Corrected the parcel state-machine test to include the supported `CREATED → CANCELLED` edge. A clean `bash ./mvnw clean test` run then passed across the complete reactor: 550 tests, zero failures/errors, four skipped, including all 23 shared contract tests.
 - Fixed the isolated E2E workflow to use the access tokens returned by login and documented the raw-token format for optional dispatcher/courier runs. The PowerShell E2E runner is unavailable in this environment, so that black-box workflow has not yet run.
+- E2E harness follow-up: corrected the isolated Postgres network and init-script mount path, added separate configurable host ports for gateway, RabbitMQ, MinIO, and Mailpit, and staged JVM service startup with a longer E2E-only health grace period. The rendered Compose configuration validates, but the isolated identity service remained unhealthy during its slow local startup; the black-box workflow did not run and remains unverified.
 
 These are local verification results, not release certification. In particular, passing mocked UI tests does not establish that all five role journeys work against live service data.
 
