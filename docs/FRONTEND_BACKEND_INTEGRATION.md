@@ -39,7 +39,7 @@ criteria have been verified; keep partial work `[ ]` and record the partial evid
 
 | Phase | Status | Evidence / remaining work |
 |---|---|---|
-| 0 — Baseline | **Partially verified** | Compose health, gateway/downstream health, live tracking/CORS, anonymous profile denial, and registration validation are verified. See Phase 0 boxes; not every configuration and traceability check has evidence yet. |
+| 0 — Baseline | **Partially verified** | Live tracking/CORS, anonymous profile denial, and registration validation are verified. On 2026-10-29, gateway readiness returned `200` but aggregate health was `DEGRADED` because the merchant downstream probe was degraded; traceability and environment inventory remain. |
 | 1 — Database foundation | **Partially verified** | Sanitized running-service DB identifiers match the documented six Neon branches and all six Flyway schemas were current at startup. Migration checksums, low-cost owner read/write checks, and complete storage smoke tests remain. |
 | 2 — Identity and authorization | **Partially verified** | Identity registration/token-flow and RBAC tests passed (62 tests); internal user lookup authorization was aligned with its documented ADMIN access. All five supplied local role accounts authenticated with HTTP 200 and their primary role screens loaded read-only. Live refresh/role-change and full negative authorization matrices remain. |
 | 3 — Pricing and customer parcel journey | **Partially verified** | Live zone listing and read-only customer estimates now work for all eight configured cities; representative small/medium/large estimates returned consistent LKR breakdowns. Focused unsupported-city error regressions pass in the UI and pricing service. Customer booking and the rest of the parcel lifecycle remain unverified; no live data was mutated. |
@@ -61,7 +61,8 @@ Baseline fixes made while starting this plan:
 - Corrected gateway route tests to expect notification service port `8086`, aligned the circuit-breaker timeout test with a route that has no longer route-specific timeout, and corrected dispatch/merchant context tests that disabled database auto-configuration while requiring JPA repositories.
 - Corrected the parcel state-machine test to include the supported `CREATED → CANCELLED` edge. A clean `bash ./mvnw clean test` run then passed across the complete reactor: 550 tests, zero failures/errors, four skipped, including all 23 shared contract tests.
 - Fixed the isolated E2E workflow to use the access tokens returned by login and documented the raw-token format for optional dispatcher/courier runs. The PowerShell E2E runner is unavailable in this environment, so that black-box workflow has not yet run.
-- E2E harness follow-up: corrected the isolated Postgres network and init-script mount path, added separate configurable host ports for gateway, RabbitMQ, MinIO, and Mailpit, and staged JVM service startup with a longer E2E-only health grace period. The rendered Compose configuration validates, but the isolated identity service remained unhealthy during its slow local startup; the black-box workflow did not run and remains unverified.
+- E2E harness follow-up: corrected the isolated Postgres network and init-script mount path, added separate configurable host ports for gateway, merchant, RabbitMQ, MinIO, and Mailpit, and fixed the outage check to call the pricing API rather than gateway health. Startup is staged with longer E2E-only health grace periods, IPv4 health probes, and per-stage builds so dependencies are not repeatedly rebuilt. Compose config validates, but the full stack and black-box workflow still have not passed: this environment lacks PowerShell, Java container startup is unusually slow, and the previous manual attempt did not finish starting every service. The isolated test project and its volumes were removed afterward; the regular local stack remains running.
+- Current local gateway probe returned readiness `200` while aggregate health was `DEGRADED`; the merchant downstream indicator was degraded even though its Compose container reported healthy. This is a follow-up diagnostic item, not evidence that the full stack is healthy.
 
 These are local verification results, not release certification. In particular, passing mocked UI tests does not establish that all five role journeys work against live service data.
 
@@ -130,7 +131,7 @@ request, expected response, database/event effect, and test evidence.
 
 - [ ] Inventory frontend routes/navigation and backend endpoints; reconcile the inventory with source and OpenAPI.
 - [x] Start the complete stack using the base Compose file plus the parcel override when MinIO is required.
-- [x] Record container health and gateway/downstream health; gateway and all eight downstream indicators reported `UP`.
+- [ ] Record container health and gateway/downstream health; an earlier check reported all eight downstream indicators `UP`, but the latest health probe reported aggregate `DEGRADED` for merchant.
 - [ ] Record image/build versions and environment variable names (never values).
 - [ ] Check API base URL, runtime config, allowed browser origins, JWT issuer/audience/JWKS URL, Redis, RabbitMQ,
   MinIO, and each Neon branch without printing secrets.
@@ -362,9 +363,13 @@ These are explicit investigation items, not assumptions that the implementation 
 - [ ] Reconcile all open questions in [FRONTEND_CONTRACTS.md](./FRONTEND_CONTRACTS.md), especially merchant console
    authentication, courier lookup/manifest semantics, webhook attempt-history fields, and assistant conversation
    persistence.
-- [x] Recheck gateway downstream health under current runtime conditions; all eight indicators reported `UP`.
-- [x] Recheck gateway actuator health under current runtime conditions (`UP`) and confirm all Compose service health
-   indicators remain healthy; the authenticated admin pricing-rules screen rendered its existing rule list read-only.
+- [ ] Recheck gateway downstream health under current runtime conditions; earlier all-eight-`UP` evidence is stale,
+   and the latest probe showed merchant `DEGRADED`.
+- [ ] Recheck gateway actuator health and every Compose service after the E2E attempt; the isolated stack did not reach
+   the gateway stage because identity, merchant, and parcel health checks did not become ready within the 10-minute
+   timeout. The customer lifecycle workflow and gateway health therefore remain unverified. Earlier, the regular
+   gateway readiness returned `200`, aggregate health was `DEGRADED`, and the merchant container was healthy while its
+   gateway probe was degraded.
 - [x] Verify sanitized identifiers for all six configured Neon branches match the documented service mapping.
 - [ ] Verify each migration is applied and recheck branch/schema state before database changes.
 - [ ] Confirm tracking status event compatibility for all event versions emitted by parcel-service, plus snapshot

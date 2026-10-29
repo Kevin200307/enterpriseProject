@@ -50,9 +50,6 @@ export function AuthShell() {
           <Outlet />
         </main>
 
-        <p className="mt-6 text-center text-xs text-muted-foreground">
-          University of Moratuwa · Enterprise Application Development
-        </p>
       </div>
     </div>
   )

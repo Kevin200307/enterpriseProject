@@ -1,7 +1,7 @@
 x-spring-healthcheck: &spring-healthcheck
   interval: 10s
   timeout: 15s
-  start_period: 5m
+  start_period: 10m
   retries: 20
 
 services:
@@ -31,7 +31,7 @@ services:
   identity-service:
     healthcheck:
       <<: *spring-healthcheck
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/actuator/health"]
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:8080/actuator/health"]
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://e2e-postgres:5432/identity
       SPRING_DATASOURCE_USERNAME: swiftdrop
@@ -46,7 +46,7 @@ services:
   parcel-service:
     healthcheck:
       <<: *spring-healthcheck
-      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health | grep -q '\"status\":\"UP\"' || exit 1"]
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/actuator/health | grep -q '\"status\":\"UP\"' || exit 1"]
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://e2e-postgres:5432/parcel
       SPRING_DATASOURCE_USERNAME: swiftdrop
@@ -58,7 +58,7 @@ services:
   dispatch-service:
     healthcheck:
       <<: *spring-healthcheck
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/actuator/health"]
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:8080/actuator/health"]
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://e2e-postgres:5432/dispatch
       SPRING_DATASOURCE_USERNAME: swiftdrop
@@ -70,7 +70,7 @@ services:
   merchant-service:
     healthcheck:
       <<: *spring-healthcheck
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/actuator/health"]
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:8080/actuator/health"]
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://e2e-postgres:5432/merchant
       SPRING_DATASOURCE_USERNAME: swiftdrop
@@ -82,7 +82,7 @@ services:
   pricing-service:
     healthcheck:
       <<: *spring-healthcheck
-      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health | grep -q '\"status\":\"UP\"' || exit 1"]
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/actuator/health | grep -q '\"status\":\"UP\"' || exit 1"]
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://e2e-postgres:5432/pricing
       SPRING_DATASOURCE_USERNAME: swiftdrop
@@ -94,7 +94,7 @@ services:
   tracking-service:
     healthcheck:
       <<: *spring-healthcheck
-      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health | grep -q '\"status\":\"UP\"' || exit 1"]
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/actuator/health | grep -q '\"status\":\"UP\"' || exit 1"]
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://e2e-postgres:5432/tracking
       SPRING_DATASOURCE_USERNAME: swiftdrop
@@ -106,7 +106,7 @@ services:
   notification-service:
     healthcheck:
       <<: *spring-healthcheck
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8086/actuator/health"]
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:8086/actuator/health"]
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://e2e-postgres:5432/notification
       SPRING_DATASOURCE_USERNAME: swiftdrop
@@ -118,4 +118,4 @@ services:
   gateway:
     healthcheck:
       <<: *spring-healthcheck
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/actuator/health"]
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:8080/actuator/health"]

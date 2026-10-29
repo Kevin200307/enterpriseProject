@@ -17,8 +17,8 @@ network; a CI HTTPS sink with a public address can exercise that adapter separat
 
 The Compose run needs the RSA identity key variables documented in
 `infra/.env.example`. It never reads or writes the shared Neon databases. By default,
-the E2E gateway, RabbitMQ management UI, MinIO, and Mailpit use host ports `18081`,
-`25673`, `29000`, `29001`, `21025`, and `28025`; override them with
+the E2E gateway, merchant service, RabbitMQ management UI, MinIO, and Mailpit use host
+ports `18081`, `18080`, `25673`, `29000`, `29001`, `21025`, and `28025`; override them with
 `E2E_GATEWAY_HOST_PORT`, `E2E_RABBITMQ_MANAGEMENT_HOST_PORT`,
 `E2E_MINIO_API_HOST_PORT`, `E2E_MINIO_CONSOLE_HOST_PORT`, `E2E_MAILPIT_SMTP_PORT`,
-and `E2E_MAILPIT_UI_PORT` if any port is already in use.
+`E2E_MAILPIT_UI_PORT`, and `E2E_MERCHANT_HOST_PORT` if any port is already in use.

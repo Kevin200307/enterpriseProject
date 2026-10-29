@@ -180,7 +180,7 @@ services:
       context: ..
       dockerfile: services/merchant-service/Dockerfile
     ports:
-      - "8080:8080"
+      - "${MERCHANT_HOST_PORT:-8080}:8080"
     environment:
       JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=75
       SPRING_DATASOURCE_URL: ${MERCHANT_DB_URL}

@@ -190,7 +190,6 @@ export function LandingPage() {
 
       <footer className="mx-auto flex w-full max-w-7xl flex-col gap-2 border-t px-5 py-6 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-8 lg:px-10">
         <span>© {new Date().getFullYear()} SwiftDrop</span>
-        <span>University of Moratuwa · Enterprise Application Development</span>
       </footer>
     </div>
   )
