@@ -11,6 +11,7 @@ const page = <T,>(content: T[], totalPages = 1, number = 0) => ({
   content,
   totalElements: content.length,
   totalPages,
+  page: number,
   number,
   size: 20,
 })
@@ -147,10 +148,8 @@ describe('couriers', () => {
       expect(within(dialog).getByLabelText('Courier user')).toHaveProperty('tagName', 'INPUT'),
     )
     await userEvent.type(within(dialog).getByLabelText('Courier user'), 'u-77')
-    await waitFor(() =>
-      expect(within(dialog).getByRole('option', { name: 'Colombo' })).toBeInTheDocument(),
-    )
-    await userEvent.selectOptions(within(dialog).getByLabelText('Home zone'), 'CMB')
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Select…' }))
+    await userEvent.click(await within(dialog).findByRole('option', { name: 'Colombo' }))
     await userEvent.clear(within(dialog).getByLabelText('Phone'))
     await userEvent.type(within(dialog).getByLabelText('Phone'), '+94771234567')
     await userEvent.click(within(dialog).getByRole('button', { name: 'Save courier' }))
@@ -189,14 +188,19 @@ describe('all parcels', () => {
   const parcel = (over: Partial<Parcel> = {}): Parcel => ({
     id: 'p-1',
     trackingNumber: 'SD-ABCD2345',
+    customerId: 'u-1',
+    merchantId: null,
+    assigneeId: null,
     status: 'IN_TRANSIT',
     size: 'SMALL',
     weightKg: 1,
-    express: false,
     fee: 600,
+    currency: 'LKR',
     pickup: addr('Colombo'),
     dropoff: addr('Kandy'),
     createdAt: '2026-10-08T05:00:00Z',
+    updatedAt: '2026-10-08T05:00:00Z',
+    version: 0,
     ...over,
   })
 
@@ -219,11 +223,13 @@ describe('all parcels', () => {
       await screen.findByRole('button', { name: 'Change status of SD-ABCD2345' }),
     )
     const dialog = await screen.findByRole('dialog')
-    const options = within(dialog)
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Delivered' }))
+    const listbox = within(dialog).getByRole('listbox')
+    const options = within(listbox)
       .getAllByRole('option')
       .map((o) => o.textContent)
     expect(options).toEqual(['Delivered', 'Failed'])
-    await userEvent.selectOptions(within(dialog).getByLabelText('New status'), 'FAILED')
+    await userEvent.click(within(listbox).getByRole('option', { name: 'Failed' }))
     await userEvent.click(within(dialog).getByRole('button', { name: 'Update status' }))
     expect(await within(dialog).findByText('A reason is required.')).toBeInTheDocument()
     expect(body).toBeUndefined()
@@ -246,9 +252,11 @@ describe('all parcels', () => {
   it('searches by tracking number and rejects a malformed one without a request', async () => {
     const called = vi.fn()
     server.use(
-      http.get(`${API}/api/v1/parcels/by-tracking/SD-ABCD2345`, () => HttpResponse.json(parcel())),
+      http.get(`${API}/api/v1/parcels/by-tracking/SD-ABCD2345/details`, () =>
+        HttpResponse.json(parcel()),
+      ),
       http.get(
-        `${API}/api/v1/parcels/by-tracking/:tn`,
+        `${API}/api/v1/parcels/by-tracking/:tn/details`,
         () => (called(), problem(404, 'RESOURCE_NOT_FOUND')),
       ),
     )

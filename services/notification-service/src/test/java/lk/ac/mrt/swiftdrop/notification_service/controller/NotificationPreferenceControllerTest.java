@@ -12,6 +12,7 @@ import java.util.UUID;
 import lk.ac.mrt.swiftdrop.contracts.domain.ParcelStatus;
 import lk.ac.mrt.swiftdrop.notification_service.domain.NotificationPreference;
 import lk.ac.mrt.swiftdrop.notification_service.dto.NotificationPreferenceDto;
+import lk.ac.mrt.swiftdrop.notification_service.dto.NotificationPreferenceUpdateRequest;
 import lk.ac.mrt.swiftdrop.notification_service.service.NotificationPreferenceService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -38,6 +39,7 @@ class NotificationPreferenceControllerTest {
         NotificationPreference preference = NotificationPreference.builder()
                 .userId(userId)
                 .emailEnabled(true)
+                .emailStatuses("CREATED,DELIVERED")
                 .smsEnabled(true)
                 .smsStatuses("OUT_FOR_DELIVERY,DELIVERED")
                 .build();
@@ -49,8 +51,8 @@ class NotificationPreferenceControllerTest {
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
         assertEquals(userId, response.getBody().userId());
-        assertEquals(true, response.getBody().emailEnabled());
-        assertEquals(true, response.getBody().smsEnabled());
+        assertEquals(Set.of(ParcelStatus.CREATED, ParcelStatus.DELIVERED), response.getBody().emailStatuses());
+        assertEquals(Set.of(ParcelStatus.OUT_FOR_DELIVERY, ParcelStatus.DELIVERED), response.getBody().smsStatuses());
         verify(preferenceService, times(1)).getPreferences(userId);
     }
 
@@ -58,24 +60,26 @@ class NotificationPreferenceControllerTest {
     @DisplayName("PUT /api/v1/notifications/preferences should update and return preferences")
     void shouldUpdatePreferences() {
         UUID userId = UUID.randomUUID();
-        NotificationPreferenceDto requestDto = new NotificationPreferenceDto(
-                userId, true, false, Set.of(ParcelStatus.DELIVERED));
+        NotificationPreferenceUpdateRequest requestDto = new NotificationPreferenceUpdateRequest(
+                Set.of(ParcelStatus.CREATED), Set.of());
 
         NotificationPreference updated = NotificationPreference.builder()
                 .userId(userId)
                 .emailEnabled(true)
+                .emailStatuses("CREATED")
                 .smsEnabled(false)
                 .smsStatuses("DELIVERED")
                 .build();
 
         when(preferenceService.updatePreferences(any(NotificationPreferenceDto.class))).thenReturn(updated);
 
-        ResponseEntity<NotificationPreferenceDto> response = preferenceController.updatePreferences(requestDto);
+        ResponseEntity<NotificationPreferenceDto> response = preferenceController.updatePreferences(userId, requestDto);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
         assertEquals(userId, response.getBody().userId());
-        assertEquals(false, response.getBody().smsEnabled());
+        assertEquals(Set.of(ParcelStatus.CREATED), response.getBody().emailStatuses());
+        assertEquals(Set.of(), response.getBody().smsStatuses());
         verify(preferenceService, times(1)).updatePreferences(any(NotificationPreferenceDto.class));
     }
 }

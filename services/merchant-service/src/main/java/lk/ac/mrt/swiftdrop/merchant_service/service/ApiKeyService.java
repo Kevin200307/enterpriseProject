@@ -17,6 +17,7 @@ import lk.ac.mrt.swiftdrop.merchant_service.domain.Merchant;
 import lk.ac.mrt.swiftdrop.merchant_service.domain.MerchantStatus;
 import lk.ac.mrt.swiftdrop.merchant_service.repository.ApiKeyRepository;
 import lk.ac.mrt.swiftdrop.merchant_service.repository.MerchantRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,6 +29,7 @@ public class ApiKeyService {
     private final SecureRandom random = new SecureRandom();
     private final Clock clock;
 
+    @Autowired
     public ApiKeyService(ApiKeyRepository keys, MerchantRepository merchants) {
         this(keys, merchants, Clock.systemUTC());
     }

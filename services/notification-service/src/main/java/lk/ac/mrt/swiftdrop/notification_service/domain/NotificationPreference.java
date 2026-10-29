@@ -38,6 +38,10 @@ public class NotificationPreference {
     private boolean emailEnabled = true;
 
     @Builder.Default
+    @Column(name = "email_statuses", nullable = false)
+    private String emailStatuses = "CREATED,PICKED_UP,IN_TRANSIT,OUT_FOR_DELIVERY,DELIVERED,FAILED,CANCELLED";
+
+    @Builder.Default
     @Column(name = "sms_enabled", nullable = false)
     private boolean smsEnabled = true;
 
@@ -58,30 +62,44 @@ public class NotificationPreference {
     private Instant updatedAt = Instant.now();
 
     public Set<ParcelStatus> getParsedSmsStatuses() {
-        if (smsStatuses == null || smsStatuses.isBlank()) {
+        return parseStatuses(smsStatuses);
+    }
+
+    public void setParsedSmsStatuses(Set<ParcelStatus> statuses) {
+        this.smsStatuses = serializeStatuses(statuses);
+    }
+
+    public Set<ParcelStatus> getParsedEmailStatuses() {
+        return parseStatuses(emailStatuses);
+    }
+
+    public void setParsedEmailStatuses(Set<ParcelStatus> statuses) {
+        this.emailStatuses = serializeStatuses(statuses);
+    }
+
+    private static Set<ParcelStatus> parseStatuses(String statuses) {
+        if (statuses == null || statuses.isBlank()) {
             return Set.of();
         }
-        return Arrays.stream(smsStatuses.split(","))
+        return Arrays.stream(statuses.split(","))
                 .map(String::trim)
                 .filter(s -> !s.isEmpty())
                 .map(ParcelStatus::valueOf)
                 .collect(Collectors.toSet());
     }
 
-    public void setParsedSmsStatuses(Set<ParcelStatus> statuses) {
+    private static String serializeStatuses(Set<ParcelStatus> statuses) {
         if (statuses == null || statuses.isEmpty()) {
-            this.smsStatuses = "";
-        } else {
-            this.smsStatuses = statuses.stream()
-                    .map(Enum::name)
-                    .collect(Collectors.joining(","));
+            return "";
         }
+        return statuses.stream().map(Enum::name).collect(Collectors.joining(","));
     }
 
     public static NotificationPreference defaultFor(UUID userId) {
         return NotificationPreference.builder()
                 .userId(userId)
                 .emailEnabled(true)
+                .emailStatuses("CREATED,PICKED_UP,IN_TRANSIT,OUT_FOR_DELIVERY,DELIVERED,FAILED,CANCELLED")
                 .smsEnabled(true)
                 .smsStatuses("OUT_FOR_DELIVERY,DELIVERED")
                 .createdAt(Instant.now())

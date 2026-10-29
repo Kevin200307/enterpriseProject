@@ -206,6 +206,7 @@ describe('merchant new order', () => {
     }
     await u.type(screen.getByLabelText('Weight (kg)'), '2')
     await u.click(screen.getByRole('radio', { name: /Small/ }))
+    await u.click(screen.getByRole('checkbox', { name: /Express delivery/ }))
     await screen.findByText('Total', {}, { timeout: 3000 })
     await u.click(screen.getByRole('button', { name: 'Book delivery' }))
     expect(await screen.findByText('Your reference is required')).toBeInTheDocument()
@@ -213,7 +214,12 @@ describe('merchant new order', () => {
     await u.type(screen.getByLabelText('Your reference'), 'ORD-2002')
     await u.click(screen.getByRole('button', { name: 'Book delivery' }))
     expect(await screen.findByRole('dialog')).toHaveTextContent('Order created')
-    expect(body).toMatchObject({ merchantRef: 'ORD-2002' })
+    expect(body).toMatchObject({
+      merchantRef: 'ORD-2002',
+      express: true,
+      pickup: { zone: 'A' },
+      dropoff: { zone: 'B' },
+    })
   })
 
   it('does not show the reference field to ordinary customers', async () => {

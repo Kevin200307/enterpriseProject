@@ -91,20 +91,23 @@ export function NewDeliveryPage({ merchant = false }: { merchant?: boolean }) {
   // --- submit --------------------------------------------------------------
   const book = useMutation<{ id?: string; trackingNumber: string }, unknown, BookingForm>({
     mutationFn: (v: BookingForm) => {
+      if (!estimate.data) throw new Error('A current price estimate is required to book a delivery')
       if (merchant) {
         return merchantApi.createOrder({
           merchantRef: reference.trim(),
-          pickup: merchantAddress(v.pickup, estimate.data?.zoneFrom),
-          dropoff: merchantAddress(v.dropoff, estimate.data?.zoneTo),
+          pickup: bookingAddress(v.pickup, estimate.data.zoneFrom),
+          dropoff: bookingAddress(v.dropoff, estimate.data.zoneTo),
           size: v.size,
           weightKg: Number(v.weightKg),
+          express: v.express,
         })
       }
       return parcelsApi.create({
-        ...v,
+        pickup: bookingAddress(v.pickup, estimate.data.zoneFrom),
+        dropoff: bookingAddress(v.dropoff, estimate.data.zoneTo),
+        size: v.size,
         weightKg: Number(v.weightKg),
-        pickup: clean(v.pickup),
-        dropoff: clean(v.dropoff),
+        express: v.express,
       })
     },
     onSuccess: (parcel) => {
@@ -335,11 +338,13 @@ export function NewDeliveryPage({ merchant = false }: { merchant?: boolean }) {
   )
 }
 
-function clean(a: BookingForm['pickup']) {
-  return { ...a, line2: a.line2 || undefined }
-}
-
-function merchantAddress(a: BookingForm['pickup'], zone?: string) {
-  const { line2: _line2, ...address } = a
-  return { ...address, zone: zone ?? a.city }
+function bookingAddress(a: BookingForm['pickup'], zone: string) {
+  return {
+    contactName: a.contactName,
+    phone: a.phone,
+    line1: a.line1,
+    city: a.city,
+    postalCode: a.postalCode,
+    zone,
+  }
 }

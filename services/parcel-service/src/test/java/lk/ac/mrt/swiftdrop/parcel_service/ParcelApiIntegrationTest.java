@@ -95,9 +95,12 @@ class ParcelApiIntegrationTest {
             .authorities(new SimpleGrantedAuthority("ROLE_" + role));
     }
     private BookingRequest booking(String city) {
+        return booking(city, false);
+    }
+    private BookingRequest booking(String city, boolean express) {
         return new BookingRequest(new AddressInput("Sender", "+94771234567", "1 Main St", "Colombo", "00100", "COLOMBO"),
             new AddressInput("Recipient", "+94777654321", "2 Lake Rd", city, "20000", "KANDY"),
-            PackageSize.SMALL, new BigDecimal("1.250"));
+            PackageSize.SMALL, new BigDecimal("1.250"), express);
     }
     private ParcelView book(String key) throws Exception {
         return mapper.readValue(mvc.perform(post("/api/v1/parcels").with(as(customer,"CUSTOMER"))
@@ -224,6 +227,22 @@ class ParcelApiIntegrationTest {
         assertThat(book("booking-price").fee()).isEqualByComparingTo("450.00");
         assertThat(book("booking-new-price").fee()).isEqualByComparingTo("999.00");
     }
+
+    @Test void bookingPersistsExpressChoiceAlongsideThePricedFee() throws Exception {
+        when(pricing.estimate(argThat(BookingRequest::express), any()))
+            .thenReturn(new PricingClient.Quote(new BigDecimal("550.00"), "LKR"));
+        var result = mvc.perform(post("/api/v1/parcels").with(as(customer,"CUSTOMER"))
+                .header("Idempotency-Key", "booking-express")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(mapper.writeValueAsString(booking("Kandy", true))))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.express").value(true))
+            .andExpect(jsonPath("$.fee").value(550.00))
+            .andReturn();
+        UUID id = UUID.fromString(mapper.readTree(result.getResponse().getContentAsString()).path("id").asString());
+        assertThat(parcels.findById(id).orElseThrow().isExpress()).isTrue();
+    }
+
     @Test void merchantBookingsAreTenantScopedAndPublishMerchantIdentity() throws Exception {
         UUID merchant = UUID.randomUUID();
         var merchantAuth = jwt().jwt(j -> j.subject(customer.toString()).claim("merchant_id",merchant.toString()))
@@ -245,6 +264,46 @@ class ParcelApiIntegrationTest {
             .header("Idempotency-Key","merchant-002").contentType(MediaType.APPLICATION_JSON)
             .content(mapper.writeValueAsString(booking("Kandy")))).andExpect(status().isForbidden());
     }
+
+    @Test void parcelListFiltersByStatusAndInclusiveUtcDateRange() throws Exception {
+        var created = book("filter-created");
+        var cancelled = book("filter-cancelled");
+        mvc.perform(post("/api/v1/parcels/{id}/cancel", cancelled.id()).with(as(customer,"CUSTOMER")))
+            .andExpect(status().isOk());
+
+        mvc.perform(get("/api/v1/parcels")
+                .param("status", "CREATED")
+                .param("from", "2000-01-01")
+                .param("to", "2100-01-01")
+                .with(as(customer,"CUSTOMER")))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.page").value(0))
+            .andExpect(jsonPath("$.content.length()").value(1))
+            .andExpect(jsonPath("$.content[0].id").value(created.id().toString()));
+
+        mvc.perform(get("/api/v1/parcels")
+                .param("status", "CANCELLED")
+                .with(as(customer,"CUSTOMER")))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.content.length()").value(1))
+            .andExpect(jsonPath("$.content[0].id").value(cancelled.id().toString()));
+
+        mvc.perform(get("/api/v1/parcels")
+                .param("from", "2000-01-01")
+                .param("to", "2000-01-02")
+                .with(as(customer,"CUSTOMER")))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.totalElements").value(0));
+    }
+
+    @Test void parcelListRejectsAnInvertedDateRange() throws Exception {
+        mvc.perform(get("/api/v1/parcels")
+                .param("from", "2026-10-10")
+                .param("to", "2026-10-01")
+                .with(as(customer,"CUSTOMER")))
+            .andExpect(status().isBadRequest());
+    }
+
     @Test void rollbackKeepsParcelHistoryAndOutboxAtomic() {
         var transaction = new org.springframework.transaction.support.TransactionTemplate(transactions);
         var actor = new lk.ac.mrt.swiftdrop.parcel_service.service.Actor(customer, Set.of("ROLE_CUSTOMER"), "test-token");

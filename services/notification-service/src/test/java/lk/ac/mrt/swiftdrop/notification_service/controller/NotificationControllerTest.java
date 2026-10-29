@@ -2,12 +2,9 @@ package lk.ac.mrt.swiftdrop.notification_service.controller;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 import java.util.List;
@@ -16,6 +13,8 @@ import java.util.UUID;
 import lk.ac.mrt.swiftdrop.notification_service.domain.NotificationChannel;
 import lk.ac.mrt.swiftdrop.notification_service.domain.NotificationLog;
 import lk.ac.mrt.swiftdrop.notification_service.domain.NotificationStatus;
+import lk.ac.mrt.swiftdrop.notification_service.dto.NotificationLogViews.AdminNotificationView;
+import lk.ac.mrt.swiftdrop.notification_service.dto.NotificationLogViews.MyNotificationView;
 import lk.ac.mrt.swiftdrop.notification_service.repository.NotificationLogRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -63,18 +62,21 @@ class NotificationControllerTest {
         Instant from = Instant.now().minusSeconds(3600);
         Instant to = Instant.now();
 
-        when(notificationService.getNotificationLogs(NotificationStatus.SENT, NotificationChannel.EMAIL, from, to, pageable))
+        when(notificationService.getNotificationLogs(NotificationStatus.SENT, NotificationChannel.EMAIL,
+                from, to, pageable))
                 .thenReturn(page);
 
-        ResponseEntity<Page<NotificationLog>> response =
-                notificationController.getNotifications(NotificationStatus.SENT, NotificationChannel.EMAIL, from, to, pageable);
+        ResponseEntity<Page<AdminNotificationView>> response =
+                notificationController.getNotifications(NotificationStatus.SENT, NotificationChannel.EMAIL,
+                        from.toString(), to.toString(), pageable);
 
         assertNotNull(response);
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals(1, response.getBody().getTotalElements());
         assertEquals(1, response.getBody().getContent().size());
-        assertEquals("SD-11223344", response.getBody().getContent().get(0).getTrackingNumber());
-        verify(notificationService, times(1)).getNotificationLogs(NotificationStatus.SENT, NotificationChannel.EMAIL, from, to, pageable);
+        assertEquals("DELIVERED", response.getBody().getContent().get(0).templateKey());
+        verify(notificationService, times(1)).getNotificationLogs(NotificationStatus.SENT,
+                NotificationChannel.EMAIL, from, to, pageable);
     }
 
     @Test
@@ -86,13 +88,35 @@ class NotificationControllerTest {
         when(notificationService.getNotificationLogs(null, null, null, null, pageable))
                 .thenReturn(emptyPage);
 
-        ResponseEntity<Page<NotificationLog>> response =
+        ResponseEntity<Page<AdminNotificationView>> response =
                 notificationController.getNotifications(null, null, null, null, pageable);
 
         assertNotNull(response);
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals(0, response.getBody().getTotalElements());
         verify(notificationService, times(1)).getNotificationLogs(null, null, null, null, pageable);
+    }
+
+    @Test
+    @DisplayName("Date-only admin filters include the full UTC end date")
+    void dateOnlyFiltersCoverFullUtcDays() {
+        Pageable pageable = PageRequest.of(0, 20);
+        when(notificationService.getNotificationLogs(
+                null,
+                null,
+                Instant.parse("2026-10-01T00:00:00Z"),
+                Instant.parse("2026-10-02T23:59:59.999999999Z"),
+                pageable))
+                .thenReturn(Page.empty(pageable));
+
+        notificationController.getNotifications(null, null, "2026-10-01", "2026-10-02", pageable);
+
+        verify(notificationService).getNotificationLogs(
+                null,
+                null,
+                Instant.parse("2026-10-01T00:00:00Z"),
+                Instant.parse("2026-10-02T23:59:59.999999999Z"),
+                pageable);
     }
 
     @Test
@@ -167,37 +191,19 @@ class NotificationControllerTest {
                 .createdAt(Instant.now())
                 .build();
 
-        when(notificationService.getUserNotifications(userId)).thenReturn(List.of(mockLog));
+        Pageable pageable = PageRequest.of(0, 20);
+        when(notificationService.getUserNotifications(userId, pageable))
+                .thenReturn(new PageImpl<>(List.of(mockLog), pageable, 1));
 
-        ResponseEntity<List<NotificationLog>> response = notificationController.getMyNotifications(userId, null);
-
-        assertNotNull(response);
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertEquals(1, response.getBody().size());
-        assertEquals(userId, response.getBody().get(0).getRecipientRef());
-        verify(notificationService, times(1)).getUserNotifications(userId);
-    }
-
-    @Test
-    @DisplayName("Should return user notifications using userId query param fallback")
-    void shouldReturnUserNotificationsUsingQueryParam() {
-        UUID userId = UUID.randomUUID();
-        when(notificationService.getUserNotifications(userId)).thenReturn(List.of());
-
-        ResponseEntity<List<NotificationLog>> response = notificationController.getMyNotifications(null, userId);
+        ResponseEntity<Page<MyNotificationView>> response =
+                notificationController.getMyNotifications(userId, pageable);
 
         assertNotNull(response);
         assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertEquals(0, response.getBody().size());
-        verify(notificationService, times(1)).getUserNotifications(userId);
-    }
-
-    @Test
-    @DisplayName("Should throw 400 BAD_REQUEST when neither header nor query param userId provided")
-    void shouldThrowBadRequestWhenUserIdMissing() {
-        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
-                () -> notificationController.getMyNotifications(null, null));
-        assertEquals(HttpStatus.BAD_REQUEST, ex.getStatusCode());
+        assertEquals(1, response.getBody().getContent().size());
+        assertEquals("SD-11223344", response.getBody().getContent().get(0).trackingNumber());
+        assertEquals("CREATED", response.getBody().getContent().get(0).templateKey());
+        verify(notificationService, times(1)).getUserNotifications(userId, pageable);
     }
 
     @Test

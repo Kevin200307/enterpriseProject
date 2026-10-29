@@ -6,8 +6,8 @@ import { server } from '@/test/server'
 import { API, mockSession, problem, renderApp } from '@/test/utils'
 
 const estimate = {
-  zoneFrom: 'Colombo',
-  zoneTo: 'Kandy',
+  zoneFrom: 'CMB',
+  zoneTo: 'KDY',
   baseFee: 450,
   weightSurcharge: 50,
   expressSurcharge: 100,
@@ -86,7 +86,7 @@ describe('booking form', () => {
     const panel = screen.getByText('Price estimate').closest('[aria-live]') as HTMLElement
     expect(within(panel).getByText(/450/)).toBeInTheDocument()
     expect(within(panel).getByText(/600/)).toBeInTheDocument()
-    expect(within(panel).getByText('Colombo → Kandy')).toBeInTheDocument()
+    expect(within(panel).getByText('CMB → KDY')).toBeInTheDocument()
   })
 
   it('says we do not deliver there yet on a 404 and blocks booking', async () => {
@@ -105,7 +105,7 @@ describe('booking form', () => {
     expect(screen.getByRole('button', { name: 'Book delivery' })).toBeDisabled()
   })
 
-  it('books the parcel and shows the tracking number', async () => {
+  it('books the parcel with resolved zones and express choice', async () => {
     let body: Record<string, unknown> = {}
     server.use(
       http.post(`${API}/api/v1/pricing/estimate`, () => HttpResponse.json(estimate)),
@@ -120,12 +120,18 @@ describe('booking form', () => {
     await fillAddress(1, 'Kandy')
     await userEvent.type(screen.getByLabelText('Weight (kg)'), '1.5')
     await pickSize()
+    await userEvent.click(screen.getByRole('checkbox', { name: /Express delivery/ }))
     await screen.findByText('Total', {}, { timeout: 3000 })
     await userEvent.click(screen.getByRole('button', { name: 'Book delivery' }))
     const dialog = await screen.findByRole('dialog')
     expect(within(dialog).getByLabelText('tracking number')).toHaveTextContent('SD-ABCD2345')
-    expect(body).toMatchObject({ size: 'SMALL', weightKg: 1.5, express: false })
-    expect((body.pickup as { city: string }).city).toBe('Colombo')
+    expect(body).toMatchObject({
+      size: 'SMALL',
+      weightKg: 1.5,
+      express: true,
+      pickup: { city: 'Colombo', zone: 'CMB' },
+      dropoff: { city: 'Kandy', zone: 'KDY' },
+    })
   })
 
   it('maps server violations onto the weight field', async () => {

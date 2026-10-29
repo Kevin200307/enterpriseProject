@@ -22,14 +22,14 @@ class HttpPricingClientTest {
         server = MockRestServiceServer.bindTo(builder).build();
         client = new HttpPricingClient(builder.build(), "/api/v1/pricing/estimate");
         var address = new AddressInput("Sender", "+94771234567", "1 Main St", "Colombo", "00100", "COLOMBO");
-        request = new BookingRequest(address, address, PackageSize.SMALL, new BigDecimal("1.250"));
+        request = new BookingRequest(address, address, PackageSize.SMALL, new BigDecimal("1.250"), true);
     }
-    @Test void sendsZonesWeightAndCallerTokenAndSnapshotsTheFee() {
+    @Test void sendsCitiesWeightExpressAndCallerTokenAndSnapshotsTheTotal() {
         server.expect(requestTo("http://pricing.test/api/v1/pricing/estimate"))
             .andExpect(method(HttpMethod.POST)).andExpect(header("Authorization", "Bearer caller-token"))
-            .andExpect(content().json("{\"zoneFrom\":\"COLOMBO\",\"zoneTo\":\"COLOMBO\",\"size\":\"SMALL\",\"weightKg\":1.250}"))
-            .andRespond(withSuccess("{\"fee\":450,\"currency\":\"LKR\"}", MediaType.APPLICATION_JSON));
-        assertThat(client.estimate(request,"caller-token").fee()).isEqualByComparingTo("450.00");
+            .andExpect(content().json("{\"fromCity\":\"Colombo\",\"toCity\":\"Colombo\",\"size\":\"SMALL\",\"weightKg\":1.250,\"express\":true}"))
+            .andRespond(withSuccess("{\"total\":550,\"currency\":\"LKR\"}", MediaType.APPLICATION_JSON));
+        assertThat(client.estimate(request,"caller-token").fee()).isEqualByComparingTo("550.00");
         server.verify();
     }
     @Test void upstreamErrorsBecomeServiceUnavailable() {
@@ -38,8 +38,8 @@ class HttpPricingClientTest {
             ex -> assertThat(ex.code().httpStatus()).isEqualTo(503));
     }
     @Test void rejectsInvalidOrOverprecisePrices() {
-        for (String json : new String[]{"{}", "{\"fee\":-1,\"currency\":\"LKR\"}",
-            "{\"fee\":450.123,\"currency\":\"LKR\"}", "{\"fee\":450,\"currency\":\"invalid\"}"}) {
+        for (String json : new String[]{"{}", "{\"total\":-1,\"currency\":\"LKR\"}",
+            "{\"total\":450.123,\"currency\":\"LKR\"}", "{\"total\":450,\"currency\":\"invalid\"}"}) {
             server.reset();
             server.expect(requestTo("http://pricing.test/api/v1/pricing/estimate"))
                 .andRespond(withSuccess(json, MediaType.APPLICATION_JSON));
