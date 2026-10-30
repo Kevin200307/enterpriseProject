@@ -7,7 +7,6 @@ import lk.ac.mrt.swiftdrop.contracts.events.ParcelStatusChangedV1;
 import lk.ac.mrt.swiftdrop.contracts.events.ParcelStatusChangedV2;
 import lk.ac.mrt.swiftdrop.contracts.events.ParcelTrackingSnapshotV1;
 import lk.ac.mrt.swiftdrop.contracts.messaging.Queues;
-import lk.ac.mrt.swiftdrop.tracking_service.client.ParcelServiceClient;
 import lk.ac.mrt.swiftdrop.tracking_service.config.TrackingProperties;
 import lk.ac.mrt.swiftdrop.tracking_service.metrics.TrackingMetrics;
 import lk.ac.mrt.swiftdrop.tracking_service.service.TrackingProjectionService;
@@ -30,7 +29,6 @@ public class TrackingEventListener {
     private final ReactiveStringRedisTemplate redisTemplate;
     private final TrackingProjectionService projectionService;
     private final TrackingProperties properties;
-    private final ParcelServiceClient parcelClient;
     private final TrackingMetrics metrics;
 
     @Autowired
@@ -38,12 +36,10 @@ public class TrackingEventListener {
             ReactiveStringRedisTemplate redisTemplate,
             TrackingProjectionService projectionService,
             TrackingProperties properties,
-            ParcelServiceClient parcelClient,
             @Autowired(required = false) TrackingMetrics metrics) {
         this.redisTemplate = redisTemplate;
         this.projectionService = projectionService;
         this.properties = properties;
-        this.parcelClient = parcelClient;
         this.metrics = metrics;
     }
 
@@ -51,15 +47,7 @@ public class TrackingEventListener {
             ReactiveStringRedisTemplate redisTemplate,
             TrackingProjectionService projectionService,
             TrackingProperties properties) {
-        this(redisTemplate, projectionService, properties, null, null);
-    }
-
-    public TrackingEventListener(
-            ReactiveStringRedisTemplate redisTemplate,
-            TrackingProjectionService projectionService,
-            TrackingProperties properties,
-            ParcelServiceClient parcelClient) {
-        this(redisTemplate, projectionService, properties, parcelClient, null);
+        this(redisTemplate, projectionService, properties, null);
     }
 
     @RabbitListener(queues = Queues.TRACKING_PARCEL_STATUS_CHANGED)
@@ -71,12 +59,7 @@ public class TrackingEventListener {
     @RabbitListener(queues = Queues.TRACKING_PARCEL_STATUS_CHANGED_V2)
     public void onParcelStatusChangedV2(EventEnvelope<ParcelStatusChangedV2> envelope) {
         String trackingNumber = envelope.payload().trackingNumber();
-        processEvent(envelope.eventId(), trackingNumber, () -> {
-            var snapshot = parcelClient.fetchSnapshot(trackingNumber)
-                    .orElseThrow(() -> new IllegalStateException(
-                            "Parcel snapshot unavailable for tracking number " + trackingNumber));
-            projectionService.applySnapshot(snapshot.toEnvelope("tracking-service"));
-        });
+        processEvent(envelope.eventId(), trackingNumber, () -> projectionService.applyStatusChangedV2(envelope));
     }
 
     @RabbitListener(queues = Queues.TRACKING_PARCEL_SNAPSHOT)

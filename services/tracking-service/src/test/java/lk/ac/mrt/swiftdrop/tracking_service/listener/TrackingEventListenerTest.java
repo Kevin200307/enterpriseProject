@@ -17,8 +17,6 @@ import lk.ac.mrt.swiftdrop.contracts.domain.ParcelStatus;
 import lk.ac.mrt.swiftdrop.contracts.events.EventEnvelope;
 import lk.ac.mrt.swiftdrop.contracts.events.ParcelStatusChangedV1;
 import lk.ac.mrt.swiftdrop.contracts.events.ParcelStatusChangedV2;
-import lk.ac.mrt.swiftdrop.contracts.events.ParcelTrackingSnapshotV1;
-import lk.ac.mrt.swiftdrop.tracking_service.client.ParcelServiceClient;
 import lk.ac.mrt.swiftdrop.tracking_service.config.TrackingProperties;
 import lk.ac.mrt.swiftdrop.tracking_service.service.TrackingProjectionService;
 import org.junit.jupiter.api.BeforeEach;
@@ -42,9 +40,6 @@ class TrackingEventListenerTest {
     @Mock
     private TrackingProjectionService projectionService;
 
-    @Mock
-    private ParcelServiceClient parcelClient;
-
     private TrackingProperties properties;
     private TrackingEventListener listener;
 
@@ -52,7 +47,7 @@ class TrackingEventListenerTest {
     void setUp() {
         properties = new TrackingProperties(null, null, new TrackingProperties.CacheProperties(90, 90, 24));
         when(redisTemplate.opsForValue()).thenReturn(valueOperations);
-        listener = new TrackingEventListener(redisTemplate, projectionService, properties, parcelClient);
+        listener = new TrackingEventListener(redisTemplate, projectionService, properties);
     }
 
     @Test
@@ -105,41 +100,27 @@ class TrackingEventListenerTest {
     }
 
     @Test
-    void backfillsAndStoresProjectionForNewStatusEvents() {
+    void projectsV2StatusEventsAndMarksDedupKey() {
         var status = new ParcelStatusChangedV2(
                 UUID.randomUUID(),
-                "SD-00000001",
+                "SD-4F7K2Q9M",
                 UUID.randomUUID(),
                 null,
                 null,
-                null,
-                ParcelStatus.CREATED,
+                ParcelStatus.PICKED_UP,
+                ParcelStatus.IN_TRANSIT,
                 UUID.randomUUID(),
                 null,
                 null);
         EventEnvelope<ParcelStatusChangedV2> envelope = status.toEnvelope("parcel-service");
-        var snapshot = new ParcelTrackingSnapshotV1(
-                status.parcelId(),
-                status.trackingNumber(),
-                ParcelStatus.CREATED,
-                "Colombo",
-                "Kandy",
-                null,
-                null,
-                Instant.now(),
-                List.of(new ParcelTrackingSnapshotV1.SnapshotTimelineEntryV1(
-                        ParcelStatus.CREATED, Instant.now(), null)));
 
         when(valueOperations.get("tracking:event:" + envelope.eventId())).thenReturn(Mono.empty());
-        when(parcelClient.fetchSnapshot(status.trackingNumber())).thenReturn(java.util.Optional.of(snapshot));
         when(valueOperations.set(eq("tracking:event:" + envelope.eventId()), eq("PROCESSED"), any(Duration.class)))
                 .thenReturn(Mono.just(true));
 
         listener.onParcelStatusChangedV2(envelope);
 
-        verify(parcelClient).fetchSnapshot(status.trackingNumber());
-        verify(projectionService).applySnapshot(org.mockito.ArgumentMatchers.argThat(
-                applied -> applied.payload().equals(snapshot)));
+        verify(projectionService).applyStatusChangedV2(envelope);
         verify(valueOperations).set(
                 eq("tracking:event:" + envelope.eventId()), eq("PROCESSED"), eq(Duration.ofHours(24)));
     }

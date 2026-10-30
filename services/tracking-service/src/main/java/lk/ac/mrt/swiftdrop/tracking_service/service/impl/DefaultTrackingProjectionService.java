@@ -5,9 +5,11 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import lk.ac.mrt.swiftdrop.contracts.domain.ParcelStatus;
 import lk.ac.mrt.swiftdrop.contracts.events.EventEnvelope;
 import lk.ac.mrt.swiftdrop.contracts.events.ParcelStatusChangedV1;
+import lk.ac.mrt.swiftdrop.contracts.events.ParcelStatusChangedV2;
 import lk.ac.mrt.swiftdrop.contracts.events.ParcelTrackingSnapshotV1;
 import lk.ac.mrt.swiftdrop.tracking_service.client.ParcelServiceClient;
 import lk.ac.mrt.swiftdrop.tracking_service.domain.TrackingProjection;
@@ -50,10 +52,18 @@ public class DefaultTrackingProjectionService implements TrackingProjectionServi
 
     @Override
     public void applyStatusChanged(EventEnvelope<ParcelStatusChangedV1> envelope) {
-        String tn = envelope.payload().trackingNumber();
-        ParcelStatus newStatus = envelope.payload().toStatus();
-        Instant occurredAt = envelope.occurredAt();
+        applyStatusChanged(envelope.eventId(), envelope.payload().trackingNumber(),
+                envelope.payload().toStatus(), envelope.occurredAt(), false);
+    }
 
+    @Override
+    public void applyStatusChangedV2(EventEnvelope<ParcelStatusChangedV2> envelope) {
+        applyStatusChanged(envelope.eventId(), envelope.payload().trackingNumber(),
+                envelope.payload().toStatus(), envelope.occurredAt(), true);
+    }
+
+    private void applyStatusChanged(UUID eventId, String tn, ParcelStatus newStatus,
+                                    Instant occurredAt, boolean requireBackfill) {
         // Load existing or backfill
         Optional<TrackingProjection> existingOpt = Optional.empty();
         try {
@@ -69,13 +79,16 @@ public class DefaultTrackingProjectionService implements TrackingProjectionServi
         );
 
         if (base == null) {
+            if (requireBackfill) {
+                throw new IllegalStateException("Unable to find projection or backfill snapshot for " + tn);
+            }
             log.warn("Unable to find projection or backfill snapshot for {}; dropping status update", tn);
             return;
         }
 
         // Tie-breaking: older events cannot regress current status
         boolean shouldAdvanceStatus = occurredAt.isAfter(base.updatedAt())
-                || (occurredAt.equals(base.updatedAt()) && envelope.eventId().compareTo(UUID_ZERO) >= 0);
+                || (occurredAt.equals(base.updatedAt()) && eventId.compareTo(UUID_ZERO) >= 0);
 
         if (!shouldAdvanceStatus && metrics != null) {
             metrics.incrementOutOfOrder();
