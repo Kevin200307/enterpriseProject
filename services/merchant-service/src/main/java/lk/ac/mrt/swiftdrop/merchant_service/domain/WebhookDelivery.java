@@ -5,6 +5,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -50,7 +52,8 @@ public class WebhookDelivery {
     private Instant nextRetryAt;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "state", nullable = false)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    @Column(name = "state", nullable = false, columnDefinition = "webhook_delivery_state")
     @Builder.Default
     private WebhookDeliveryState state = WebhookDeliveryState.PENDING;
 
