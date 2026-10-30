@@ -58,5 +58,6 @@ export const parcelsApi = {
     body.append('file', file)
     return api.post<DeliveryProof>(`/api/v1/parcels/${id}/proofs`, body)
   },
-  receipt: (id: string) => requestBlob(`/api/v1/parcels/${id}/receipt`),
+  receipt: (id: string) =>
+    requestBlob(`/api/v1/parcels/${id}/receipt`, { headers: { Accept: 'application/pdf' } }),
 }

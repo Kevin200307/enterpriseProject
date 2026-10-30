@@ -144,19 +144,19 @@ export function PublicTrackPage() {
   const items = [...t.timeline].sort((a, b) => b.occurredAt.localeCompare(a.occurredAt))
 
   return (
-    <article className="flex flex-col gap-4">
+    <article className="mx-auto flex w-full max-w-2xl flex-col gap-4">
       {/* Hero — the dark card the rest of the app uses for headline information */}
-      <section className="flex flex-col gap-6 rounded-3xl bg-sidebar p-6 text-white">
+      <section className="flex flex-col gap-6 rounded-3xl bg-sidebar p-6 text-white sm:p-8">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             <p className="truncate font-mono text-xs text-white/50">{t.trackingNumber}</p>
-            <h1 className="mt-1 text-3xl font-bold leading-tight tracking-tight">{label}</h1>
+            <h1 className="mt-1 text-3xl font-bold leading-tight tracking-tight sm:text-4xl">{label}</h1>
           </div>
           <span
             aria-hidden
-            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white/10"
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white/10 sm:h-14 sm:w-14"
           >
-            <Icon className={cn('h-6 w-6', terminalProblem ? 'text-destructive' : 'text-accent')} />
+            <Icon className={cn('h-6 w-6 sm:h-7 sm:w-7', terminalProblem ? 'text-destructive' : 'text-accent')} />
           </span>
         </div>
 
@@ -193,35 +193,38 @@ export function PublicTrackPage() {
         </p>
       )}
 
-      <section aria-label="Route" className="rounded-3xl border bg-card p-5">
-        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Route</p>
-        <p className="mt-1 text-lg font-semibold tracking-tight">
-          {t.originCity} <span aria-label="to">→</span> {t.destinationCity}
-        </p>
-        <dl className="mt-3 flex flex-col gap-1 text-sm">
-          {t.eta && !terminalProblem && t.status !== 'DELIVERED' && (
-            <div className="flex justify-between gap-4">
-              <dt className="text-muted-foreground">Estimated delivery</dt>
-              <dd className="text-right font-medium">{formatDateTime(t.eta)}</dd>
-            </div>
-          )}
-          {t.courierFirstName && (
-            <div className="flex justify-between gap-4">
-              <dt className="text-muted-foreground">Courier</dt>
-              <dd className="text-right font-medium">{t.courierFirstName}</dd>
-            </div>
-          )}
-        </dl>
-      </section>
+      {/* Route and Progress side-by-side on tablet+ */}
+      <div className="grid gap-4 sm:grid-cols-2">
+        <section aria-label="Route" className="rounded-3xl border bg-card p-5">
+          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Route</p>
+          <p className="mt-1 text-lg font-semibold tracking-tight">
+            {t.originCity} <span aria-label="to">→</span> {t.destinationCity}
+          </p>
+          <dl className="mt-3 flex flex-col gap-1 text-sm">
+            {t.eta && !terminalProblem && t.status !== 'DELIVERED' && (
+              <div className="flex justify-between gap-4">
+                <dt className="text-muted-foreground">Estimated delivery</dt>
+                <dd className="text-right font-medium">{formatDateTime(t.eta)}</dd>
+              </div>
+            )}
+            {t.courierFirstName && (
+              <div className="flex justify-between gap-4">
+                <dt className="text-muted-foreground">Courier</dt>
+                <dd className="text-right font-medium">{t.courierFirstName}</dd>
+              </div>
+            )}
+          </dl>
+        </section>
 
-      <section aria-label="Progress" className="rounded-3xl border bg-card p-5">
-        <h2 className="mb-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-          Progress
-        </h2>
-        <StatusTimeline items={items} />
-      </section>
+        <section aria-label="Progress" className="rounded-3xl border bg-card p-5">
+          <h2 className="mb-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            Progress
+          </h2>
+          <StatusTimeline items={items} />
+        </section>
+      </div>
 
-      <footer className="flex gap-3">
+      <footer className="flex flex-col gap-3 sm:flex-row">
         <Button
           variant="outline"
           className="h-11 flex-1"

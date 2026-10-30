@@ -22,13 +22,21 @@ public class MerchantOrderService {
     private final MerchantRepository merchants;
     private final MerchantOrderRepository orders;
     private final WebClient parcelClient;
+    private final ServiceTokenProvider serviceTokenProvider;
 
     public MerchantOrderService(MerchantRepository merchants, MerchantOrderRepository orders,
                                 WebClient.Builder clients,
+                                ServiceTokenProvider serviceTokenProvider,
                                 @Value("${parcel-service.url:http://parcel-service:8080}") String parcelUrl) {
-        this.merchants = merchants; this.orders = orders; this.parcelClient = clients.baseUrl(parcelUrl).build();
+        this.merchants = merchants; this.orders = orders;
+        this.parcelClient = clients.baseUrl(parcelUrl).build();
+        this.serviceTokenProvider = serviceTokenProvider;
     }
 
+    /**
+     * @param bearerToken the caller's JWT to forward to parcel-service, or {@code null}
+     *                    when called via API key (service token is fetched automatically).
+     */
     @Transactional
     public View create(UUID ownerId, Create request, String bearerToken) {
         Merchant merchant = approved(ownerId);
@@ -40,10 +48,11 @@ public class MerchantOrderService {
                 throw new ResponseStatusException(HttpStatus.CONFLICT, "Merchant reference was used with a different order");
             return view(existing.get());
         }
+        String token = bearerToken != null ? bearerToken : serviceTokenProvider.token();
         ParcelView parcel;
         try {
             parcel = parcelClient.post().uri("/api/v1/parcels")
-                    .headers(h -> h.setBearerAuth(bearerToken))
+                    .headers(h -> h.setBearerAuth(token))
                     .header("Idempotency-Key", idempotencyKey(merchant.getId(), ref))
                     .bodyValue(new ParcelBooking(request.pickup(), request.dropoff(), request.size(),
                             request.weightKg(), request.express()))

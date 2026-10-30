@@ -13,5 +13,7 @@ export function roleLanding(roles: Role[]): string {
 export function safeReturnTo(value: string | null | undefined, fallback: string): string {
   if (!value || !value.startsWith('/') || value.startsWith('//') || value.includes('\\'))
     return fallback
+  // Never bounce the user back to the error pages — go to their home instead.
+  if (value === '/403' || value === '/404') return fallback
   return value
 }
