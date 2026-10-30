@@ -18,6 +18,7 @@ const estimate = {
 }
 
 beforeEach(() => {
+  localStorage.clear()
   mockSession(['CUSTOMER'])
   server.use(
     http.get(`${API}/api/v1/pricing/zones`, () =>
@@ -44,6 +45,46 @@ async function fillAddress(group: 0 | 1, city: string) {
 }
 
 describe('booking form', () => {
+  it('applies every saved pickup detail', async () => {
+    localStorage.setItem(
+      'swiftdrop.saved-delivery-details:a@b.lk',
+      JSON.stringify({
+        contactName: 'Saved Contact',
+        phone: '+94770001111',
+        line1: '12 Saved Road',
+        line2: 'Apartment 4',
+        city: 'Colombo',
+        postalCode: '10100',
+      }),
+    )
+    renderApp('/deliveries/new')
+    await screen.findByRole('heading', { name: 'New delivery', level: 1 })
+
+    await userEvent.click(screen.getByRole('button', { name: 'Use my details' }))
+
+    expect(await screen.findAllByDisplayValue('Saved Contact')).toHaveLength(1)
+    expect(screen.getAllByLabelText('Phone')[0]).toHaveValue('+94770001111')
+    expect(screen.getAllByLabelText('Address line 1')[0]).toHaveValue('12 Saved Road')
+    expect(screen.getAllByLabelText('Address line 2 (optional)')[0]).toHaveValue('Apartment 4')
+    expect(screen.getAllByLabelText('City')[0]).toHaveValue('Colombo')
+    expect(screen.getAllByLabelText('Postal code')[0]).toHaveValue('10100')
+  })
+
+  it('uses the profile phone and clears address fields when no address is saved', async () => {
+    renderApp('/deliveries/new')
+    await screen.findByRole('heading', { name: 'New delivery', level: 1 })
+    await userEvent.type(screen.getAllByLabelText('Address line 1')[0]!, 'Old address')
+
+    await userEvent.click(screen.getByRole('button', { name: 'Use my details' }))
+
+    expect(await screen.findAllByDisplayValue('Test User')).toHaveLength(1)
+    expect(screen.getAllByLabelText('Phone')[0]).toHaveValue('+94771234567')
+    expect(screen.getAllByLabelText('Address line 1')[0]).toHaveValue('')
+    expect(screen.getAllByLabelText('Address line 2 (optional)')[0]).toHaveValue('')
+    expect(screen.getAllByLabelText('City')[0]).toHaveValue('')
+    expect(screen.getAllByLabelText('Postal code')[0]).toHaveValue('')
+  })
+
   it('asks only for active zones (regression: query context must not leak into includeInactive)', async () => {
     const seen: URL[] = []
     server.use(
@@ -140,7 +181,11 @@ describe('booking form', () => {
     await userEvent.type(screen.getByLabelText('Weight (kg)'), '2')
     await pickSize()
     expect(
-      await screen.findByText('No price is available for this route and package size.', {}, { timeout: 3000 }),
+      await screen.findByText(
+        'No price is available for this route and package size.',
+        {},
+        { timeout: 3000 },
+      ),
     ).toBeInTheDocument()
     expect(screen.queryByText(/don't deliver/)).not.toBeInTheDocument()
   })

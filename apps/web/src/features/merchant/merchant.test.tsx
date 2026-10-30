@@ -15,12 +15,16 @@ const page = <T,>(content: T[]) => ({
   size: 20,
 })
 const order = (over: Partial<MerchantOrder> = {}): MerchantOrder => ({
-  merchantRef: 'ORD-1001',
-  trackingNumber: 'SD-ABCD2345',
-  status: 'IN_TRANSIT',
-  destinationCity: 'Kandy',
-  createdAt: '2026-10-08T05:00:00Z',
   ...over,
+  id: over.id ?? 'order-1',
+  merchantRef: over.merchantRef ?? 'ORD-1001',
+  parcelId: over.parcelId ?? 'parcel-1',
+  trackingNumber: over.trackingNumber ?? 'SD-ABCD2345',
+  status: over.status ?? 'IN_TRANSIT',
+  destinationCity: over.destinationCity ?? 'Kandy',
+  fee: over.fee ?? 600,
+  currency: over.currency ?? 'LKR',
+  createdAt: over.createdAt ?? '2026-10-08T05:00:00Z',
 })
 
 describe('merchant registration', () => {

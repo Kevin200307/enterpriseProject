@@ -17,3 +17,40 @@ export function safeReturnTo(value: string | null | undefined, fallback: string)
   if (value === '/403' || value === '/404') return fallback
   return value
 }
+
+/** Do not send a newly signed-in user back to a route their role cannot open. */
+export function safeRoleReturnTo(
+  value: string | null | undefined,
+  fallback: string,
+  roles: Role[],
+) {
+  const destination = safeReturnTo(value, fallback)
+  if (destination === fallback) return fallback
+
+  const pathname = destination.split(/[?#]/, 1)[0] ?? destination
+  let requiredRoles: Role[] | undefined
+
+  if (pathname === '/home' || pathname === '/deliveries' || pathname.startsWith('/deliveries/')) {
+    requiredRoles = ['CUSTOMER']
+  } else if (pathname === '/courier' || pathname.startsWith('/courier/')) {
+    requiredRoles = ['COURIER']
+  } else if (
+    pathname === '/admin/users' ||
+    pathname === '/admin/notifications' ||
+    pathname === '/admin/reports' ||
+    pathname === '/admin/zones' ||
+    pathname === '/admin/pricing' ||
+    pathname === '/admin/merchants'
+  ) {
+    requiredRoles = ['ADMIN']
+  } else if (pathname === '/admin' || pathname.startsWith('/admin/')) {
+    requiredRoles = ['ADMIN', 'DISPATCHER']
+  } else if (pathname.startsWith('/merchant/')) {
+    const publicMerchantPath = ['/merchant/register', '/merchant/pending'].includes(pathname)
+    if (!publicMerchantPath) requiredRoles = ['MERCHANT']
+  }
+
+  return requiredRoles && !requiredRoles.some((role) => roles.includes(role))
+    ? fallback
+    : destination
+}

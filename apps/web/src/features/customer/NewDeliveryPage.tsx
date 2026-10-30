@@ -127,13 +127,11 @@ export function NewDeliveryPage({ merchant = false }: { merchant?: boolean }) {
       const details = readSavedDetails(me.email)
       const saved = details.line1 || details.city || details.postalCode
       setValue('pickup.contactName', details.contactName || me.fullName, { shouldDirty: true })
-      setValue('pickup.phone', details.phone || me.phone, { shouldDirty: true })
-      if (saved) {
-        setValue('pickup.line1', details.line1, { shouldDirty: true })
-        setValue('pickup.line2', details.line2 ?? '', { shouldDirty: true })
-        setValue('pickup.city', details.city, { shouldDirty: true })
-        setValue('pickup.postalCode', details.postalCode, { shouldDirty: true })
-      }
+      setValue('pickup.phone', saved ? details.phone : me.phone, { shouldDirty: true })
+      setValue('pickup.line1', details.line1, { shouldDirty: true })
+      setValue('pickup.line2', details.line2 ?? '', { shouldDirty: true })
+      setValue('pickup.city', details.city, { shouldDirty: true })
+      setValue('pickup.postalCode', details.postalCode, { shouldDirty: true })
       toast.success(saved ? 'Saved delivery details applied' : 'Your profile details applied')
     } catch (e) {
       toast.error(describeError(e).message)
@@ -173,7 +171,12 @@ export function NewDeliveryPage({ merchant = false }: { merchant?: boolean }) {
           <Card>
             <CardHeader className="flex-row items-center justify-between">
               <CardTitle>Pickup</CardTitle>
-              <Button type="button" variant="outline" size="sm" onClick={() => void fillMyDetails()}>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => void fillMyDetails()}
+              >
                 Use my details
               </Button>
             </CardHeader>
@@ -283,12 +286,7 @@ export function NewDeliveryPage({ merchant = false }: { merchant?: boolean }) {
             className="fixed inset-x-0 bottom-[68px] z-20 border-t bg-background/95 p-4 backdrop-blur-md lg:static lg:border-0 lg:bg-transparent lg:p-0 lg:backdrop-blur-none"
             style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
           >
-            <Button
-              type="submit"
-              size="lg"
-              className="w-full"
-              disabled={blocked || book.isPending}
-            >
+            <Button type="submit" size="lg" className="w-full" disabled={blocked || book.isPending}>
               {book.isPending ? 'Booking…' : 'Book delivery'}
             </Button>
           </div>
