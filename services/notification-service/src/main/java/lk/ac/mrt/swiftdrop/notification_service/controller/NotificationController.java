@@ -110,11 +110,15 @@ public class NotificationController {
      * GET /api/v1/notifications/{trackingNumber}
      */
     @GetMapping("/{trackingNumber}")
-    public ResponseEntity<List<NotificationLog>> getNotificationsByTrackingNumber(
+    public ResponseEntity<List<AdminNotificationView>> getNotificationsByTrackingNumber(
             @PathVariable String trackingNumber) {
         log.info("Fetching notification history for trackingNumber={}", trackingNumber);
-        List<NotificationLog> logs = logRepository.findByTrackingNumberOrderByCreatedAtDesc(trackingNumber);
-        return ResponseEntity.ok(logs);
+        List<AdminNotificationView> views = logRepository
+                .findByTrackingNumberOrderByCreatedAtDesc(trackingNumber)
+                .stream()
+                .map(AdminNotificationView::from)
+                .toList();
+        return ResponseEntity.ok(views);
     }
 
     /**
@@ -122,10 +126,10 @@ public class NotificationController {
      * POST /api/v1/notifications/{id}/resend
      */
     @PostMapping("/{id}/resend")
-    public ResponseEntity<NotificationLog> resendNotification(@PathVariable UUID id) {
+    public ResponseEntity<AdminNotificationView> resendNotification(@PathVariable UUID id) {
         log.info("Request to resend notification with id={}", id);
         NotificationLog resent = notificationService.resendNotification(id);
-        return ResponseEntity.ok(resent);
+        return ResponseEntity.ok(AdminNotificationView.from(resent));
     }
 
     /**

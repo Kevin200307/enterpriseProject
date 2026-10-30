@@ -35,6 +35,7 @@ export const qk = {
     prefs: ['notifications', 'prefs'] as const,
     mine: (page: number) => ['notifications', 'mine', page] as const,
     log: (f: object) => ['notifications', 'log', f] as const,
+    byTracking: (tn: string) => ['notifications', 'byTracking', tn] as const,
     all: ['notifications'] as const,
   },
   courier: { today: ['courier', 'today'] as const },
