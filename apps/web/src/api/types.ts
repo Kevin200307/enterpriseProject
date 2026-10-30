@@ -276,11 +276,14 @@ export interface MerchantProfile {
 }
 
 export interface MerchantOrder {
-  id?: string
+  id: string
   merchantRef: string
+  parcelId: string
   trackingNumber: string
   status: ParcelStatus
   destinationCity: string
+  fee: number
+  currency: string
   createdAt: string
 }
 

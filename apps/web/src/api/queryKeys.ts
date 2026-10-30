@@ -26,6 +26,7 @@ export const qk = {
   merchant: {
     me: ['merchant', 'me'] as const,
     orders: (f: object) => ['merchant', 'orders', f] as const,
+    order: (id: string) => ['merchant', 'order', id] as const,
     keys: ['merchant', 'keys'] as const,
     deliveries: (f: object) => ['merchant', 'deliveries', f] as const,
     all: ['merchant'] as const,
