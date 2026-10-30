@@ -136,6 +136,15 @@ export interface DeliveryProof {
   createdAt: string
 }
 
+/** Async dispatch command — returned as 202 body when an assign/unassign is queued. */
+export interface AssignmentCommand {
+  id: string
+  state: 'PENDING' | 'DONE' | 'FAILED'
+  parcelId: string
+  courierId: string
+  detail?: string
+}
+
 /** A parcel waiting for a courier (DSP-2). */
 export interface QueueItem {
   parcelId: string

@@ -10,6 +10,8 @@ export const qk = {
     queue: (zone?: string) => ['dispatch', 'queue', zone ?? ''] as const,
     suggest: (parcelId: string) => ['dispatch', 'suggest', parcelId] as const,
     workload: ['dispatch', 'workload'] as const,
+    manifest: (courierId: string, date: string) => ['dispatch', 'manifest', courierId, date] as const,
+    command: (commandId: string) => ['dispatch', 'command', commandId] as const,
     all: ['dispatch'] as const,
   },
   admin: {

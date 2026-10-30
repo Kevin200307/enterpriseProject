@@ -1,12 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { isApiError } from '@/api/ApiError'
 import { dispatchApi } from '@/api/endpoints/dispatch'
 import { pricingApi } from '@/api/endpoints/pricing'
 import { describeError } from '@/api/errorMessages'
 import { qk } from '@/api/queryKeys'
-import type { QueueItem } from '@/api/types'
+import type { AssignmentCommand, QueueItem } from '@/api/types'
 import { EmptyState } from '@/components/common/EmptyState'
 import { ErrorState } from '@/components/common/ErrorState'
 import { PageHeader } from '@/components/common/PageHeader'
@@ -80,6 +80,29 @@ export function DispatchBoardPage() {
   const [zone, setZone] = useState('')
   const [picking, setPicking] = useState<QueueItem>()
   const [conflict, setConflict] = useState<Target>()
+  const [pendingCommandId, setPendingCommandId] = useState<string | null>(null)
+
+  // Poll an async command if the assign returned 202 instead of 200.
+  const commandPoll = useQuery({
+    queryKey: qk.dispatch.command(pendingCommandId ?? ''),
+    queryFn: () => dispatchApi.getCommand(pendingCommandId!),
+    enabled: pendingCommandId !== null,
+    refetchInterval: (q) => {
+      if (!q.state.data) return 2000
+      return q.state.data.state === 'PENDING' ? 2000 : false
+    },
+  })
+  useEffect(() => {
+    if (!commandPoll.data) return
+    if (commandPoll.data.state === 'DONE') {
+      setPendingCommandId(null)
+      toast.success('Assignment confirmed')
+      void qc.invalidateQueries({ queryKey: qk.dispatch.all })
+    } else if (commandPoll.data.state === 'FAILED') {
+      setPendingCommandId(null)
+      toast.error(`Assignment failed${commandPoll.data.detail ? `: ${commandPoll.data.detail}` : ''}`)
+    }
+  }, [commandPoll.data?.state])
 
   const zones = useQuery({
     queryKey: qk.pricing.zones,
@@ -92,13 +115,19 @@ export function DispatchBoardPage() {
     refetchInterval: 15_000, // paused automatically while the tab is hidden
   })
 
-  const assign = useMutation({
-    mutationFn: ({ item, courierId, reassign }: Target & { reassign?: boolean }) =>
+  const assign = useMutation<AssignmentCommand | undefined, unknown, Target & { reassign?: boolean }>({
+    mutationFn: ({ item, courierId, reassign }) =>
       dispatchApi.assign(item.parcelId, courierId, reassign),
-    onSuccess: (_d, v) => {
-      toast.success(`${v.item.trackingNumber} assigned`)
+    onSuccess: (cmd, v) => {
       setPicking(undefined)
       setConflict(undefined)
+      if (cmd?.state === 'PENDING') {
+        setPendingCommandId(cmd.id)
+        toast.info(`${v.item.trackingNumber} assignment in progress…`)
+      } else {
+        toast.success(`${v.item.trackingNumber} assigned`)
+        void qc.invalidateQueries({ queryKey: qk.dispatch.all })
+      }
     },
     onError: (e, v) => {
       if (isApiError(e) && e.errorCode === 'CONFLICT' && !v.reassign) {
@@ -107,7 +136,6 @@ export function DispatchBoardPage() {
       }
       toast.error(describeError(e).message)
     },
-    onSettled: () => void qc.invalidateQueries({ queryKey: qk.dispatch.all }),
   })
 
   const order = [...(queue.data ?? [])].sort((a, b) => a.createdAt.localeCompare(b.createdAt))
