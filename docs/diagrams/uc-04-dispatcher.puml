@@ -1,0 +1,104 @@
+@startuml
+title Use Cases — Dispatcher and Admin
+
+left to right direction
+
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam defaultFontName "Segoe UI"
+skinparam defaultFontSize 13
+skinparam ArrowColor #555555
+skinparam ArrowFontSize 11
+skinparam usecase {
+  BackgroundColor #F8FAFC
+  BorderColor #64748B
+  FontColor #0F172A
+}
+skinparam actor {
+  BackgroundColor #E2E8F0
+  BorderColor #475569
+}
+skinparam rectangle {
+  BackgroundColor #FFFFFF
+  BorderColor #94A3B8
+}
+
+actor Dispatcher as D
+actor Admin as A
+
+rectangle "SwiftDrop — Operations" {
+
+  package "Dispatch" {
+    usecase UC1 as "View dispatch queue
+    --
+    unassigned parcels"
+    usecase UC2 as "View courier workload"
+    usecase UC3 as "Request courier
+    suggestion"
+    usecase UC4 as "Assign parcel
+    to courier"
+    usecase UC5 as "Unassign parcel"
+    usecase UC6 as "View courier manifest"
+    usecase UC7 as "View daily stats"
+  }
+
+  package "Courier roster" {
+    usecase UC8 as "Register courier"
+    usecase UC9 as "Update courier
+    --
+    zone, capacity, active"
+  }
+
+  usecase UC10 as "View all parcels"
+
+  package "Administration <<ADMIN only>>" #FFF7ED {
+    usecase UC11 as "Approve / reject
+    / suspend merchants"
+    usecase UC12 as "Manage user roles
+    and status"
+    usecase UC13 as "Manage delivery zones"
+    usecase UC14 as "Manage pricing rules"
+    usecase UC15 as "View notification log"
+    usecase UC16 as "Resend a notification"
+    usecase UC17 as "View reports"
+  }
+}
+
+D --> UC1
+D --> UC2
+D --> UC3
+D --> UC4
+D --> UC5
+D --> UC6
+D --> UC7
+D --> UC8
+D --> UC9
+D --> UC10
+
+A --> UC11
+A --> UC12
+A --> UC13
+A --> UC14
+A --> UC15
+A --> UC16
+A --> UC17
+
+A -|> D
+
+UC4 ..> UC3 : <<extend>>
+
+note right of A
+  Admin inherits every
+  Dispatcher use case
+end note
+
+note bottom of UC4
+  Assignment is an asynchronous
+  command: dispatch-service
+  validates the courier with
+  identity-service, then applies
+  a compare-and-set against the
+  parcel aggregate
+end note
+
+@enduml

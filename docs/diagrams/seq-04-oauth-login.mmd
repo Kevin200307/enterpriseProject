@@ -1,0 +1,65 @@
+---
+title: Flow 4 — Google sign-in with OAuth 2.0 and PKCE
+---
+sequenceDiagram
+    autonumber
+    actor U as User
+    participant SPA as React SPA
+    participant ID as identity-service
+    participant RD as Redis
+    participant G as Google
+
+    rect rgb(240, 249, 255)
+    Note over U,G: Phase A — authorization request
+    U->>SPA: click "Sign in with Google"
+    SPA->>SPA: verifier = base64url(32 random bytes)<br/>challenge = base64url(SHA-256(verifier))
+    SPA->>ID: GET /auth/oauth2/google/authorize<br/>?codeChallenge&redirectUri
+    activate ID
+    ID->>RD: store state → {codeChallenge, redirectUri}<br/>TTL 10 minutes
+    ID-->>SPA: authorizationUrl (response_type=code,<br/>scope=openid email profile, S256, state)
+    deactivate ID
+    SPA->>SPA: save {verifier, state, returnTo} to sessionStorage
+    SPA->>G: browser redirect
+    U->>G: consent
+    G-->>SPA: redirect to /oauth/callback?code&state
+    end
+
+    rect rgb(240, 253, 244)
+    Note over SPA,G: Phase B — callback and token exchange
+    SPA->>SPA: take pending state (single use),<br/>verify state matches
+    SPA->>ID: GET /auth/oauth2/callback/google<br/>?code&state&codeVerifier&redirectUri
+    activate ID
+    ID->>RD: GETDEL oauth2:state:{state}
+    alt state missing or expired
+        ID-->>SPA: 400 invalid OAuth state
+    else valid
+        ID->>ID: recompute SHA-256(codeVerifier),<br/>constant-time compare with stored challenge
+        ID->>ID: verify redirectUri matches the stored one
+        ID->>G: POST token endpoint (code + codeVerifier)
+        G-->>ID: id_token + access_token
+        ID->>ID: verify id_token iss and aud
+        ID->>ID: link by google_sub, else link by email,<br/>else provision a new CUSTOMER<br/>(password_hash null — password login impossible)
+        ID->>ID: mint RS256 JWT — sub, email, roles,<br/>iss, aud=swiftdrop, 15 min TTL, kid swiftdrop-v1
+        ID->>ID: issue opaque refresh token,<br/>persist only its hash
+        ID-->>SPA: 200 {accessToken} +<br/>Set-Cookie refreshToken (HttpOnly, Secure,<br/>SameSite=Strict, Path=/api/v1/auth)
+    end
+    deactivate ID
+    SPA->>SPA: hold the access token in memory only,<br/>never localStorage
+    SPA->>U: redirect to the role's landing page
+    end
+
+    rect rgb(255, 251, 235)
+    Note over SPA,ID: Phase C — rotation, roughly every 15 minutes
+    SPA->>ID: POST /auth/refresh (cookie is the only credential)
+    activate ID
+    ID->>ID: look up by token hash
+    alt token already revoked — replay detected
+        ID->>ID: revoke the entire token family for this user
+        ID-->>SPA: 401 session invalidated for security
+    else valid
+        ID->>ID: issue a successor, mark the old one rotated
+        ID-->>SPA: new access token + new cookie
+        Note right of ID: Roles are re-read from the user row,<br/>so a newly granted role takes effect here
+    end
+    deactivate ID
+    end

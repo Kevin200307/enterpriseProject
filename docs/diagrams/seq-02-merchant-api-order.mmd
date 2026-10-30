@@ -1,0 +1,54 @@
+---
+title: Flow 2 — Merchant creates an order via the REST API
+---
+sequenceDiagram
+    autonumber
+    participant SYS as Merchant backend
+    participant MS as merchant-service
+    participant MDB as merchant_db
+    participant ID as identity-service
+    participant PS as parcel-service
+
+    Note over SYS,MS: Prerequisites — merchant APPROVED by an admin,<br/>API key issued once as sdk_… and stored only as a SHA-256 hash
+
+    SYS->>MS: POST /api/v1/merchants/orders<br/>X-Api-Key: sdk_… · body {merchantRef, pickup, dropoff, size, weightKg}
+    Note right of SYS: Reaches merchant-service directly.<br/>The gateway chain is JWT-only, so an<br/>API-key request cannot traverse it.
+
+    activate MS
+    MS->>MS: ApiKeyAuthFilter — extract key,<br/>derive required scope (write for POST)
+    MS->>MDB: findAllByKeyPrefixAndRevokedAtIsNull(prefix)
+    MS->>MS: filter not-expired and scope present,<br/>then constant-time MessageDigest.isEqual on the hash
+    alt no match
+        MS-->>SYS: 401 UNAUTHENTICATED
+    else verified
+        MS->>MDB: update last_used_at
+        MS->>MS: install ApiKeyAuthentication<br/>principal = merchant.ownerUserId, authority ROLE_MERCHANT
+    end
+
+    MS->>MDB: findByOwnerUserId → must be APPROVED
+    MS->>MDB: findByMerchantIdAndMerchantRef (idempotency)
+    alt same ref, same payload hash
+        MDB-->>MS: existing order
+        MS-->>SYS: 200 with the original View
+    else same ref, different hash
+        MS-->>SYS: 409 reference reused with a different order
+    else new order
+        MS->>ID: POST /api/v1/auth/service-token<br/>Basic merchant-service:secret · client_credentials
+        activate ID
+        ID-->>MS: short-lived service JWT (300 s, no human roles)
+        deactivate ID
+        Note right of MS: Cached until expires_in − 30 s
+
+        MS->>PS: POST /api/v1/parcels<br/>Bearer service token<br/>Idempotency-Key: m_ + sha256(merchantId:ref)
+        activate PS
+        Note right of PS: Deterministic key, so a retried<br/>merchant call reuses the same parcel
+        PS->>PS: re-quote fee, generate tracking number,<br/>persist parcel + history + outbox rows
+        PS-->>MS: 201 ParcelView
+        deactivate PS
+
+        MS->>MDB: INSERT merchant_orders<br/>parcelId, trackingNumber, fee, requestHash
+        MS-->>SYS: 201 MerchantOrderDtos.View
+    end
+    deactivate MS
+
+    Note over PS,SYS: Later — parcel status events fan out to<br/>merchant-webhook queue → HMAC-signed POST to the merchant's URL,<br/>retried with backoff min(3600, 30 << (n−1)) seconds

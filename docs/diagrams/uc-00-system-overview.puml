@@ -1,0 +1,86 @@
+@startuml
+title SwiftDrop — Actors and Shared Use Cases
+
+left to right direction
+
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam defaultFontName "Segoe UI"
+skinparam defaultFontSize 13
+skinparam ArrowColor #555555
+skinparam ArrowFontSize 11
+skinparam usecase {
+  BackgroundColor #F8FAFC
+  BorderColor #64748B
+  FontColor #0F172A
+}
+skinparam actor {
+  BackgroundColor #E2E8F0
+  BorderColor #475569
+}
+skinparam rectangle {
+  BackgroundColor #FFFFFF
+  BorderColor #94A3B8
+}
+
+actor "Guest\n(unauthenticated)" as Guest
+actor Customer as Cust
+actor Merchant as Merch
+actor Courier as Cour
+actor Dispatcher as Disp
+actor Admin as Adm
+
+rectangle "SwiftDrop Platform" {
+  usecase UCtrack as "Track a parcel
+  --
+  public, rate limited"
+  usecase UCsignin as "Sign in"
+  usecase UCgoogle as "Sign in with Google
+  --
+  OAuth 2.0 + PKCE"
+
+  usecase UCbook as "Book a delivery"
+  usecase UCorder as "Create merchant order"
+  usecase UCstatus as "Update parcel status"
+  usecase UCassign as "Assign parcel to courier"
+  usecase UCadmin as "Administer platform
+  --
+  users, merchants,
+  zones, pricing"
+}
+
+Guest --> UCtrack
+Guest --> UCsignin
+
+Cust --> UCtrack
+Cust --> UCsignin
+Cust --> UCbook
+
+Merch --> UCtrack
+Merch --> UCsignin
+Merch --> UCorder
+
+Cour --> UCsignin
+Cour --> UCstatus
+
+Disp --> UCsignin
+Disp --> UCassign
+
+Adm --> UCadmin
+
+UCsignin <|-- UCgoogle
+
+Adm -|> Disp
+
+note right of Adm
+  Admin holds every
+  Dispatcher capability
+  plus platform administration
+end note
+
+note bottom of UCtrack
+  The only use case reachable
+  without authentication
+end note
+
+@enduml
