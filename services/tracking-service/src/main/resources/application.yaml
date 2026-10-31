@@ -50,7 +50,7 @@ tracking:
     connect-timeout-ms: 2000
     read-timeout-ms: 3000
   cors:
-    allowed-origins: ${WEB_ORIGIN:http://localhost:5173}
+    allowed-origins: ${WEB_ORIGINS:${WEB_ORIGIN:http://localhost:5173}}
   cache:
     parcel-ttl-days: 90
     timeline-ttl-days: 90

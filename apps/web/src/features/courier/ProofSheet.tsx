@@ -7,11 +7,11 @@ import { Label } from '@/components/ui/label'
 import { prepareImage, validateProof } from '@/lib/image'
 
 export interface DeliveredPayload {
-  photo?: File
+  photo: File
   note?: string
 }
 
-/** Delivered: optional photo (camera on phones) with preview, plus a note. */
+/** Delivered: requires proof photo (camera on phones) with preview, plus an optional note. */
 export function ProofSheet({
   open,
   trackingNumber,
@@ -62,12 +62,13 @@ export function ProofSheet({
     >
       <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-2">
-          <Label htmlFor="proof-photo">Proof photo (optional)</Label>
+          <Label htmlFor="proof-photo">Proof photo (required)</Label>
           <Input
             id="proof-photo"
             type="file"
             accept="image/jpeg,image/png"
             capture="environment"
+            required
             className="h-auto py-3"
             onChange={(e) => void pick(e.target.files?.[0])}
           />
@@ -104,8 +105,8 @@ export function ProofSheet({
           <Button
             size="lg"
             className="flex-1"
-            disabled={busy}
-            onClick={() => onConfirm({ photo, note: note.trim() || undefined })}
+            disabled={busy || !photo}
+            onClick={() => photo && onConfirm({ photo, note: note.trim() || undefined })}
           >
             {busy ? 'Saving…' : 'Confirm delivered'}
           </Button>

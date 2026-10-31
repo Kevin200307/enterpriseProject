@@ -8,8 +8,8 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.*;
 
 class ParcelStateMachineTest {
-    @Test void onlyTheSixDocumentedEdgesAreAllowed() {
-        var allowed = Set.of("CREATED:PICKED_UP", "PICKED_UP:IN_TRANSIT", "IN_TRANSIT:OUT_FOR_DELIVERY",
+    @Test void onlyTheDocumentedEdgesAreAllowed() {
+        var allowed = Set.of("CREATED:PICKED_UP", "CREATED:CANCELLED", "PICKED_UP:IN_TRANSIT", "IN_TRANSIT:OUT_FOR_DELIVERY",
             "OUT_FOR_DELIVERY:DELIVERED", "OUT_FOR_DELIVERY:FAILED", "FAILED:OUT_FOR_DELIVERY");
         for (var from : ParcelStatus.values()) for (var to : ParcelStatus.values()) {
             if (allowed.contains(from + ":" + to)) {

@@ -20,6 +20,7 @@ export const merchantApi = {
       page: f.page ?? 0,
       size: 20,
     }),
+  getOrder: (id: string) => api.get<MerchantOrder>(`/api/v1/merchants/orders/${encodeURIComponent(id)}`),
   createOrder: (input: CreateMerchantOrderInput, idempotencyKey = crypto.randomUUID()) =>
     api.post<MerchantOrder>('/api/v1/merchants/orders', input, {
       headers: { 'Idempotency-Key': idempotencyKey },

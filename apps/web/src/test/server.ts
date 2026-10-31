@@ -4,6 +4,16 @@ import { setupServer } from 'msw/node'
 // Incidental fetches that many tests trigger just by navigating (post-login landing page, city list on the
 // booking page). Tests that care about these override them with server.use().
 export const server = setupServer(
+  http.get('http://localhost:8081/api/v1/users/me', () =>
+    HttpResponse.json({
+      id: 'u-1',
+      email: 'a@b.lk',
+      fullName: 'Test User',
+      phone: '+94771234567',
+      roles: ['CUSTOMER'],
+      status: 'ACTIVE',
+    }),
+  ),
   http.get('http://localhost:8081/api/v1/pricing/zones', () => HttpResponse.json([])),
   http.get('http://localhost:8081/api/v1/couriers/me/assignments', () => HttpResponse.json([])),
   http.get('http://localhost:8081/api/v1/dispatch/queue', () => HttpResponse.json([])),

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { makeJwt } from '@/test/utils'
 import { decodeClaims } from './jwt'
-import { roleLanding, safeReturnTo } from './landing'
+import { roleLanding, safeReturnTo, safeRoleReturnTo } from './landing'
 import { challengeFor } from './pkce'
 
 describe('decodeClaims', () => {
@@ -36,6 +36,24 @@ describe('roleLanding', () => {
     [['DISPATCHER'], '/admin'],
     [['CUSTOMER', 'ADMIN'], '/admin'],
   ] as const)('%j -> %s', (roles, path) => expect(roleLanding([...roles])).toBe(path))
+})
+
+describe('safeRoleReturnTo', () => {
+  it.each([
+    [['CUSTOMER'], '/admin', '/home'],
+    [['MERCHANT'], '/home', '/merchant/orders'],
+    [['COURIER'], '/admin', '/courier/today'],
+    [['DISPATCHER'], '/admin/users', '/admin'],
+    [['ADMIN'], '/home', '/admin'],
+  ] as const)('uses the role home for %j opening %s', (roles, destination, fallback) => {
+    expect(safeRoleReturnTo(destination, fallback, [...roles])).toBe(fallback)
+  })
+
+  it('preserves a return path the role can access', () => {
+    expect(safeRoleReturnTo('/deliveries?status=FAILED', '/home', ['CUSTOMER'])).toBe(
+      '/deliveries?status=FAILED',
+    )
+  })
 })
 
 describe('pkce', () => {

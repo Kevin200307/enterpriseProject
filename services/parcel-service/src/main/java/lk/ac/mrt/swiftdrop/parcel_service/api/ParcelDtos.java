@@ -27,18 +27,19 @@ public final class ParcelDtos {
         @NotNull @Valid AddressInput dropoff,
         @NotNull PackageSize size,
         @NotNull @DecimalMin("0.001") @DecimalMax("1000.000")
-        @Digits(integer=4, fraction=3) BigDecimal weightKg) {}
+        @Digits(integer=4, fraction=3) BigDecimal weightKg,
+        @NotNull Boolean express) {}
 
     public record StatusRequest(@NotNull ParcelStatus status, @Size(max=1000) String note,
                                 UUID proofId, @Size(max=500) String failedReason) {}
     public record AssignmentRequest(@NotNull UUID courierId) {}
 
     public record ParcelView(UUID id, String trackingNumber, UUID customerId, UUID merchantId, UUID assigneeId,
-        Address pickup, Address dropoff, PackageSize size, BigDecimal weightKg, BigDecimal fee,
+        Address pickup, Address dropoff, PackageSize size, BigDecimal weightKg, boolean express, BigDecimal fee,
         String currency, ParcelStatus status, Instant createdAt, Instant updatedAt, long version) {
         public static ParcelView of(Parcel p) {
             return new ParcelView(p.getId(), p.getTrackingNumber(), p.getCustomerId(), p.getMerchantId(), p.getAssigneeId(),
-                p.getPickup(), p.getDropoff(), p.getSize(), p.getWeightKg(), p.getFee(), p.getCurrency(),
+                p.getPickup(), p.getDropoff(), p.getSize(), p.getWeightKg(), p.isExpress(), p.getFee(), p.getCurrency(),
                 p.getStatus(), p.getCreatedAt(), p.getUpdatedAt(), p.getVersion());
         }
     }

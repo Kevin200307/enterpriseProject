@@ -141,9 +141,10 @@ class PricingServicesTest {
         verify(rules, times(2)).findEffective(colombo.getId(), galle.getId(), PackageSize.MEDIUM, now);
         when(zones.findActiveByNormalizedCity("unknown")).thenReturn(Optional.empty());
         assertThatThrownBy(() -> estimateService.estimateAt(new EstimateRequest("Unknown", "Galle", PackageSize.SMALL, d("1"), false), now))
-            .isInstanceOf(PricingException.class);
+            .isInstanceOf(PricingException.class).hasMessage("We don't deliver to Unknown yet.");
         when(rules.findEffective(colombo.getId(), galle.getId(), PackageSize.MEDIUM, now)).thenReturn(List.of());
-        assertThatThrownBy(() -> estimateService.estimateAt(request, now)).isInstanceOf(PricingException.class);
+        assertThatThrownBy(() -> estimateService.estimateAt(request, now)).isInstanceOf(PricingException.class)
+            .hasMessage("No price is available for this route and package size.");
         when(rules.findEffective(colombo.getId(), galle.getId(), PackageSize.MEDIUM, now)).thenReturn(List.of(rule, rule));
         assertThatThrownBy(() -> estimateService.estimateAt(request, now)).isInstanceOf(PricingException.class);
         when(rule.getMaxWeightKg()).thenReturn(d("1.000"));

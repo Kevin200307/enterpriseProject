@@ -1,21 +1,27 @@
 package lk.ac.mrt.swiftdrop.notification_service.controller;
 
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import lk.ac.mrt.swiftdrop.notification_service.domain.NotificationChannel;
 import lk.ac.mrt.swiftdrop.notification_service.domain.NotificationLog;
 import lk.ac.mrt.swiftdrop.notification_service.domain.NotificationStatus;
+import lk.ac.mrt.swiftdrop.notification_service.dto.NotificationLogViews.AdminNotificationView;
+import lk.ac.mrt.swiftdrop.notification_service.dto.NotificationLogViews.MyNotificationView;
 import lk.ac.mrt.swiftdrop.notification_service.repository.NotificationLogRepository;
 import lk.ac.mrt.swiftdrop.notification_service.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -42,35 +48,60 @@ public class NotificationController {
      * GET /api/v1/notifications
      */
     @GetMapping
-    public ResponseEntity<Page<NotificationLog>> getNotifications(
+    public ResponseEntity<Page<AdminNotificationView>> getNotifications(
             @RequestParam(required = false) NotificationStatus status,
             @RequestParam(required = false) NotificationChannel channel,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant from,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to,
+            @RequestParam(required = false) String from,
+            @RequestParam(required = false) String to,
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+        Instant fromInstant = parseDateFilter(from, false);
+        Instant toInstant = parseDateFilter(to, true);
+        if (fromInstant != null && toInstant != null && fromInstant.isAfter(toInstant)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "'from' must not be after 'to'");
+        }
         log.info("Admin query delivery logs: status={}, channel={}, from={}, to={}, pageable={}",
-                status, channel, from, to, pageable);
-        Page<NotificationLog> page = notificationService.getNotificationLogs(status, channel, from, to, pageable);
+                status, channel, fromInstant, toInstant, pageable);
+        Page<AdminNotificationView> page = notificationService
+                .getNotificationLogs(status, channel, fromInstant, toInstant, pageable)
+                .map(AdminNotificationView::from);
         return ResponseEntity.ok(page);
+    }
+
+    private static Instant parseDateFilter(String value, boolean endOfDay) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            LocalDate date = LocalDate.parse(value);
+            return (endOfDay ? date.atTime(LocalTime.MAX) : date.atStartOfDay())
+                    .toInstant(ZoneOffset.UTC);
+        } catch (DateTimeParseException ignored) {
+            try {
+                return Instant.parse(value);
+            } catch (DateTimeParseException ignoredInstant) {
+                try {
+                    return OffsetDateTime.parse(value).toInstant();
+                } catch (DateTimeParseException invalid) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                            "Date filters must be ISO dates or timestamps");
+                }
+            }
+        }
     }
 
     /**
      * User Notification History Endpoint:
      * Retrieve notification history for the authenticated user.
-     * Identity resolved via X-User-Id header (gateway) or userId query param.
+     * Identity is resolved only from the trusted gateway-injected X-User-Id header.
      * GET /api/v1/notifications/me
      */
     @GetMapping("/me")
-    public ResponseEntity<List<NotificationLog>> getMyNotifications(
-            @RequestHeader(value = "X-User-Id", required = false) UUID headerUserId,
-            @RequestParam(value = "userId", required = false) UUID paramUserId) {
-        UUID userId = headerUserId != null ? headerUserId : paramUserId;
-        if (userId == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Missing user identification: provide X-User-Id header or userId query parameter");
-        }
+    public ResponseEntity<Page<MyNotificationView>> getMyNotifications(
+            @RequestHeader("X-User-Id") UUID userId,
+            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
         log.info("Fetching notification history for current user: userId={}", userId);
-        List<NotificationLog> history = notificationService.getUserNotifications(userId);
+        Page<MyNotificationView> history = notificationService.getUserNotifications(userId, pageable)
+                .map(MyNotificationView::from);
         return ResponseEntity.ok(history);
     }
 
@@ -79,11 +110,15 @@ public class NotificationController {
      * GET /api/v1/notifications/{trackingNumber}
      */
     @GetMapping("/{trackingNumber}")
-    public ResponseEntity<List<NotificationLog>> getNotificationsByTrackingNumber(
+    public ResponseEntity<List<AdminNotificationView>> getNotificationsByTrackingNumber(
             @PathVariable String trackingNumber) {
         log.info("Fetching notification history for trackingNumber={}", trackingNumber);
-        List<NotificationLog> logs = logRepository.findByTrackingNumberOrderByCreatedAtDesc(trackingNumber);
-        return ResponseEntity.ok(logs);
+        List<AdminNotificationView> views = logRepository
+                .findByTrackingNumberOrderByCreatedAtDesc(trackingNumber)
+                .stream()
+                .map(AdminNotificationView::from)
+                .toList();
+        return ResponseEntity.ok(views);
     }
 
     /**
@@ -91,10 +126,10 @@ public class NotificationController {
      * POST /api/v1/notifications/{id}/resend
      */
     @PostMapping("/{id}/resend")
-    public ResponseEntity<NotificationLog> resendNotification(@PathVariable UUID id) {
+    public ResponseEntity<AdminNotificationView> resendNotification(@PathVariable UUID id) {
         log.info("Request to resend notification with id={}", id);
         NotificationLog resent = notificationService.resendNotification(id);
-        return ResponseEntity.ok(resent);
+        return ResponseEntity.ok(AdminNotificationView.from(resent));
     }
 
     /**

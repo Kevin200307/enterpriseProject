@@ -64,6 +64,12 @@ spring:
 # -----------------------------------------------------------------------------
 # Custom App Configurations
 # -----------------------------------------------------------------------------
+notification:
+  security:
+    issuer: ${IDENTITY_ISSUER_URI:http://identity-service:8080}
+    jwks: ${IDENTITY_JWKS_URI:http://identity-service:8080/.well-known/jwks.json}
+    audience: ${JWT_AUDIENCE:swiftdrop}
+
 app:
   web:
     base-url: ${WEB_BASE_URL:http://localhost:5173}

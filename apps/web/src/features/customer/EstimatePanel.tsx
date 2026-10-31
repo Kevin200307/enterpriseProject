@@ -10,7 +10,6 @@ interface Props {
   loading: boolean
   data?: Estimate
   error: unknown
-  toCity: string
 }
 
 const Row = ({
@@ -32,11 +31,7 @@ const Row = ({
   </div>
 )
 
-function unservedCity(error: unknown) {
-  return isApiError(error) && error.status === 404
-}
-
-export function EstimatePanel({ ready, loading, data, error, toCity }: Props) {
+export function EstimatePanel({ ready, loading, data, error }: Props) {
   let body
   if (!ready) {
     body = (
@@ -52,10 +47,10 @@ export function EstimatePanel({ ready, loading, data, error, toCity }: Props) {
         <Skeleton className="h-6 w-2/3" />
       </div>
     )
-  } else if (unservedCity(error)) {
+  } else if (isApiError(error) && error.status === 404) {
     body = (
       <p role="alert" className="text-sm text-destructive">
-        We don&apos;t deliver to {toCity || 'that city'} yet.
+        {error.detail}
       </p>
     )
   } else if (error) {

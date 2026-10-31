@@ -4,8 +4,9 @@ import java.util.*;
 import lk.ac.mrt.swiftdrop.parcel_service.domain.Parcel;
 import org.springframework.data.domain.*;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
-public interface ParcelRepository extends JpaRepository<Parcel, UUID> {
+public interface ParcelRepository extends JpaRepository<Parcel, UUID>, JpaSpecificationExecutor<Parcel> {
     @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
     @org.springframework.data.jpa.repository.Query("select p from Parcel p where p.id=:id")
     Optional<Parcel> lock(UUID id);

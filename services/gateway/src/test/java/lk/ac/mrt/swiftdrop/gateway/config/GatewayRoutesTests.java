@@ -64,7 +64,7 @@ class GatewayRoutesTests {
 		assertOpenApiRoute("dispatch-openapi", "http://dispatch-service:8080", "dispatch");
 		assertOpenApiRoute("merchant-openapi", "http://merchant-service:8080", "merchant");
 		assertOpenApiRoute("tracking-openapi", "http://tracking-service:8080", "tracking");
-		assertOpenApiRoute("notification-openapi", "http://notification-service:8080", "notification");
+		assertOpenApiRoute("notification-openapi", "http://notification-service:8086", "notification");
 		assertOpenApiRoute("assistant-openapi", "http://ai-assistant-service:8080", "assistant");
 	}
 
@@ -114,7 +114,7 @@ class GatewayRoutesTests {
 				"/api/v1/dispatch/**", "/api/v1/couriers/**");
 		assertRoute("merchant-api", "http://merchant-service:8080", "/api/v1/merchants/**");
 		assertRoute("tracking-api", "http://tracking-service:8080", "/api/v1/tracking/**");
-		assertRoute("notification-api", "http://notification-service:8080",
+		assertRoute("notification-api", "http://notification-service:8086",
 				"/api/v1/notifications/**");
 		assertRoute("assistant-api", "http://ai-assistant-service:8080", "/api/v1/assistant/**");
 	}

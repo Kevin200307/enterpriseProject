@@ -1,0 +1,223 @@
+---
+title: SwiftDrop — Complete Data Model (24 tables, 6 databases)
+---
+erDiagram
+
+    users ||--o{ user_roles : "granted"
+    roles ||--o{ user_roles : "granted to"
+    users ||--o{ refresh_tokens : "holds"
+    refresh_tokens ||--o| refresh_tokens : "replaced_by"
+
+    parcels ||--o{ parcel_status_history : "audited by"
+    parcels ||--o{ delivery_proofs : "evidenced by"
+    delivery_proofs ||--o| parcel_status_history : "proves"
+    parcels ||--o{ parcel_assignment_commands : "commanded"
+
+    merchants ||--o{ api_keys : "issues"
+    merchants ||--o{ oauth_clients : "issues"
+    merchants ||--o{ merchant_orders : "places"
+    merchants ||--o{ webhook_deliveries : "receives"
+
+    couriers ||--o{ assignments : "works"
+    dispatch_parcels ||--o{ assignments : "assigned by"
+    dispatch_parcels ||--o{ assignment_commands : "commanded"
+    couriers ||--o{ assignment_commands : "targeted"
+
+    zones ||--o{ zone_cities : "covers"
+    zones ||--o{ pricing_rules : "priced from"
+    zones ||--o{ pricing_rules : "priced to"
+
+    users ||..o{ parcels : "books"
+    users ||..o| merchants : "owns"
+    users ||..o| couriers : "is"
+    users ||..o{ notifications : "notified"
+    users ||..o| notification_preferences : "configures"
+    merchants ||..o{ parcels : "originates"
+    zones ||..o{ parcels : "zoned"
+
+    parcels ||..o| merchant_orders : "fulfils"
+    parcels ||..o| dispatch_parcels : "projected as"
+    parcels ||..o{ notifications : "subject of"
+
+    parcel_outbox ||..o{ notifications : "triggers"
+    parcel_outbox ||..o{ webhook_deliveries : "triggers"
+    parcel_outbox ||..o| processed_events : "deduped by"
+
+    users {
+        uuid id PK
+        citext email UK
+        varchar password_hash
+        varchar full_name
+        varchar google_sub UK
+        varchar status
+    }
+    roles {
+        varchar id PK
+        varchar description
+    }
+    user_roles {
+        uuid user_id PK "FK to users.id"
+        varchar role_id PK "FK to roles.id"
+    }
+    refresh_tokens {
+        uuid id PK
+        uuid user_id FK
+        varchar token_hash UK
+        timestamptz expires_at
+        timestamptz revoked_at
+        uuid replaced_by FK "rotation chain"
+    }
+
+    parcels {
+        uuid id PK
+        bigint version
+        varchar tracking_number UK
+        uuid customer_id
+        uuid assignee_id
+        uuid merchant_id
+        varchar status
+        numeric fee
+        varchar booking_key "idempotency"
+    }
+    parcel_status_history {
+        uuid id PK
+        uuid parcel_id FK
+        varchar from_status
+        varchar to_status
+        uuid actor_id
+        uuid proof_id FK
+    }
+    delivery_proofs {
+        uuid id PK
+        uuid parcel_id FK
+        uuid uploaded_by
+        varchar object_key UK "MinIO"
+        bigint size_bytes
+    }
+    parcel_outbox {
+        uuid id PK
+        text payload
+        varchar routing_key
+        timestamptz published_at "null = pending"
+    }
+    parcel_assignment_commands {
+        uuid id PK
+        uuid parcel_id FK
+        uuid assignee_user_id
+        bigint parcel_version
+    }
+
+    merchants {
+        uuid id PK
+        uuid owner_user_id UK
+        varchar org_name
+        merchant_status status
+        varchar webhook_secret_hash
+    }
+    api_keys {
+        uuid id PK
+        uuid merchant_id FK
+        varchar key_hash "SHA-256"
+        varchar key_prefix
+        text_array scopes
+        timestamptz revoked_at
+    }
+    oauth_clients {
+        uuid id PK
+        uuid merchant_id FK
+        varchar client_id UK
+        varchar client_secret_hash
+    }
+    merchant_orders {
+        uuid id PK
+        uuid merchant_id FK
+        varchar merchant_ref
+        uuid parcel_id UK
+        varchar tracking_number
+        numeric fee
+    }
+    webhook_deliveries {
+        uuid id PK
+        uuid event_id
+        uuid merchant_id FK
+        jsonb payload
+        integer attempts
+        webhook_delivery_state state
+        timestamptz next_retry_at
+    }
+
+    couriers {
+        uuid id PK
+        uuid user_id UK
+        varchar vehicle_type
+        varchar home_zone_code
+        integer max_daily_load
+        integer open_load
+    }
+    dispatch_parcels {
+        uuid id PK "= parcels.id"
+        bigint parcel_version
+        varchar tracking_number UK
+        varchar status "no CANCELLED"
+        uuid assignee_user_id
+        text snapshot
+    }
+    assignments {
+        uuid id PK
+        uuid parcel_id FK
+        uuid active_parcel_id UK "one open per parcel"
+        uuid courier_id FK
+        uuid assigned_by
+        timestamptz closed_at
+    }
+    assignment_commands {
+        uuid id PK
+        uuid parcel_id FK
+        uuid pending_parcel_id UK
+        uuid courier_id FK
+        varchar state "PENDING CONFIRMED REJECTED"
+        varchar request_id
+    }
+    processed_events {
+        uuid event_id PK "inbox dedupe"
+        timestamptz processed_at
+    }
+
+    zones {
+        uuid id PK
+        varchar name UK
+        varchar code UK
+        boolean active
+    }
+    zone_cities {
+        uuid zone_id PK "FK to zones.id"
+        varchar normalized_city PK
+        varchar city_name
+    }
+    pricing_rules {
+        uuid id PK
+        uuid zone_from_id FK
+        uuid zone_to_id FK
+        varchar size_band
+        numeric base_fee
+        numeric per_kg
+        timestamptz effective_from
+    }
+
+    notifications {
+        uuid id PK
+        uuid event_id
+        uuid parcel_id
+        varchar channel "EMAIL SMS"
+        uuid recipient_ref
+        varchar recipient "masked"
+        varchar status
+        integer attempts
+    }
+    notification_preferences {
+        uuid user_id PK
+        boolean email_enabled
+        boolean sms_enabled
+        varchar email_statuses "CSV"
+        varchar sms_statuses "CSV"
+    }

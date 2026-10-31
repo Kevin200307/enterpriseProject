@@ -66,11 +66,15 @@ public class NotificationService {
 
         // 3. Process EMAIL Notification (Idempotency: event_id + channel + recipient_ref)
         if (!logRepository.existsByEventIdAndChannelAndRecipientRef(eventId, NotificationChannel.EMAIL, recipientRef)) {
-            if (preferences.isEmailEnabled()) {
+            boolean emailEligible = preferences.isEmailEnabled()
+                    && preferences.getParsedEmailStatuses().contains(toStatus);
+            if (emailEligible) {
                 sendEmail(eventId, payload, recipientRef, user.email(), user.name(), toStatus);
             } else {
-                log.info("Email disabled by user preferences for recipientRef: {}, recording as SKIPPED", recipientRef);
-                recordSkipped(eventId, payload, recipientRef, PiiMaskingConverter.maskEmail(user.email()), NotificationChannel.EMAIL, toStatus, "Email disabled in preferences");
+                log.info("Email not eligible by user preferences (status: {}, enabled: {}) for recipientRef: {}, recording as SKIPPED",
+                        toStatus, preferences.isEmailEnabled(), recipientRef);
+                recordSkipped(eventId, payload, recipientRef, PiiMaskingConverter.maskEmail(user.email()),
+                        NotificationChannel.EMAIL, toStatus, "Email disabled by preferences for " + toStatus);
             }
         } else {
             log.info("Email already sent for eventId: {}, skipping.", eventId);
@@ -233,5 +237,10 @@ public class NotificationService {
     @Transactional(readOnly = true)
     public List<NotificationLog> getUserNotifications(UUID userId) {
         return logRepository.findByRecipientRefOrderByCreatedAtDesc(userId);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<NotificationLog> getUserNotifications(UUID userId, Pageable pageable) {
+        return logRepository.findByRecipientRefOrderByCreatedAtDesc(userId, pageable);
     }
 }

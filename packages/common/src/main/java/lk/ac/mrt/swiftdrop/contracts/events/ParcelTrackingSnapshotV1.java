@@ -11,7 +11,8 @@ import lk.ac.mrt.swiftdrop.contracts.domain.TrackingNumber;
  * Privacy-safe snapshot contract for parcel tracking.
  * <p>
  * <b>Producer ownership:</b> {@code parcel-service} produces this snapshot either as an
- * internal event or via authenticated backfill endpoint {@code GET /api/v1/parcels/by-tracking/{tn}}.
+ * internal event or via the privacy-safe backfill endpoint
+ * {@code GET /api/v1/parcels/by-tracking/{tn}}.
  * <p>
  * <b>Consumer ownership:</b> {@code tracking-service} consumes this contract to build and
  * maintain the Redis tracking projection and public tracking views.

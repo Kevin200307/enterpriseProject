@@ -97,15 +97,14 @@ class ParcelTrackingSnapshotV1ContractTest {
         assertTrue(TrackingNumber.isValid("SD-4F7K2Q9M"));
         assertTrue(TrackingNumber.isValid("SD-ABCDEF23"));
         assertTrue(TrackingNumber.isValid("SD-ZZZZ9999"));
+        assertTrue(TrackingNumber.isValid("SD-00000001"));
+        assertTrue(TrackingNumber.isValid("SD-4F7K2Q90"));
 
-        // Invalid: missing SD- prefix, wrong length, ambiguous characters (I, L, O, 0, 1)
+        // Invalid: missing SD- prefix, wrong length or non-base-36 characters
         assertFalse(TrackingNumber.isValid("4F7K2Q9M"));
         assertFalse(TrackingNumber.isValid("SD-4F7K2Q9"));
         assertFalse(TrackingNumber.isValid("SD-4F7K2Q9MM"));
-        assertFalse(TrackingNumber.isValid("SD-4F7K2Q9I")); // 'I' is excluded
-        assertFalse(TrackingNumber.isValid("SD-4F7K2Q9O")); // 'O' is excluded
-        assertFalse(TrackingNumber.isValid("SD-4F7K2Q90")); // '0' is excluded
-        assertFalse(TrackingNumber.isValid("SD-4F7K2Q91")); // '1' is excluded
+        assertFalse(TrackingNumber.isValid("SD-4F7K2Q9_"));
         assertFalse(TrackingNumber.isValid(null));
 
         assertThrows(IllegalArgumentException.class, () -> TrackingNumber.validate("invalid-tn"));

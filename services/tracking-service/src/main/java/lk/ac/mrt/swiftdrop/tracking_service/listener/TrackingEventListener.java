@@ -4,6 +4,8 @@ import java.time.Duration;
 import java.util.UUID;
 import lk.ac.mrt.swiftdrop.contracts.events.EventEnvelope;
 import lk.ac.mrt.swiftdrop.contracts.events.ParcelStatusChangedV1;
+import lk.ac.mrt.swiftdrop.contracts.events.ParcelStatusChangedV2;
+import lk.ac.mrt.swiftdrop.contracts.events.ParcelTrackingSnapshotV1;
 import lk.ac.mrt.swiftdrop.contracts.messaging.Queues;
 import lk.ac.mrt.swiftdrop.tracking_service.config.TrackingProperties;
 import lk.ac.mrt.swiftdrop.tracking_service.metrics.TrackingMetrics;
@@ -50,14 +52,27 @@ public class TrackingEventListener {
 
     @RabbitListener(queues = Queues.TRACKING_PARCEL_STATUS_CHANGED)
     public void onParcelStatusChanged(EventEnvelope<ParcelStatusChangedV1> envelope) {
-        UUID eventId = envelope.eventId();
-        String dedupKey = "tracking:event:" + eventId;
+        processEvent(envelope.eventId(), envelope.payload().trackingNumber(),
+                () -> projectionService.applyStatusChanged(envelope));
+    }
 
-        // Idempotency check: if already processed, ack and drop
+    @RabbitListener(queues = Queues.TRACKING_PARCEL_STATUS_CHANGED_V2)
+    public void onParcelStatusChangedV2(EventEnvelope<ParcelStatusChangedV2> envelope) {
+        String trackingNumber = envelope.payload().trackingNumber();
+        processEvent(envelope.eventId(), trackingNumber, () -> projectionService.applyStatusChangedV2(envelope));
+    }
+
+    @RabbitListener(queues = Queues.TRACKING_PARCEL_SNAPSHOT)
+    public void onParcelTrackingSnapshot(EventEnvelope<ParcelTrackingSnapshotV1> envelope) {
+        processEvent(envelope.eventId(), envelope.payload().trackingNumber(),
+                () -> projectionService.applySnapshot(envelope));
+    }
+
+    private void processEvent(UUID eventId, String trackingNumber, Runnable projectionUpdate) {
+        String dedupKey = "tracking:event:" + eventId;
         String processed = redisTemplate.opsForValue().get(dedupKey).block();
         if ("PROCESSED".equals(processed)) {
-            log.info("Duplicate event ignored: eventId={}, trackingNumber={}",
-                    eventId, envelope.payload().trackingNumber());
+            log.info("Duplicate event ignored: eventId={}, trackingNumber={}", eventId, trackingNumber);
             if (metrics != null) {
                 metrics.incrementDuplicate();
             }
@@ -65,14 +80,12 @@ public class TrackingEventListener {
         }
 
         try {
-            // Update the tracking projection
-            projectionService.applyStatusChanged(envelope);
+            projectionUpdate.run();
 
-            // Mark event as processed only after projection succeeds
             int dedupHours = properties.cache() != null ? properties.cache().eventDedupTtlHours() : 24;
             redisTemplate.opsForValue().set(dedupKey, "PROCESSED", Duration.ofHours(dedupHours)).block();
-            log.info("Processed parcel status changed: eventId={}, trackingNumber={}, toStatus={}",
-                    eventId, envelope.payload().trackingNumber(), envelope.payload().toStatus());
+            log.info("Processed parcel tracking event: eventId={}, trackingNumber={}",
+                    eventId, trackingNumber);
             if (metrics != null) {
                 metrics.incrementProcessed();
             }

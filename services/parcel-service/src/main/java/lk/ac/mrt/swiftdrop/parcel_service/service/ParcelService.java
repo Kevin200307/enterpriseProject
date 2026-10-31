@@ -3,6 +3,7 @@ package lk.ac.mrt.swiftdrop.parcel_service.service;
 import java.security.*;
 import java.time.*;
 import java.util.*;
+import jakarta.persistence.criteria.Predicate;
 import lk.ac.mrt.swiftdrop.contracts.domain.ParcelStatus;
 import lk.ac.mrt.swiftdrop.contracts.error.ErrorCode;
 import lk.ac.mrt.swiftdrop.contracts.domain.TrackingNumber;
@@ -87,6 +88,7 @@ public class ParcelService {
         String tracking = trackingNumbers.next();
         Parcel parcel = parcels.saveAndFlush(new Parcel(actor.id(), merchantId, tracking,
             request.pickup().toAddress(), request.dropoff().toAddress(), request.size(), request.weightKg(),
+            Boolean.TRUE.equals(request.express()),
             quote.fee(), quote.currency(), key, hash, now));
         recordChange(parcel, null, actor, null, null, null, now);
         return ParcelView.of(parcel);
@@ -94,14 +96,41 @@ public class ParcelService {
 
     public ParcelView get(UUID id, Actor actor) { return ParcelView.of(readable(id, actor)); }
 
-    public PageView<ParcelView> list(int page, int size, Actor actor) {
+    public PageView<ParcelView> list(int page, int size, List<ParcelStatus> statuses,
+                                     LocalDate from, LocalDate to, Actor actor) {
         var pageable = page(page, size, "createdAt");
-        Page<Parcel> result;
-        if (actor.manages()) result = parcels.findAll(pageable);
-        else if (actor.has("COURIER")) result = parcels.findByAssigneeId(actor.id(), pageable);
-        else if (actor.has("MERCHANT")) result = parcels.findByMerchantId(requireMerchant(actor), pageable);
-        else if (actor.has("CUSTOMER")) result = parcels.findByCustomerIdAndMerchantIdIsNull(actor.id(), pageable);
-        else throw new ParcelException(ErrorCode.ACCESS_DENIED, "Parcel access is not permitted");
+        if (from != null && to != null && from.isAfter(to)) {
+            throw new ParcelException(ErrorCode.VALIDATION_FAILED, "The from date must not be after the to date");
+        }
+        UUID merchantId = actor.has("MERCHANT") ? requireMerchant(actor) : null;
+        if (!actor.manages() && !actor.has("COURIER") && !actor.has("MERCHANT") && !actor.has("CUSTOMER")) {
+            throw new ParcelException(ErrorCode.ACCESS_DENIED, "Parcel access is not permitted");
+        }
+        Instant fromInclusive = from == null ? null : from.atStartOfDay(ZoneOffset.UTC).toInstant();
+        Instant toExclusive = to == null ? null : to.plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant();
+        var result = parcels.findAll((root, query, builder) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            if (!actor.manages()) {
+                if (actor.has("COURIER")) {
+                    predicates.add(builder.equal(root.get("assigneeId"), actor.id()));
+                } else if (actor.has("MERCHANT")) {
+                    predicates.add(builder.equal(root.get("merchantId"), merchantId));
+                } else {
+                    predicates.add(builder.equal(root.get("customerId"), actor.id()));
+                    predicates.add(builder.isNull(root.get("merchantId")));
+                }
+            }
+            if (statuses != null && !statuses.isEmpty()) {
+                predicates.add(root.get("status").in(statuses));
+            }
+            if (fromInclusive != null) {
+                predicates.add(builder.greaterThanOrEqualTo(root.get("createdAt"), fromInclusive));
+            }
+            if (toExclusive != null) {
+                predicates.add(builder.lessThan(root.get("createdAt"), toExclusive));
+            }
+            return builder.and(predicates.toArray(Predicate[]::new));
+        }, pageable);
         return PageView.of(result.map(ParcelView::of));
     }
 
@@ -219,7 +248,8 @@ public class ParcelService {
 
     private String hash(BookingRequest request) {
         // Normalize weight scale so 1.0 and 1.000 have the same booking identity.
-        var normalized = new BookingRequest(request.pickup(), request.dropoff(), request.size(), request.weightKg().stripTrailingZeros());
+        var normalized = new BookingRequest(request.pickup(), request.dropoff(), request.size(),
+            request.weightKg().stripTrailingZeros(), request.express());
         try {
             return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
                 .digest(mapper.writeValueAsBytes(normalized)));

@@ -27,6 +27,7 @@ $auth = @{ Authorization = "Bearer $($login.accessToken)"; "Idempotency-Key" = "
 $address = @{ contactName = "E2E User"; phone = "+94770000000"; line1 = "1 Test Road"; city = "Colombo"; postalCode = "00100" }
 $dropoff = $address.Clone()
 $dropoff.line1 = "2 Test Road"
+$auth.Authorization = "Bearer $($login.accessToken)"
 $parcel = Invoke-Json POST "/api/v1/parcels" @{
     pickup = $address; dropoff = $dropoff; size = "SMALL"; weightKg = 1.0; express = $false
 } $auth
@@ -50,6 +51,8 @@ if ($cancelled.status -ne "CANCELLED") { throw "Cancellation did not reach CANCE
 if ($env:E2E_DISPATCHER_TOKEN -and $env:E2E_COURIER_TOKEN -and $env:E2E_COURIER_ID) {
     $dispatch = @{ Authorization = "Bearer $env:E2E_DISPATCHER_TOKEN" }
     $courier = @{ Authorization = "Bearer $env:E2E_COURIER_TOKEN" }
+    $dispatch.Authorization = "Bearer $($env:E2E_DISPATCHER_TOKEN)"
+    $courier.Authorization = "Bearer $($env:E2E_COURIER_TOKEN)"
     $deliveryDropoff = $address.Clone()
     $deliveryDropoff.line1 = "3 Test Road"
     $delivery = Invoke-Json POST "/api/v1/parcels" @{

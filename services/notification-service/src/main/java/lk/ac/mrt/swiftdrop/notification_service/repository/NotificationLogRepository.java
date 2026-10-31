@@ -5,6 +5,8 @@ import java.util.UUID;
 import lk.ac.mrt.swiftdrop.notification_service.domain.NotificationChannel;
 import lk.ac.mrt.swiftdrop.notification_service.domain.NotificationLog;
 import lk.ac.mrt.swiftdrop.notification_service.domain.NotificationStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
@@ -29,6 +31,8 @@ public interface NotificationLogRepository extends JpaRepository<NotificationLog
      * User ID (recipient_ref) එක අනුව notifications ලබාගැනීමට.
      */
     List<NotificationLog> findByRecipientRefOrderByCreatedAtDesc(UUID recipientRef);
+
+    Page<NotificationLog> findByRecipientRefOrderByCreatedAtDesc(UUID recipientRef, Pageable pageable);
 
     /**
      * Scheduled Retry: Fail වූ (status = FAILED) සහ උපරිම attempts (උදා: 5) ට වඩා අඩු notifications ලබාගැනීමට.

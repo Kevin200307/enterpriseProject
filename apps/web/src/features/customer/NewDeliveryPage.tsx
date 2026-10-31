@@ -91,20 +91,23 @@ export function NewDeliveryPage({ merchant = false }: { merchant?: boolean }) {
   // --- submit --------------------------------------------------------------
   const book = useMutation<{ id?: string; trackingNumber: string }, unknown, BookingForm>({
     mutationFn: (v: BookingForm) => {
+      if (!estimate.data) throw new Error('A current price estimate is required to book a delivery')
       if (merchant) {
         return merchantApi.createOrder({
           merchantRef: reference.trim(),
-          pickup: merchantAddress(v.pickup, estimate.data?.zoneFrom),
-          dropoff: merchantAddress(v.dropoff, estimate.data?.zoneTo),
+          pickup: bookingAddress(v.pickup, estimate.data.zoneFrom),
+          dropoff: bookingAddress(v.dropoff, estimate.data.zoneTo),
           size: v.size,
           weightKg: Number(v.weightKg),
+          express: v.express,
         })
       }
       return parcelsApi.create({
-        ...v,
+        pickup: bookingAddress(v.pickup, estimate.data.zoneFrom),
+        dropoff: bookingAddress(v.dropoff, estimate.data.zoneTo),
+        size: v.size,
         weightKg: Number(v.weightKg),
-        pickup: clean(v.pickup),
-        dropoff: clean(v.dropoff),
+        express: v.express,
       })
     },
     onSuccess: (parcel) => {
@@ -124,13 +127,11 @@ export function NewDeliveryPage({ merchant = false }: { merchant?: boolean }) {
       const details = readSavedDetails(me.email)
       const saved = details.line1 || details.city || details.postalCode
       setValue('pickup.contactName', details.contactName || me.fullName, { shouldDirty: true })
-      setValue('pickup.phone', details.phone || me.phone, { shouldDirty: true })
-      if (saved) {
-        setValue('pickup.line1', details.line1, { shouldDirty: true })
-        setValue('pickup.line2', details.line2 ?? '', { shouldDirty: true })
-        setValue('pickup.city', details.city, { shouldDirty: true })
-        setValue('pickup.postalCode', details.postalCode, { shouldDirty: true })
-      }
+      setValue('pickup.phone', saved ? details.phone : me.phone, { shouldDirty: true })
+      setValue('pickup.line1', details.line1, { shouldDirty: true })
+      setValue('pickup.line2', details.line2 ?? '', { shouldDirty: true })
+      setValue('pickup.city', details.city, { shouldDirty: true })
+      setValue('pickup.postalCode', details.postalCode, { shouldDirty: true })
       toast.success(saved ? 'Saved delivery details applied' : 'Your profile details applied')
     } catch (e) {
       toast.error(describeError(e).message)
@@ -170,7 +171,12 @@ export function NewDeliveryPage({ merchant = false }: { merchant?: boolean }) {
           <Card>
             <CardHeader className="flex-row items-center justify-between">
               <CardTitle>Pickup</CardTitle>
-              <Button type="button" variant="outline" size="sm" onClick={() => void fillMyDetails()}>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => void fillMyDetails()}
+              >
                 Use my details
               </Button>
             </CardHeader>
@@ -268,7 +274,6 @@ export function NewDeliveryPage({ merchant = false }: { merchant?: boolean }) {
             loading={isReady && (!settled || estimate.isFetching)}
             data={isReady && settled ? estimate.data : undefined}
             error={isReady && settled ? estimate.error : undefined}
-            toCity={wanted.toCity}
           />
           {formError && (
             <p role="alert" className="text-sm text-destructive">
@@ -281,12 +286,7 @@ export function NewDeliveryPage({ merchant = false }: { merchant?: boolean }) {
             className="fixed inset-x-0 bottom-[68px] z-20 border-t bg-background/95 p-4 backdrop-blur-md lg:static lg:border-0 lg:bg-transparent lg:p-0 lg:backdrop-blur-none"
             style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
           >
-            <Button
-              type="submit"
-              size="lg"
-              className="w-full"
-              disabled={blocked || book.isPending}
-            >
+            <Button type="submit" size="lg" className="w-full" disabled={blocked || book.isPending}>
               {book.isPending ? 'Booking…' : 'Book delivery'}
             </Button>
           </div>
@@ -335,11 +335,13 @@ export function NewDeliveryPage({ merchant = false }: { merchant?: boolean }) {
   )
 }
 
-function clean(a: BookingForm['pickup']) {
-  return { ...a, line2: a.line2 || undefined }
-}
-
-function merchantAddress(a: BookingForm['pickup'], zone?: string) {
-  const { line2: _line2, ...address } = a
-  return { ...address, zone: zone ?? a.city }
+function bookingAddress(a: BookingForm['pickup'], zone: string) {
+  return {
+    contactName: a.contactName,
+    phone: a.phone,
+    line1: a.line1,
+    city: a.city,
+    postalCode: a.postalCode,
+    zone,
+  }
 }

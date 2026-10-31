@@ -1,0 +1,109 @@
+@startuml
+title Use Cases — Merchant
+
+left to right direction
+
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam defaultFontName "Segoe UI"
+skinparam defaultFontSize 13
+skinparam ArrowColor #555555
+skinparam ArrowFontSize 11
+skinparam usecase {
+  BackgroundColor #F8FAFC
+  BorderColor #64748B
+  FontColor #0F172A
+}
+skinparam actor {
+  BackgroundColor #E2E8F0
+  BorderColor #475569
+}
+skinparam rectangle {
+  BackgroundColor #FFFFFF
+  BorderColor #94A3B8
+}
+
+actor Merchant as M
+actor "Merchant's\nbackend system" as Sys
+actor Admin as A
+
+rectangle "SwiftDrop — Merchant" {
+
+  package "Onboarding" {
+    usecase UC1 as "Register organisation"
+    usecase UC2 as "Check approval status"
+    usecase UC3 as "Approve / reject
+    / suspend merchant"
+  }
+
+  package "Orders" {
+    usecase UC4 as "Create order
+    via web console"
+    usecase UC5 as "Create order
+    via REST API
+    --
+    X-Api-Key"
+    usecase UC6 as "List orders"
+    usecase UC7 as "View order detail
+    --
+    fee, tracking number"
+    usecase UC8 as "Track a parcel"
+  }
+
+  package "API credentials" {
+    usecase UC9 as "Issue API key
+    --
+    shown once"
+    usecase UC10 as "List API keys"
+    usecase UC11 as "Revoke API key"
+  }
+
+  package "Webhooks" {
+    usecase UC12 as "Configure webhook
+    endpoint"
+    usecase UC13 as "View delivery history"
+    usecase UC14 as "Replay a delivery"
+    usecase UC15 as "Receive signed
+    status webhook"
+  }
+}
+
+M --> UC1
+M --> UC2
+M --> UC4
+M --> UC6
+M --> UC7
+M --> UC8
+M --> UC9
+M --> UC10
+M --> UC11
+M --> UC12
+M --> UC13
+M --> UC14
+
+Sys --> UC5
+Sys --> UC15
+
+A --> UC3
+
+UC4 ..> UC6 : <<extend>>
+UC5 ..> UC9 : <<include>>
+
+note right of UC3
+  Only an approved merchant
+  can issue API keys or
+  create orders
+end note
+
+note right of UC5
+  Authenticated by a hashed
+  API key with a parcels:write
+  scope, not by a user login
+end note
+
+note right of UC15
+  HMAC-signed POST with
+  exponential backoff retry
+end note
+
+@enduml

@@ -44,10 +44,10 @@ public class InternalUserLookupController {
     }
 
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
-    @PreAuthorize("authentication instanceof T(org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken) and ((authentication.token.claims['client_id'] == 'dispatch-service' and authentication.token.claims['scope'] == 'dispatch.internal') or (authentication.token.claims['client_id'] == 'notification-service' and authentication.token.claims['scope'] == 'notification.internal') or (authentication.token.claims['client_id'] == 'merchant-service' and authentication.token.claims['scope'] == 'merchant.internal'))")
+    @PreAuthorize("authentication instanceof T(org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken) and ((authentication.token.claims['client_id'] == 'dispatch-service' and authentication.token.claims['scope'] == 'dispatch.internal') or (authentication.token.claims['client_id'] == 'notification-service' and authentication.token.claims['scope'] == 'notification.internal') or (authentication.token.claims['client_id'] == 'merchant-service' and authentication.token.claims['scope'] == 'merchant.internal') or hasRole('ADMIN'))")
     @Operation(
             summary = "Batch lookup users by IDs",
-            description = "Resolves user details (id, fullName, email, phone, status, roles) for a list of UUIDs. Restricted to internal services."
+            description = "Resolves user details (id, fullName, email, phone, status, roles) for a list of UUIDs. Restricted to internal services and administrators."
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -67,7 +67,7 @@ public class InternalUserLookupController {
             ),
             @ApiResponse(
                     responseCode = "403",
-                    description = "Access denied - service-to-service credentials required (RFC 7807)",
+                    description = "Access denied - service-to-service credentials or administrator role required (RFC 7807)",
                     content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class))
             )
     })
@@ -79,10 +79,10 @@ public class InternalUserLookupController {
     }
 
     @GetMapping
-    @PreAuthorize("authentication instanceof T(org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken) and ((authentication.token.claims['client_id'] == 'dispatch-service' and authentication.token.claims['scope'] == 'dispatch.internal') or (authentication.token.claims['client_id'] == 'notification-service' and authentication.token.claims['scope'] == 'notification.internal') or (authentication.token.claims['client_id'] == 'merchant-service' and authentication.token.claims['scope'] == 'merchant.internal'))")
+    @PreAuthorize("authentication instanceof T(org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken) and ((authentication.token.claims['client_id'] == 'dispatch-service' and authentication.token.claims['scope'] == 'dispatch.internal') or (authentication.token.claims['client_id'] == 'notification-service' and authentication.token.claims['scope'] == 'notification.internal') or (authentication.token.claims['client_id'] == 'merchant-service' and authentication.token.claims['scope'] == 'merchant.internal') or hasRole('ADMIN'))")
     @Operation(
             summary = "Lookup a single user by ID",
-            description = "Resolves single user details (id, fullName, email, phone, status, roles). Restricted to internal services."
+            description = "Resolves single user details (id, fullName, email, phone, status, roles). Restricted to internal services and administrators."
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -97,7 +97,7 @@ public class InternalUserLookupController {
             ),
             @ApiResponse(
                     responseCode = "403",
-                    description = "Access denied - service-to-service credentials required (RFC 7807)",
+                    description = "Access denied - service-to-service credentials or administrator role required (RFC 7807)",
                     content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class))
             ),
             @ApiResponse(

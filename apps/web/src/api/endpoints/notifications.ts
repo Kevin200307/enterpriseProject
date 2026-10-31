@@ -24,5 +24,7 @@ export const notificationsApi = {
       page: f.page ?? 0,
       size: 20,
     }),
-  resend: (id: string) => api.post<void>(`/api/v1/notifications/${id}/resend`),
+  byTracking: (trackingNumber: string) =>
+    api.get<AdminNotification[]>(`/api/v1/notifications/${encodeURIComponent(trackingNumber)}`),
+  resend: (id: string) => api.post<AdminNotification>(`/api/v1/notifications/${id}/resend`),
 }

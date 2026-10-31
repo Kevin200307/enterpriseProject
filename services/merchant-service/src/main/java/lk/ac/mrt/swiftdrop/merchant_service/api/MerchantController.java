@@ -17,7 +17,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
+import lk.ac.mrt.swiftdrop.merchant_service.security.ApiKeyAuthentication;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
@@ -136,22 +138,36 @@ public class MerchantController {
 
     @PostMapping("/orders")
     public MerchantOrderDtos.View createOrder(@Valid @RequestBody MerchantOrderDtos.Create request,
-                                               @AuthenticationPrincipal Jwt jwt) {
-        return orders.create(UUID.fromString(jwt.getSubject()), request, jwt.getTokenValue());
+                                               Authentication authentication) {
+        UUID ownerId = resolveOwnerId(authentication);
+        String bearerToken = authentication instanceof Jwt jwt ? jwt.getTokenValue() : null;
+        return orders.create(ownerId, request, bearerToken);
     }
 
     @GetMapping("/orders")
     public Page<MerchantOrderDtos.View> listOrders(@RequestParam(required=false) String q,
                                                     @RequestParam(defaultValue="0") int page,
                                                     @RequestParam(defaultValue="20") int size,
-                                                    @AuthenticationPrincipal Jwt jwt) {
-        return orders.list(UUID.fromString(jwt.getSubject()), q,
+                                                    Authentication authentication) {
+        return orders.list(resolveOwnerId(authentication), q,
                 PageRequest.of(page, Math.min(Math.max(size, 1), 100), Sort.by(Sort.Direction.DESC, "createdAt")));
     }
 
     @GetMapping("/orders/{orderId}")
-    public MerchantOrderDtos.View getOrder(@PathVariable UUID orderId, @AuthenticationPrincipal Jwt jwt) {
-        return orders.get(UUID.fromString(jwt.getSubject()), orderId);
+    public MerchantOrderDtos.View getOrder(@PathVariable UUID orderId, Authentication authentication) {
+        return orders.get(resolveOwnerId(authentication), orderId);
+    }
+
+    /** Extracts the merchant owner UUID from either a JWT or an API key authentication. */
+    private static UUID resolveOwnerId(Authentication authentication) {
+        if (authentication instanceof ApiKeyAuthentication apiKeyAuth) {
+            return (UUID) apiKeyAuth.getPrincipal();
+        }
+        if (authentication != null && authentication.getPrincipal() instanceof Jwt jwt) {
+            return UUID.fromString(jwt.getSubject());
+        }
+        throw new org.springframework.web.server.ResponseStatusException(
+                org.springframework.http.HttpStatus.UNAUTHORIZED, "No valid authentication");
     }
 
     public record WebhookRequest(@jakarta.validation.constraints.NotBlank String url) {}

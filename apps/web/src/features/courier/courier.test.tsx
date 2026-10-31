@@ -139,11 +139,13 @@ describe('courier today', () => {
     renderApp('/courier/today')
     await userEvent.click(await screen.findByRole('button', { name: 'Delivered' }))
     const sheet = await screen.findByRole('dialog')
+    expect(within(sheet).getByRole('button', { name: 'Confirm delivered' })).toBeDisabled()
     await userEvent.upload(
       within(sheet).getByLabelText(/Proof photo/),
       new File(['img'], 'door.jpg', { type: 'image/jpeg' }),
     )
     expect(await within(sheet).findByAltText('Proof preview')).toBeInTheDocument()
+    expect(within(sheet).getByRole('button', { name: 'Confirm delivered' })).toBeEnabled()
     await userEvent.click(within(sheet).getByRole('button', { name: 'Confirm delivered' }))
     await waitFor(() => expect(order).toEqual(['proof', 'status']))
     expect(patch).toMatchObject({ status: 'DELIVERED', proofId: 'proof-1' })

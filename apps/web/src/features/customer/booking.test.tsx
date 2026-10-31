@@ -6,8 +6,8 @@ import { server } from '@/test/server'
 import { API, mockSession, problem, renderApp } from '@/test/utils'
 
 const estimate = {
-  zoneFrom: 'Colombo',
-  zoneTo: 'Kandy',
+  zoneFrom: 'CMB',
+  zoneTo: 'KDY',
   baseFee: 450,
   weightSurcharge: 50,
   expressSurcharge: 100,
@@ -18,6 +18,7 @@ const estimate = {
 }
 
 beforeEach(() => {
+  localStorage.clear()
   mockSession(['CUSTOMER'])
   server.use(
     http.get(`${API}/api/v1/pricing/zones`, () =>
@@ -44,6 +45,46 @@ async function fillAddress(group: 0 | 1, city: string) {
 }
 
 describe('booking form', () => {
+  it('applies every saved pickup detail', async () => {
+    localStorage.setItem(
+      'swiftdrop.saved-delivery-details:a@b.lk',
+      JSON.stringify({
+        contactName: 'Saved Contact',
+        phone: '+94770001111',
+        line1: '12 Saved Road',
+        line2: 'Apartment 4',
+        city: 'Colombo',
+        postalCode: '10100',
+      }),
+    )
+    renderApp('/deliveries/new')
+    await screen.findByRole('heading', { name: 'New delivery', level: 1 })
+
+    await userEvent.click(screen.getByRole('button', { name: 'Use my details' }))
+
+    expect(await screen.findAllByDisplayValue('Saved Contact')).toHaveLength(1)
+    expect(screen.getAllByLabelText('Phone')[0]).toHaveValue('+94770001111')
+    expect(screen.getAllByLabelText('Address line 1')[0]).toHaveValue('12 Saved Road')
+    expect(screen.getAllByLabelText('Address line 2 (optional)')[0]).toHaveValue('Apartment 4')
+    expect(screen.getAllByLabelText('City')[0]).toHaveValue('Colombo')
+    expect(screen.getAllByLabelText('Postal code')[0]).toHaveValue('10100')
+  })
+
+  it('uses the profile phone and clears address fields when no address is saved', async () => {
+    renderApp('/deliveries/new')
+    await screen.findByRole('heading', { name: 'New delivery', level: 1 })
+    await userEvent.type(screen.getAllByLabelText('Address line 1')[0]!, 'Old address')
+
+    await userEvent.click(screen.getByRole('button', { name: 'Use my details' }))
+
+    expect(await screen.findAllByDisplayValue('Test User')).toHaveLength(1)
+    expect(screen.getAllByLabelText('Phone')[0]).toHaveValue('+94771234567')
+    expect(screen.getAllByLabelText('Address line 1')[0]).toHaveValue('')
+    expect(screen.getAllByLabelText('Address line 2 (optional)')[0]).toHaveValue('')
+    expect(screen.getAllByLabelText('City')[0]).toHaveValue('')
+    expect(screen.getAllByLabelText('Postal code')[0]).toHaveValue('')
+  })
+
   it('asks only for active zones (regression: query context must not leak into includeInactive)', async () => {
     const seen: URL[] = []
     server.use(
@@ -86,12 +127,14 @@ describe('booking form', () => {
     const panel = screen.getByText('Price estimate').closest('[aria-live]') as HTMLElement
     expect(within(panel).getByText(/450/)).toBeInTheDocument()
     expect(within(panel).getByText(/600/)).toBeInTheDocument()
-    expect(within(panel).getByText('Colombo → Kandy')).toBeInTheDocument()
+    expect(within(panel).getByText('CMB → KDY')).toBeInTheDocument()
   })
 
-  it('says we do not deliver there yet on a 404 and blocks booking', async () => {
+  it('identifies an unsupported drop-off city on a 404 and blocks booking', async () => {
     server.use(
-      http.post(`${API}/api/v1/pricing/estimate`, () => problem(404, 'RESOURCE_NOT_FOUND')),
+      http.post(`${API}/api/v1/pricing/estimate`, () =>
+        problem(404, 'RESOURCE_NOT_FOUND', { detail: "We don't deliver to Atlantis yet." }),
+      ),
     )
     renderApp('/deliveries/new')
     await screen.findByRole('heading', { name: 'New delivery', level: 1 })
@@ -105,7 +148,49 @@ describe('booking form', () => {
     expect(screen.getByRole('button', { name: 'Book delivery' })).toBeDisabled()
   })
 
-  it('books the parcel and shows the tracking number', async () => {
+  it('identifies an unsupported pickup city on a 404 and blocks booking', async () => {
+    server.use(
+      http.post(`${API}/api/v1/pricing/estimate`, () =>
+        problem(404, 'RESOURCE_NOT_FOUND', { detail: "We don't deliver to Atlantis yet." }),
+      ),
+    )
+    renderApp('/deliveries/new')
+    await screen.findByRole('heading', { name: 'New delivery', level: 1 })
+    await fillAddress(0, 'Atlantis')
+    await fillAddress(1, 'Kandy')
+    await userEvent.type(screen.getByLabelText('Weight (kg)'), '2')
+    await pickSize()
+    expect(
+      await screen.findByText(/don't deliver to Atlantis yet/, {}, { timeout: 3000 }),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Book delivery' })).toBeDisabled()
+  })
+
+  it('does not mislabel a route without pricing as an unsupported city', async () => {
+    server.use(
+      http.post(`${API}/api/v1/pricing/estimate`, () =>
+        problem(404, 'RESOURCE_NOT_FOUND', {
+          detail: 'No price is available for this route and package size.',
+        }),
+      ),
+    )
+    renderApp('/deliveries/new')
+    await screen.findByRole('heading', { name: 'New delivery', level: 1 })
+    await fillAddress(0, 'Colombo')
+    await fillAddress(1, 'Kandy')
+    await userEvent.type(screen.getByLabelText('Weight (kg)'), '2')
+    await pickSize()
+    expect(
+      await screen.findByText(
+        'No price is available for this route and package size.',
+        {},
+        { timeout: 3000 },
+      ),
+    ).toBeInTheDocument()
+    expect(screen.queryByText(/don't deliver/)).not.toBeInTheDocument()
+  })
+
+  it('books the parcel with resolved zones and express choice', async () => {
     let body: Record<string, unknown> = {}
     server.use(
       http.post(`${API}/api/v1/pricing/estimate`, () => HttpResponse.json(estimate)),
@@ -120,12 +205,18 @@ describe('booking form', () => {
     await fillAddress(1, 'Kandy')
     await userEvent.type(screen.getByLabelText('Weight (kg)'), '1.5')
     await pickSize()
+    await userEvent.click(screen.getByRole('checkbox', { name: /Express delivery/ }))
     await screen.findByText('Total', {}, { timeout: 3000 })
     await userEvent.click(screen.getByRole('button', { name: 'Book delivery' }))
     const dialog = await screen.findByRole('dialog')
     expect(within(dialog).getByLabelText('tracking number')).toHaveTextContent('SD-ABCD2345')
-    expect(body).toMatchObject({ size: 'SMALL', weightKg: 1.5, express: false })
-    expect((body.pickup as { city: string }).city).toBe('Colombo')
+    expect(body).toMatchObject({
+      size: 'SMALL',
+      weightKg: 1.5,
+      express: true,
+      pickup: { city: 'Colombo', zone: 'CMB' },
+      dropoff: { city: 'Kandy', zone: 'KDY' },
+    })
   })
 
   it('maps server violations onto the weight field', async () => {

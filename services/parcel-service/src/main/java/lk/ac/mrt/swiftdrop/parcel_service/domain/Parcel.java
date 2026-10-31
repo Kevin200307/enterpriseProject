@@ -35,6 +35,7 @@ public class Parcel {
     private Address dropoff;
     @Enumerated(EnumType.STRING) private PackageSize size;
     @Column(precision=10, scale=3) private BigDecimal weightKg;
+    @Column(nullable=false) private boolean express;
     @Column(precision=12, scale=2) private BigDecimal fee;
     private String currency;
     @Enumerated(EnumType.STRING) private ParcelStatus status;
@@ -44,7 +45,7 @@ public class Parcel {
     private Instant updatedAt;
 
     public Parcel(UUID customerId, UUID merchantId, String trackingNumber, Address pickup, Address dropoff,
-                  PackageSize size, BigDecimal weightKg, BigDecimal fee, String currency,
+                  PackageSize size, BigDecimal weightKg, boolean express, BigDecimal fee, String currency,
                   String bookingKey, String requestHash, Instant now) {
         this.id = UUID.randomUUID();
         this.customerId = customerId;
@@ -54,6 +55,7 @@ public class Parcel {
         this.dropoff = dropoff;
         this.size = size;
         this.weightKg = weightKg;
+        this.express = express;
         this.fee = fee;
         this.currency = currency;
         this.status = ParcelStatus.CREATED;
@@ -92,6 +94,8 @@ public class Parcel {
     public PackageSize getSize() { return size; }
 
     public BigDecimal getWeightKg() { return weightKg; }
+
+    public boolean isExpress() { return express; }
 
     public BigDecimal getFee() { return fee; }
 

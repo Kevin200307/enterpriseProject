@@ -34,7 +34,8 @@ public class EstimateService {
         if (request.weightKg().signum() <= 0) throw new PricingException(ErrorCode.VALIDATION_FAILED, "weightKg must be positive");
         Zone from = resolve(request.fromCity()); Zone to = resolve(request.toCity());
         List<PricingRule> effective = rules.findEffective(from.getId(), to.getId(), request.size(), at);
-        if (effective.isEmpty()) throw new PricingException(ErrorCode.RESOURCE_NOT_FOUND, "No active pricing rule applies to this route and package size");
+        if (effective.isEmpty()) throw new PricingException(ErrorCode.RESOURCE_NOT_FOUND,
+            "No price is available for this route and package size.");
         if (effective.size() > 1) throw new PricingException(ErrorCode.CONFLICT, "More than one effective pricing rule applies to this route");
         PricingRule rule = effective.getFirst();
         if (request.weightKg().compareTo(rule.getMaxWeightKg()) > 0)
@@ -53,7 +54,7 @@ public class EstimateService {
     }
     private Zone resolve(String city) {
         return zones.findActiveByNormalizedCity(normalize(city)).orElseThrow(() ->
-            new PricingException(ErrorCode.RESOURCE_NOT_FOUND, "No active delivery zone is mapped to that city"));
+            new PricingException(ErrorCode.RESOURCE_NOT_FOUND, "We don't deliver to " + city.trim() + " yet."));
     }
     private static String normalize(String city) { return city.trim().toLowerCase(Locale.ROOT); }
 }

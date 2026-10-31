@@ -47,7 +47,7 @@ class DownstreamHealthIndicatorTests {
 	@Test
 	void timesOutSlowServicesAsDegraded() {
 		server = server((request, response) -> response.sendString(
-				Mono.delay(Duration.ofSeconds(2)).thenReturn("late")));
+				Mono.delay(DownstreamHealthIndicator.PROBE_TIMEOUT.plusSeconds(1)).thenReturn("late")));
 
 		StepVerifier.create(indicator(server.port()).health())
 				.assertNext(health -> assertThat(health.getStatus().getCode()).isEqualTo("DEGRADED"))
