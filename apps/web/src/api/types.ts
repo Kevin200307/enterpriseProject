@@ -18,37 +18,50 @@ export interface Address {
   line2?: string
   city: string
   postalCode: string
+  zone?: string
 }
 
 export interface Parcel {
   id: string
   trackingNumber: string
+  customerId: string
+  merchantId: string | null
+  assigneeId: string | null
   status: ParcelStatus
   size: PackageSize
   weightKg: number
-  express: boolean
   fee: number | string
+  currency: string
   pickup: Address
   dropoff: Address
   createdAt: string
-  courierName?: string
-  proofUrl?: string
-  failureReason?: string
+  updatedAt: string
+  version: number
 }
 
 export interface HistoryEntry {
+  id: string
   fromStatus: ParcelStatus | null
   toStatus: ParcelStatus
-  actorName?: string
+  actorId: string
   note?: string
-  failureReason?: string
-  proofUrl?: string
+  proofId?: string | null
+  failedReason?: string | null
   occurredAt: string
 }
 
+export interface ParcelPage<T> extends Omit<Page<T>, 'number'> {
+  page: number
+}
+
+export interface ProofUrl {
+  url: string
+  expiresAt: string
+}
+
 export interface CreateParcelInput {
-  pickup: Address
-  dropoff: Address
+  pickup: Omit<Address, 'line2' | 'zone'> & { zone: string }
+  dropoff: Omit<Address, 'line2' | 'zone'> & { zone: string }
   size: PackageSize
   weightKg: number
   express: boolean
@@ -121,6 +134,15 @@ export interface DeliveryProof {
   contentType: string
   sizeBytes: number
   createdAt: string
+}
+
+/** Async dispatch command — returned as 202 body when an assign/unassign is queued. */
+export interface AssignmentCommand {
+  id: string
+  state: 'PENDING' | 'DONE' | 'FAILED'
+  parcelId: string
+  courierId: string
+  detail?: string
 }
 
 /** A parcel waiting for a courier (DSP-2). */
@@ -254,11 +276,14 @@ export interface MerchantProfile {
 }
 
 export interface MerchantOrder {
-  id?: string
+  id: string
   merchantRef: string
+  parcelId: string
   trackingNumber: string
   status: ParcelStatus
   destinationCity: string
+  fee: number
+  currency: string
   createdAt: string
 }
 
@@ -268,6 +293,7 @@ export interface CreateMerchantOrderInput {
   dropoff: Omit<Address, 'line2'> & { zone: string }
   size: PackageSize
   weightKg: number
+  express: boolean
 }
 
 export interface MerchantApplication {

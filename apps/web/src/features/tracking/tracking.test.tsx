@@ -112,10 +112,22 @@ describe('public tracking page', () => {
     server.use(
       http.get(`${API}/api/v1/tracking/:tn`, () => (called(), HttpResponse.json(tracking()))),
     )
-    renderApp('/track/SD-0O1I0000')
+    renderApp('/track/SD-INVALID')
     expect(await screen.findByText('Invalid tracking number')).toBeInTheDocument()
     expect(called).not.toHaveBeenCalled()
     expect(live.started).toHaveLength(0)
+  })
+
+  it('accepts a tracking number generated from the parcel sequence', async () => {
+    const generatedTracking = 'SD-00000001'
+    server.use(
+      http.get(`${API}/api/v1/tracking/${generatedTracking}`, () =>
+        HttpResponse.json(tracking({ trackingNumber: generatedTracking })),
+      ),
+    )
+    renderApp(`/track/${generatedTracking}`)
+    expect(await screen.findByRole('heading', { name: 'In transit' })).toBeInTheDocument()
+    expect(screen.getByText(generatedTracking)).toBeInTheDocument()
   })
 
   it('gives the same flat message for any unknown parcel', async () => {
@@ -176,5 +188,20 @@ describe('tracking lookup', () => {
     await userEvent.type(input, 'sd-abcd2345')
     await userEvent.click(screen.getByRole('button', { name: 'Track' }))
     await waitFor(() => expect(router.state.location.pathname).toBe('/track/SD-ABCD2345'))
+  })
+
+  it('accepts the tracking number returned for a newly created parcel', async () => {
+    const generatedTracking = 'SD-00000001'
+    server.use(
+      http.get(`${API}/api/v1/tracking/${generatedTracking}`, () =>
+        HttpResponse.json(tracking({ trackingNumber: generatedTracking })),
+      ),
+    )
+    const router = renderApp('/track')
+    const input = await screen.findByLabelText('Tracking number')
+    await userEvent.type(input, generatedTracking)
+    await userEvent.click(screen.getByRole('button', { name: 'Track' }))
+    await waitFor(() => expect(router.state.location.pathname).toBe(`/track/${generatedTracking}`))
+    expect(await screen.findByRole('heading', { name: 'In transit' })).toBeInTheDocument()
   })
 })

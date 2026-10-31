@@ -44,6 +44,8 @@ spring:
     gateway:
       server:
         webflux:
+          default-filters:
+            - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin, RETAIN_UNIQUE
           httpclient:
             connect-timeout: 2000
             response-timeout: 10s
@@ -153,6 +155,8 @@ spring:
                   args:
                     name: pricingService
                     fallbackUri: forward:/internal/gateway-fallback
+              metadata:
+                response-timeout: 30000
             - id: dispatch-api
               uri: ${gateway.services.dispatch}
               predicates:
@@ -239,7 +243,7 @@ springdoc:
 
 gateway:
   browser:
-    origin: ${WEB_ORIGIN:http://localhost:5173}
+    origins: ${WEB_ORIGINS:${WEB_ORIGIN:http://localhost:5173}}
   dashboard:
     timeout: ${DASHBOARD_UPSTREAM_TIMEOUT:2s}
   services:
@@ -249,5 +253,5 @@ gateway:
     dispatch: ${DISPATCH_SERVICE_URL:http://dispatch-service:8080}
     merchant: ${MERCHANT_SERVICE_URL:http://merchant-service:8080}
     tracking: ${TRACKING_SERVICE_URL:http://tracking-service:8080}
-    notification: ${NOTIFICATION_SERVICE_URL:http://notification-service:8080}
+    notification: ${NOTIFICATION_SERVICE_URL:http://notification-service:8086}
     ai-assistant: ${AI_ASSISTANT_SERVICE_URL:http://ai-assistant-service:8080}

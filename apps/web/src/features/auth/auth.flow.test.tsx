@@ -92,7 +92,30 @@ describe('login', () => {
     await userEvent.type(await screen.findByLabelText('Email'), 'a@b.lk')
     await userEvent.type(screen.getByLabelText('Password'), 'secret123')
     await userEvent.click(screen.getByRole('button', { name: 'Sign in' }))
-    await waitFor(() => expect(router.state.location.pathname).toBe('/deliveries'))
+    await waitFor(() => expect(router.state.location.pathname).toBe('/home'))
+  })
+
+  it.each([
+    ['CUSTOMER', '/admin', '/home'],
+    ['MERCHANT', '/home', '/merchant/orders'],
+    ['COURIER', '/admin', '/courier/today'],
+    ['DISPATCHER', '/admin/users', '/admin'],
+    ['ADMIN', '/home', '/admin'],
+  ] as const)('sends %s to its home when returnTo is not accessible', async (role, from, home) => {
+    mockSession()
+    server.use(
+      http.post(`${API}/api/v1/auth/login`, () =>
+        HttpResponse.json({ accessToken: makeJwt([role]) }),
+      ),
+      http.get(`${API}/api/v1/merchants/orders`, () =>
+        HttpResponse.json({ content: [], totalElements: 0, totalPages: 0, number: 0, size: 20 }),
+      ),
+    )
+    const router = renderApp(`/login?returnTo=${encodeURIComponent(from)}`)
+    await userEvent.type(await screen.findByLabelText('Email'), 'a@b.lk')
+    await userEvent.type(screen.getByLabelText('Password'), 'secret123')
+    await userEvent.click(screen.getByRole('button', { name: 'Sign in' }))
+    await waitFor(() => expect(router.state.location.pathname).toBe(home))
   })
 
   it('disables submit with a countdown when rate limited', async () => {
@@ -169,7 +192,7 @@ describe('google callback', () => {
     )
     oauthPending.save({ verifier: 'v', state: 's' })
     const router = renderApp('/oauth/callback?code=abc&state=s')
-    await waitFor(() => expect(router.state.location.pathname).toBe('/deliveries'))
+    await waitFor(() => expect(router.state.location.pathname).toBe('/home'))
     expect(sessionStorage.getItem('sd-oauth')).toBeNull()
   })
 })

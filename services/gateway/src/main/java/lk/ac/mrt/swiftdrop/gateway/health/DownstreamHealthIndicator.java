@@ -16,7 +16,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 public final class DownstreamHealthIndicator implements ReactiveHealthIndicator {
 
 	public static final String DEGRADED = "DEGRADED";
-	static final Duration PROBE_TIMEOUT = Duration.ofMillis(750);
+	static final Duration PROBE_TIMEOUT = Duration.ofSeconds(3);
 
 	private final WebClient client;
 

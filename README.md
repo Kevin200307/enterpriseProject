@@ -139,8 +139,9 @@ flowchart TB
 
 ```
 enterpriseProject/
-  docs/SWIFTDROP.md          # full architecture + setup (created first)
-  docs/diagrams/             # mermaid sources used in the MD
+  docs/DESIGN.md             # design pack: use cases, ER, architecture, integration, sequences, patterns
+  docs/SWIFTDROP.md          # per-service design notes + setup
+  docs/diagrams/             # mermaid (.mmd) and plantuml (.puml) sources + rendered png/svg
   apps/web/                  # React SPA (customer, merchant, courier, admin)
   services/
     gateway/
@@ -326,19 +327,25 @@ services. Service databases use the external Neon connections configured in
 - Frontend: React Testing Library for critical forms; Playwright happy-path smoke
 - JaCoCo + coverage badge in CI; HTML report committed under `docs/test-reports/` at submission
 
-## Design documentation (20 marks) — all inside `docs/SWIFTDROP.md`
+## Design documentation (20 marks) — [`docs/DESIGN.md`](docs/DESIGN.md)
 
-The MD file is the assignment-ready design pack (exportable to PDF later):
+The assignment-ready design pack (exportable to PDF later). Diagram sources and
+rendered images live in [`docs/diagrams/`](docs/diagrams/).
 
-1. Use case diagrams (customer, merchant, courier, dispatcher)
-2. ER diagram
-3. Architecture + layer justification
-4. Integration patterns table
-5. Sequence diagrams: create delivery, merchant API order, courier status → notifications, Google OAuth
-6. SOLID / DRY / Repository / Strategy / Observer note
-7. Security decisions
-8. 10-member contribution sheet template
-9. Local + K8s setup instructions (copied into README)
+| # | Deliverable | Where |
+|---|---|---|
+| 1 | Use case diagrams (customer, merchant, courier, dispatcher) | `DESIGN.md` §1 |
+| 2 | ER diagram | `DESIGN.md` §2 |
+| 3 | Architecture + layer justification | `DESIGN.md` §3 |
+| 4 | Integration patterns table | `DESIGN.md` §4 |
+| 5 | Sequence diagrams: create delivery, merchant API order, courier status → notifications, Google OAuth | `DESIGN.md` §5 |
+| 6 | SOLID / DRY / Repository / Strategy / Observer note | `DESIGN.md` §6 |
+| 7 | Security decisions | `DESIGN.md` §6.5 and `SWIFTDROP.md` §2 |
+| 8 | 10-member contribution sheet template | _outstanding_ |
+| 9 | Local + K8s setup instructions (copied into README) | _outstanding_ |
+
+`DESIGN.md` §7 additionally records the defects found while verifying the
+documentation against the implementation.
 
 ## Implementation order (so the demo stays always runnable)
 

@@ -4,12 +4,11 @@ import java.util.regex.Pattern;
 
 /**
  * SwiftDrop tracking number format and validation rules.
- * Strictly adheres to {@code ^SD-[A-HJ-NP-Z2-9]{8}$}.
- * Excludes ambiguous characters (I, L, O, 0, 1).
+ * Tracking numbers use the parcel service's zero-padded base-36 sequence format.
  */
 public final class TrackingNumber {
 
-    public static final String REGEX = "^SD-[A-HJ-NP-Z2-9]{8}$";
+    public static final String REGEX = "^SD-[0-9A-Z]{8}$";
     public static final Pattern PATTERN = Pattern.compile(REGEX);
 
     private TrackingNumber() {

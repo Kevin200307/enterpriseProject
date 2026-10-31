@@ -156,7 +156,7 @@ checker shows every place the UI disagrees.
 **Notes**
 - The UI never applies a push whose `updatedAt` is older than what it already shows, so out-of-order events are safe.
 - Fallback ladder: WebSocket → SSE → poll every 15 s. SockJS needs `/ws/info` and the transport paths proxied (Kevin, GW-4).
-- Tracking numbers are validated client-side with `^SD-[A-HJ-NP-Z2-9]{8}$` before any request.
+- Tracking numbers use the parcel service's zero-padded base-36 sequence format and are validated client-side with `^SD-[0-9A-Z]{8}$` before any request.
 
 ---
 

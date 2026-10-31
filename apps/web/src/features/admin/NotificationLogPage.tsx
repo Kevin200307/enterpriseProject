@@ -16,12 +16,15 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
-import { formatDateTime, humanize } from '@/lib/format'
+import { TRACKING_NUMBER_RE, formatDateTime, humanize } from '@/lib/format'
 import { NotificationBadge } from '@/features/notifications/NotificationBadge'
 
 export function NotificationLogPage() {
   const qc = useQueryClient()
   const [params, setParams] = useSearchParams()
+  const tn = (params.get('tn') ?? '').toUpperCase()
+  const [draft, setDraft] = useState(tn)
+  const [tnError, setTnError] = useState<string>()
   const f = {
     status: params.get('status') ?? '',
     channel: params.get('channel') ?? '',
@@ -30,6 +33,13 @@ export function NotificationLogPage() {
     page: Math.max(0, Number(params.get('page')) || 0),
   }
   const [resending, setResending] = useState<AdminNotification>()
+
+  const byTracking = useQuery({
+    queryKey: qk.notifications.byTracking(tn),
+    queryFn: () => notificationsApi.byTracking(tn),
+    enabled: !!tn,
+    retry: false,
+  })
   const q = useQuery({
     queryKey: qk.notifications.log(f),
     queryFn: () =>
@@ -40,8 +50,12 @@ export function NotificationLogPage() {
         to: f.to || undefined,
         page: f.page,
       }),
+    enabled: !tn,
     placeholderData: (p) => p,
   })
+  const rows: AdminNotification[] = tn ? (byTracking.data ?? []) : (q.data?.content ?? [])
+  const active = tn ? byTracking : q
+
   const resend = useMutation({
     mutationFn: (n: AdminNotification) => notificationsApi.resend(n.id),
     onSuccess: () => toast.success('Queued for resending'),
@@ -58,6 +72,16 @@ export function NotificationLogPage() {
     next.delete('page')
     setParams(next)
   }
+  const submitTn = (e: React.FormEvent) => {
+    e.preventDefault()
+    const v = draft.trim().toUpperCase()
+    if (v && !TRACKING_NUMBER_RE.test(v))
+      return setTnError('Tracking numbers look like SD-ABCD2345.')
+    setTnError(undefined)
+    const next = new URLSearchParams()
+    if (v) next.set('tn', v)
+    setParams(next)
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -65,7 +89,26 @@ export function NotificationLogPage() {
         title="Notification log"
         description="Delivery history. Recipients are shown by user id only."
       />
-      <div className="flex flex-wrap gap-3">
+      <form onSubmit={submitTn} noValidate className="flex items-end gap-2">
+        <div className="flex flex-col gap-1">
+          <Label htmlFor="n-tn" className="text-xs">Tracking number</Label>
+          <Input
+            id="n-tn"
+            value={draft}
+            onChange={(e) => setDraft(e.target.value.toUpperCase())}
+            placeholder="SD-XXXXXXXX"
+            className="font-mono w-44"
+          />
+          {tnError && <p role="alert" className="text-xs text-destructive">{tnError}</p>}
+        </div>
+        <Button type="submit" variant="secondary">Search</Button>
+        {tn && (
+          <Button type="button" variant="outline" onClick={() => { setDraft(''); setParams(new URLSearchParams()) }}>
+            Clear
+          </Button>
+        )}
+      </form>
+      <div className={`flex flex-wrap gap-3 ${tn ? 'opacity-50 pointer-events-none' : ''}`}>
         <div className="flex flex-col gap-1">
           <Label htmlFor="n-status" className="text-xs">
             Status
@@ -125,11 +168,11 @@ export function NotificationLogPage() {
         </div>
       </div>
 
-      {q.isPending ? (
+      {active.isPending ? (
         <Skeleton className="h-48 w-full" />
-      ) : q.isError ? (
-        <ErrorState error={q.error} onRetry={() => void q.refetch()} />
-      ) : q.data.content.length === 0 ? (
+      ) : active.isError ? (
+        <ErrorState error={active.error} onRetry={() => void active.refetch()} />
+      ) : rows.length === 0 ? (
         <EmptyState title="No notifications match" />
       ) : (
         <>
@@ -147,7 +190,7 @@ export function NotificationLogPage() {
                 </tr>
               </thead>
               <tbody>
-                {q.data.content.map((n) => (
+                {rows.map((n) => (
                   <tr key={n.id} className="border-t align-top">
                     <th scope="row" className="p-3 text-left font-normal">
                       {formatDateTime(n.sentAt ?? n.createdAt)}
@@ -179,15 +222,17 @@ export function NotificationLogPage() {
               </tbody>
             </table>
           </div>
-          <Pagination
-            page={q.data.number}
-            totalPages={q.data.totalPages}
-            onChange={(n) => {
-              const next = new URLSearchParams(params)
-              next.set('page', String(n))
-              setParams(next)
-            }}
-          />
+          {!tn && q.data && (
+            <Pagination
+              page={q.data.number}
+              totalPages={q.data.totalPages}
+              onChange={(n) => {
+                const next = new URLSearchParams(params)
+                next.set('page', String(n))
+                setParams(next)
+              }}
+            />
+          )}
         </>
       )}
       <ConfirmDialog

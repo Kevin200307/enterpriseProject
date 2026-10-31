@@ -5,6 +5,7 @@ import { PageHeader } from '@/components/common/PageHeader'
 import { Skeleton } from '@/components/ui/skeleton'
 import type { WorkloadRow } from '@/api/types'
 import { CapacityBar } from './WorkloadPanel'
+import { CourierManifestSheet } from './CourierManifestSheet'
 import { useWorkload } from './useWorkload'
 
 type SortKey = 'name' | 'activeAssignments' | 'deliveredToday' | 'failedToday' | 'remainingCapacity'
@@ -22,6 +23,8 @@ export function WorkloadPage() {
     key: 'activeAssignments',
     dir: -1,
   })
+  const [selectedCourier, setSelectedCourier] = useState<WorkloadRow | null>(null)
+  const today = new Date().toISOString().slice(0, 10)
   const rows = useMemo(
     () =>
       [...(q.data ?? [])].sort((a: WorkloadRow, b: WorkloadRow) => {
@@ -79,7 +82,11 @@ export function WorkloadPage() {
             </thead>
             <tbody>
               {rows.map((r) => (
-                <tr key={r.courierId} className={`border-t ${r.active ? '' : 'opacity-50'}`}>
+                <tr
+                  key={r.courierId}
+                  className={`cursor-pointer border-t hover:bg-accent ${r.active ? '' : 'opacity-50'}`}
+                  onClick={() => setSelectedCourier(r)}
+                >
                   <th scope="row" className="p-3 text-left font-medium">
                     {r.name}
                     {!r.active && (
@@ -99,6 +106,12 @@ export function WorkloadPage() {
           </table>
         </div>
       )}
+
+      <CourierManifestSheet
+        courier={selectedCourier}
+        date={today}
+        onClose={() => setSelectedCourier(null)}
+      />
     </div>
   )
 }

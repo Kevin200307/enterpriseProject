@@ -26,11 +26,12 @@ function getOptions(children: React.ReactNode): Option[] {
 export const Select = React.forwardRef<
   HTMLSelectElement,
   React.SelectHTMLAttributes<HTMLSelectElement>
->(({ className, children, value, defaultValue, onChange, onBlur, ...props }, ref) => {
+>(({ className, children, value, defaultValue, onChange, onBlur, id, ...props }, ref) => {
   const options = getOptions(children)
   const [open, setOpen] = React.useState(false)
   const rootRef = React.useRef<HTMLDivElement>(null)
   const selectRef = React.useRef<HTMLSelectElement>(null)
+  const listboxId = React.useId()
   const isControlled = value !== undefined
   const [uncontrolledValue, setUncontrolledValue] = React.useState(() => {
     if (defaultValue !== undefined) return String(defaultValue)
@@ -84,9 +85,15 @@ export const Select = React.forwardRef<
       </select>
       <button
         type="button"
+        role="combobox"
         disabled={props.disabled}
         aria-label={props['aria-label']}
         aria-labelledby={props['aria-labelledby']}
+        aria-describedby={props['aria-describedby']}
+        aria-invalid={props['aria-invalid']}
+        aria-required={props['aria-required']}
+        id={id}
+        aria-controls={listboxId}
         aria-haspopup="listbox"
         aria-expanded={open}
         onClick={() => setOpen((current) => !current)}
@@ -102,6 +109,7 @@ export const Select = React.forwardRef<
       </button>
       {open && (
         <div
+          id={listboxId}
           role="listbox"
           aria-label={props['aria-label']}
           className="absolute left-0 top-[calc(100%+0.35rem)] z-30 max-h-72 w-full min-w-[12rem] overflow-y-auto rounded-2xl border border-border bg-card p-2 shadow-xl shadow-foreground/10"

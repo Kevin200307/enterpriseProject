@@ -1,0 +1,55 @@
+---
+title: Flow 1 — Customer creates a delivery
+---
+sequenceDiagram
+    autonumber
+    actor C as Customer (SPA)
+    participant GW as gateway
+    participant PR as pricing-service
+    participant PS as parcel-service
+    participant DB as parcel_db
+    participant MQ as RabbitMQ
+
+    rect rgb(240, 249, 255)
+    Note over C,PR: Phase A — live estimate, debounced 400 ms while typing
+    C->>GW: POST /api/v1/pricing/estimate<br/>Bearer JWT · X-Request-Id
+    GW->>GW: validate JWT (issuer + aud=swiftdrop)<br/>strip and re-inject X-User-Id / X-User-Roles
+    GW->>PR: forward
+    activate PR
+    PR->>PR: resolve pickup and dropoff zones by city
+    PR->>PR: find effective pricing rule (route + size + date)
+    PR->>PR: PricingEngine.calculate()<br/>ZoneBand(10) → WeightSurcharge(20) → Express(30)
+    PR-->>C: 200 EstimateResponse<br/>baseFee, surcharges, total, ruleId
+    deactivate PR
+    end
+
+    rect rgb(240, 253, 244)
+    Note over C,MQ: Phase B — booking (the UI blocks submit without a current estimate)
+    C->>GW: POST /api/v1/parcels<br/>Idempotency-Key: uuid
+    GW->>PS: forward
+    activate PS
+    PS->>DB: findByCustomerIdAndBookingKey(customerId, key)
+    alt replay of the same key and payload hash
+        DB-->>PS: existing parcel
+        PS-->>C: 201 with the original ParcelView
+    else new booking
+        PS->>PR: POST /pricing/estimate (user JWT forwarded)
+        Note right of PS: The fee is re-quoted server side.<br/>The browser's number is never trusted.
+        PR-->>PS: authoritative fee
+        PS->>DB: nextval('parcel_tracking_seq') → SD-XXXXXXXX
+        PS->>DB: INSERT parcels (status=CREATED, fee snapshotted)
+        PS->>DB: INSERT parcel_status_history (null → CREATED)
+        PS->>DB: INSERT parcel_outbox ×2<br/>status.changed.v2 + dispatch.changed.v1
+        Note right of DB: All four writes commit in<br/>one local transaction — transactional outbox
+        PS-->>C: 201 Created · Location · ParcelView
+    end
+    deactivate PS
+    end
+
+    rect rgb(255, 251, 235)
+    Note over PS,MQ: Phase C — asynchronous fan-out, after commit
+    PS->>DB: OutboxPublisher polls pending rows (every 3 s)
+    PS->>MQ: publish PERSISTENT to parcel.events<br/>await publisher confirm (5 s)
+    PS->>DB: mark published_at
+    MQ-->>MQ: routes to dispatch, tracking,<br/>notification and merchant-webhook queues
+    end

@@ -1,0 +1,49 @@
+---
+title: SwiftDrop — Event Topology and Delivery Guarantees
+---
+flowchart TB
+
+    subgraph PRODUCER["parcel-service — the only producer"]
+        direction TB
+        BIZ["Business transaction<br/>parcels + parcel_status_history"]
+        OB[("parcel_outbox<br/>payload · routing_key · published_at")]
+        PUB["OutboxPublisher<br/>@Scheduled every 3 s · batches of 20<br/>PERSISTENT · publisher confirms (5 s)<br/>row retained on nack or return"]
+        BIZ -->|"same local transaction"| OB
+        OB --> PUB
+    end
+
+    EX{{"Exchange: parcel.events<br/>type: topic · durable"}}
+
+    PUB -->|"publish"| EX
+
+    EX -->|"parcel.dispatch.changed.v1"| Q1["dispatch.parcel.dispatch.changed.v1"]
+    EX -->|"parcel.status.changed.v2"| Q2["tracking.parcel.status.changed.v2"]
+    EX -->|"parcel.status.changed.v2"| Q3["notification.parcel.status.changed.v2"]
+    EX -->|"parcel.status.changed.v2"| Q4["merchant-webhook.parcel.status.changed.v2"]
+
+    Q1 --> C1["dispatch-service<br/>ParcelProjector<br/>dedupe: processed_events table"]
+    Q2 --> C2["tracking-service<br/>TrackingProjectionService<br/>dedupe: Redis key, 24 h TTL"]
+    Q3 --> C3["notification-service<br/>NotificationService<br/>dedupe: unique event+channel+recipient"]
+    Q4 --> C4["merchant-service<br/>WebhookService<br/>dedupe: event_id + merchant_id"]
+
+    C1 -.->|"on exhausted retry"| DLX{{"swiftdrop.dlx<br/>direct dead-letter exchange"}}
+    C2 -.->|"on exhausted retry"| DLX
+    C4 -.->|"no DLQ configured"| GAP["⚠ messages dropped"]
+    C3 -.->|"routes to default exchange,<br/>not swiftdrop.dlx"| GAP2["⚠ inconsistent DLQ"]
+
+    DLX --> DLQ[("*.dlq queues<br/>for manual inspection")]
+
+    NOTE["Payload envelope: EventEnvelope&lt;T&gt;<br/>eventId · eventType · version · occurredAt · producer · payload<br/>JSON shapes pinned by golden-file contract tests in packages/common"]
+
+    classDef prod fill:#DCFCE7,stroke:#16A34A,color:#14532D
+    classDef broker fill:#FFE4E6,stroke:#E11D48,color:#881337
+    classDef queue fill:#FEF3C7,stroke:#D97706,color:#78350F
+    classDef consumer fill:#DBEAFE,stroke:#2563EB,color:#1E3A8A
+    classDef warn fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D
+
+    class BIZ,OB,PUB prod
+    class EX,DLX,DLQ broker
+    class Q1,Q2,Q3,Q4 queue
+    class C1,C2,C3,C4 consumer
+    class GAP,GAP2 warn
+    style NOTE fill:#FFFFFF,stroke:#94A3B8,color:#334155

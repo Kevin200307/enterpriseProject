@@ -1,6 +1,7 @@
 package lk.ac.mrt.swiftdrop.gateway.config;
 
 import java.net.URI;
+import java.util.List;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -33,6 +34,6 @@ public record GatewayProperties(
 			@NotNull URI aiAssistant) {
 	}
 
-	public record Browser(@NotNull URI origin) {
+	public record Browser(@NotNull List<URI> origins) {
 	}
 }

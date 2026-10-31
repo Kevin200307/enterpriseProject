@@ -15,12 +15,16 @@ const page = <T,>(content: T[]) => ({
   size: 20,
 })
 const order = (over: Partial<MerchantOrder> = {}): MerchantOrder => ({
-  merchantRef: 'ORD-1001',
-  trackingNumber: 'SD-ABCD2345',
-  status: 'IN_TRANSIT',
-  destinationCity: 'Kandy',
-  createdAt: '2026-10-08T05:00:00Z',
   ...over,
+  id: over.id ?? 'order-1',
+  merchantRef: over.merchantRef ?? 'ORD-1001',
+  parcelId: over.parcelId ?? 'parcel-1',
+  trackingNumber: over.trackingNumber ?? 'SD-ABCD2345',
+  status: over.status ?? 'IN_TRANSIT',
+  destinationCity: over.destinationCity ?? 'Kandy',
+  fee: over.fee ?? 600,
+  currency: over.currency ?? 'LKR',
+  createdAt: over.createdAt ?? '2026-10-08T05:00:00Z',
 })
 
 describe('merchant registration', () => {
@@ -206,6 +210,7 @@ describe('merchant new order', () => {
     }
     await u.type(screen.getByLabelText('Weight (kg)'), '2')
     await u.click(screen.getByRole('radio', { name: /Small/ }))
+    await u.click(screen.getByRole('checkbox', { name: /Express delivery/ }))
     await screen.findByText('Total', {}, { timeout: 3000 })
     await u.click(screen.getByRole('button', { name: 'Book delivery' }))
     expect(await screen.findByText('Your reference is required')).toBeInTheDocument()
@@ -213,7 +218,12 @@ describe('merchant new order', () => {
     await u.type(screen.getByLabelText('Your reference'), 'ORD-2002')
     await u.click(screen.getByRole('button', { name: 'Book delivery' }))
     expect(await screen.findByRole('dialog')).toHaveTextContent('Order created')
-    expect(body).toMatchObject({ merchantRef: 'ORD-2002' })
+    expect(body).toMatchObject({
+      merchantRef: 'ORD-2002',
+      express: true,
+      pickup: { zone: 'A' },
+      dropoff: { zone: 'B' },
+    })
   })
 
   it('does not show the reference field to ordinary customers', async () => {

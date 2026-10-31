@@ -38,13 +38,19 @@ class MerchantOrderServiceTest {
         DisposableServer server = HttpServer.create().host("127.0.0.1").port(0).route(r -> r.post("/api/v1/parcels", (req,res) -> {
             assertNotNull(req.requestHeaders().get("Idempotency-Key"));
             assertEquals("Bearer token", req.requestHeaders().get("Authorization"));
-            return res.header("Content-Type", "application/json").sendString(Mono.just("{\"id\":\""+UUID.randomUUID()+"\",\"trackingNumber\":\"SD-12345678\",\"status\":\"CREATED\",\"fee\":725.00,\"currency\":\"LKR\"}"));
+            return req.receive().aggregate().asString().flatMap(body -> {
+                assertTrue(body.contains("\"express\":true"));
+                return res.header("Content-Type", "application/json").sendString(
+                        Mono.just("{\"id\":\""+UUID.randomUUID()+"\",\"trackingNumber\":\"SD-12345678\",\"status\":\"CREATED\",\"fee\":725.00,\"currency\":\"LKR\"}"))
+                        .then();
+            });
         })).bindNow();
         try {
             when(orders.findByMerchantIdAndMerchantRef(merchant.getId(), "ERP-1")).thenReturn(Optional.empty());
             when(orders.save(any())).thenAnswer(i -> { MerchantOrder o=i.getArgument(0); o.setId(UUID.randomUUID()); return o; });
             var service = new MerchantOrderService(merchants, orders, WebClient.builder(), "http://127.0.0.1:"+server.port());
-            var result = service.create(merchant.getOwnerUserId(), new Create("ERP-1", pickup, dropoff, PackageSize.SMALL, BigDecimal.ONE), "token");
+            var result = service.create(merchant.getOwnerUserId(),
+                    new Create("ERP-1", pickup, dropoff, PackageSize.SMALL, BigDecimal.ONE, true), "token");
             assertEquals(new BigDecimal("725.00"), result.fee());
             assertEquals("Kandy", result.destinationCity());
         } finally { server.disposeNow(); }
@@ -53,10 +59,12 @@ class MerchantOrderServiceTest {
     @Test void duplicateReferenceReturnsSameOrderWithoutCallingParcel() {
         MerchantOrder existing = MerchantOrder.builder().id(UUID.randomUUID()).merchant(merchant).merchantRef("ERP-2")
                 .parcelId(UUID.randomUUID()).trackingNumber("SD-12345678").status("CREATED").destinationCity("Kandy")
-                .fee(BigDecimal.TEN).currency("LKR").requestHash(hashFor(new Create("ERP-2", pickup, dropoff, PackageSize.SMALL, BigDecimal.ONE))).build();
+                .fee(BigDecimal.TEN).currency("LKR").requestHash(hashFor(
+                        new Create("ERP-2", pickup, dropoff, PackageSize.SMALL, BigDecimal.ONE, false))).build();
         when(orders.findByMerchantIdAndMerchantRef(merchant.getId(), "ERP-2")).thenReturn(Optional.of(existing));
         var service = new MerchantOrderService(merchants, orders, WebClient.builder(), "http://127.0.0.1:1");
-        assertEquals(existing.getId(), service.create(merchant.getOwnerUserId(), new Create("ERP-2", pickup, dropoff, PackageSize.SMALL, BigDecimal.ONE), "token").id());
+        assertEquals(existing.getId(), service.create(merchant.getOwnerUserId(),
+                new Create("ERP-2", pickup, dropoff, PackageSize.SMALL, BigDecimal.ONE, false), "token").id());
     }
 
     @Test void getDoesNotLeakAnotherMerchantsOrder() {

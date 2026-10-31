@@ -49,7 +49,10 @@ class PricingAuthorizationTest {
             .andExpect(status().isOk());
         mvc.perform(get("/api/v1/pricing/zones").param("includeInactive", "true")
             .with(SecurityMockMvcRequestPostProcessors.authentication(user("CUSTOMER")))).andExpect(status().isForbidden());
-        mvc.perform(post("/api/v1/pricing/zones").with(SecurityMockMvcRequestPostProcessors.authentication(user("CUSTOMER"))))
+        mvc.perform(post("/api/v1/pricing/zones")
+            .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+            .content("{\"name\":\"Kandy\",\"code\":\"KAN\",\"cities\":[\"Kandy\"],\"active\":true}")
+            .with(SecurityMockMvcRequestPostProcessors.authentication(user("CUSTOMER"))))
             .andExpect(status().isForbidden());
         mvc.perform(get("/api/v1/pricing/rules").with(SecurityMockMvcRequestPostProcessors.authentication(user("CUSTOMER"))))
             .andExpect(status().isOk());

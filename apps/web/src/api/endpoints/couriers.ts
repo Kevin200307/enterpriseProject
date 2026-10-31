@@ -13,4 +13,7 @@ export const couriersApi = {
   create: (c: CourierInput) => api.post<Courier>('/api/v1/couriers', c),
   update: (id: string, c: Partial<CourierInput>) => api.patch<Courier>(`/api/v1/couriers/${id}`, c),
   myAssignments: () => api.get<Assignment[]>('/api/v1/couriers/me/assignments'),
+  /** Dispatcher/admin: today's (or a specific date's) assignments for a specific courier. */
+  manifest: (courierId: string, date: string) =>
+    api.get<Assignment[]>(`/api/v1/couriers/${encodeURIComponent(courierId)}/manifest`, { date }),
 }

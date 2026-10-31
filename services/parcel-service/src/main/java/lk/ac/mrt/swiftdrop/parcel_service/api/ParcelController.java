@@ -2,11 +2,15 @@ package lk.ac.mrt.swiftdrop.parcel_service.api;
 
 import jakarta.validation.Valid;
 import java.net.URI;
+import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
+import lk.ac.mrt.swiftdrop.contracts.domain.ParcelStatus;
 import lk.ac.mrt.swiftdrop.parcel_service.api.ParcelDtos.*;
 import lk.ac.mrt.swiftdrop.parcel_service.service.*;
 import org.springframework.http.*;
 import org.springframework.security.core.Authentication;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -25,8 +29,12 @@ public class ParcelController {
     }
     @GetMapping
     public PageView<ParcelView> list(@RequestParam(defaultValue="0") int page,
-        @RequestParam(defaultValue="20") int size, Authentication auth) {
-        return parcels.list(page, size, Actor.from(auth));
+        @RequestParam(defaultValue="20") int size,
+        @RequestParam(required=false) List<ParcelStatus> status,
+        @RequestParam(required=false) @DateTimeFormat(iso=DateTimeFormat.ISO.DATE) LocalDate from,
+        @RequestParam(required=false) @DateTimeFormat(iso=DateTimeFormat.ISO.DATE) LocalDate to,
+        Authentication auth) {
+        return parcels.list(page, size, status, from, to, Actor.from(auth));
     }
     @GetMapping("/{id}")
     public ParcelView get(@PathVariable UUID id, Authentication auth) { return parcels.get(id, Actor.from(auth)); }

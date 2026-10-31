@@ -359,10 +359,10 @@ You own the core aggregate. Every other service reacts to the events you publish
 
 - Flyway `V1__parcel_schema.sql`: `parcels` (id UUID, tracking_number unique `SD-XXXXXXXX`, customer_id, merchant_id nullable, pickup_* and dropoff_* as **structured columns** — contact_name, phone, line1, line2, city, postal_code — size, weight_kg, express bool, fee NUMERIC(10,2), fee_rule_id, status, assigned_courier_id nullable, created_at, updated_at) and `parcel_status_history` (id, parcel_id, from_status, to_status, actor_id, actor_role, note, proof_url, failure_reason, occurred_at).
 - Index on `tracking_number`, `customer_id`, `status`, and `(status, created_at)` for the dispatch queue.
-- `TrackingNumberGenerator`: `SD-` plus 8 chars from an unambiguous alphabet (no `0/O/1/I`), collision-retried against a unique constraint. Not sequential — tracking numbers must not be guessable from each other.
+- `TrackingNumberGenerator`: `SD-` plus an 8-character, zero-padded base-36 sequence. The shared validator must accept the full base-36 alphabet generated here.
 - Addresses are structured columns, never one free-text blob — Thiranjaya's PII redaction and Maheesha's public masking both rely on it.
 
-**Acceptance:** 10 000 generated numbers in a test produce no collision and match `^SD-[A-HJ-NP-Z2-9]{8}$`.
+**Acceptance:** 10 000 generated numbers in a test produce no collision and match `^SD-[0-9A-Z]{8}$`.
 
 #### `PAR-2` Booking API — *M2*
 
@@ -512,7 +512,7 @@ You are the read side. No database of your own — Redis projections fed by even
 #### `TRK-3` Public tracking API with PII masking — *M3*
 
 - `GET /api/v1/tracking/{trackingNumber}` — **unauthenticated** (Kevin allow-lists it in `GW-2`). Returns status, timeline, origin **city only**, destination **city only**, courier **first name only**, and an ETA. Never the street address, never a phone number, never the customer's full name, never internal ids.
-- Validate the tracking number against `^SD-[A-HJ-NP-Z2-9]{8}$` before any lookup; a malformed one is a 400, an unknown one a flat `404 RESOURCE_NOT_FOUND` with no hint about whether it ever existed.
+- Validate the tracking number against `^SD-[0-9A-Z]{8}$` before any lookup; a malformed one is a 400, an unknown one a flat `404 RESOURCE_NOT_FOUND` with no hint about whether it ever existed.
 - `GET /api/v1/tracking/{trackingNumber}/full` — authenticated, full detail, but only for the owning customer, the merchant, the assigned courier, a dispatcher or an admin.
 - Make the response cacheable for 10 s (`Cache-Control`) so a shared tracking link does not hammer the service, and tell Kevin to rate-limit the public route at 30 req/min.
 
@@ -768,7 +768,7 @@ Every row below is one GitHub issue. Full scope lives in [§5](#5-work-breakdown
 | GW-1 | Routing, DNS discovery and health | Kevin `@Kevin200307` | `area/gateway`, `milestone/M1`, `type/feat` | — | `curl :8081/api/v1/...` reaches each service; stopped upstream → 503 problem body |
 | GW-2 | Edge authentication, CORS and security headers | Kevin `@Kevin200307` | `area/gateway`, `milestone/M1`, `type/feat` | IDN-2 | forged `X-User-Id` rejected; SPA CORS + cookies; security headers present |
 | PRC-1 | Zone and pricing-rule schema | Pavindu `@Pavindu11` | `area/pricing`, `milestone/M1`, `type/feat` | — | migrations + Sri Lankan seed load via Testcontainers Postgres |
-| PAR-1 | Parcel schema, tracking numbers, status history | Praveena `@LP-Ishadi` | `area/parcel`, `milestone/M1`, `type/feat` | — | 10k generated numbers, no collision, match `^SD-[A-HJ-NP-Z2-9]{8}$` |
+| PAR-1 | Parcel schema, tracking numbers, status history | Praveena `@LP-Ishadi` | `area/parcel`, `milestone/M1`, `type/feat` | — | 10k generated numbers, no collision, match `^SD-[0-9A-Z]{8}$` |
 | DSP-1 | Courier schema and courier administration | Methsara `@Dimeshmethsara` | `area/dispatch`, `milestone/M1`, `type/feat` | IDN-2 (role check) | migration clean; non-COURIER user rejected with readable message |
 | MER-1 | Merchant schema, registration and approval | Charithma `@CDDassanayake` | `area/merchant`, `milestone/M1`, `type/feat` | IDN-4 (role grant) | register → pending → approve → next login has `MERCHANT` + `merchantId` |
 | FE-1 | Scaffold the SPA and wire it into the stack | Thanoj `@ThanojBuddhima` | `area/web`, `milestone/M1`, `type/feat` | GW-1 (API base) | Compose serves SPA; deep links work; API errors readable |

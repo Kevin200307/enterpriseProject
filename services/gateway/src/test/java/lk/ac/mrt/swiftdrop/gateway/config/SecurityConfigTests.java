@@ -28,6 +28,7 @@ import org.springframework.mock.http.server.reactive.MockServerHttpResponse;
 				"gateway.services.identity=http://127.0.0.1:1",
 				"gateway.services.parcel=http://127.0.0.1:1",
 				"gateway.services.tracking=http://127.0.0.1:1",
+				"gateway.browser.origins=http://localhost:5173,http://localhost:5174",
 				"spring.cloud.gateway.server.webflux.httpclient.connect-timeout=100",
 				"spring.cloud.gateway.server.webflux.httpclient.response-timeout=500ms",
 				"resilience4j.timelimiter.configs.default.timeout-duration=500ms"
@@ -193,6 +194,20 @@ class SecurityConfigTests {
 						HttpHeaders.ACCESS_CONTROL_ALLOW_HEADERS,
 						value -> org.assertj.core.api.Assertions.assertThat(value.toLowerCase())
 								.contains("authorization", "content-type", "x-request-id", "idempotency-key"));
+	}
+
+	@Test
+	void allowsDockerWebOriginPreflight() {
+		client.options()
+				.uri("http://localhost/api/v1/tracking/SD-00000001")
+				.header(HttpHeaders.ORIGIN, "http://localhost:5174")
+				.header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "GET")
+				.header(HttpHeaders.ACCESS_CONTROL_REQUEST_HEADERS, "authorization")
+				.exchange()
+				.expectStatus().isOk()
+				.expectHeader().valueEquals(
+						HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN,
+						"http://localhost:5174");
 	}
 
 	@Test

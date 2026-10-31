@@ -67,6 +67,27 @@ class GatewayRateLimitFilterTests {
 	}
 
 	@Test
+	void rejectedPublicTrackingReturnsRateLimitedProblemAndRetryAfter() {
+		MockServerWebExchange exchange = exchange(
+				MockServerHttpRequest.get("/api/v1/tracking/SD-12345678"));
+		when(trackingLimiter.isAllowed("public-tracking", "ip:192.0.2.10"))
+				.thenReturn(Mono.just(new RateLimiter.Response(false, Map.of("X-RateLimit-Remaining", "0"))));
+
+		StepVerifier.create(filter.filter(exchange, ignored -> Mono.error(
+				new AssertionError("rejected request must not reach the route"))))
+				.verifyComplete();
+
+		assertThat(exchange.getResponse().getStatusCode()).isEqualTo(HttpStatus.TOO_MANY_REQUESTS);
+		assertThat(exchange.getResponse().getHeaders().getFirst("Retry-After")).isEqualTo("60");
+		assertThat(exchange.getResponse().getHeaders().getFirst("X-RateLimit-Remaining")).isEqualTo("0");
+		String body = exchange.getResponse().getBodyAsString().block();
+		assertThat(JsonPath.read(body, "$.errorCode").toString()).isEqualTo("RATE_LIMITED");
+		assertThat(JsonPath.read(body, "$.traceId").toString()).isEqualTo("rate-request");
+		assertThat(JsonPath.read(body, "$.instance").toString())
+				.isEqualTo("/api/v1/tracking/SD-12345678");
+	}
+
+	@Test
 	void publicTrackingAndNestedTrackingUseDifferentPolicies() {
 		MockServerWebExchange publicExchange = exchange(
 				MockServerHttpRequest.get("/api/v1/tracking/SD-123"));

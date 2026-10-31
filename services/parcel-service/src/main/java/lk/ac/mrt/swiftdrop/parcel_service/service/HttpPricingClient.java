@@ -30,20 +30,23 @@ public class HttpPricingClient implements PricingClient {
         this.client = client;
         this.path = path;
     }
-    record EstimateRequest(String zoneFrom, String zoneTo, PackageSize size, java.math.BigDecimal weightKg) {}
+    record EstimateRequest(String fromCity, String toCity, PackageSize size,
+                           java.math.BigDecimal weightKg, boolean express) {}
+    record EstimateResponse(java.math.BigDecimal total, String currency) {}
     @Override
     public Quote estimate(BookingRequest request, String bearerToken) {
         try {
-            Quote quote = client.post().uri(path)
+            EstimateResponse estimate = client.post().uri(path)
                 .headers(h -> { if (bearerToken != null) h.setBearerAuth(bearerToken); })
-                .body(new EstimateRequest(request.pickup().zone(), request.dropoff().zone(), request.size(), request.weightKg()))
-                .retrieve().body(Quote.class);
-            if (quote == null || quote.fee() == null || quote.fee().signum() < 0
-                || quote.fee().precision() - quote.fee().scale() > 10
-                || quote.currency() == null || !quote.currency().matches("[A-Z]{3}")) {
+                .body(new EstimateRequest(request.pickup().city(), request.dropoff().city(), request.size(),
+                    request.weightKg(), Boolean.TRUE.equals(request.express())))
+                .retrieve().body(EstimateResponse.class);
+            if (estimate == null || estimate.total() == null || estimate.total().signum() < 0
+                || estimate.total().precision() - estimate.total().scale() > 10
+                || estimate.currency() == null || !estimate.currency().matches("[A-Z]{3}")) {
                 throw new IllegalStateException("Invalid pricing response");
             }
-            return new Quote(quote.fee().setScale(2, RoundingMode.UNNECESSARY), quote.currency());
+            return new Quote(estimate.total().setScale(2, RoundingMode.UNNECESSARY), estimate.currency());
         } catch (RuntimeException ex) {
             throw new ParcelException(ErrorCode.UPSTREAM_UNAVAILABLE, "Delivery pricing is temporarily unavailable");
         }

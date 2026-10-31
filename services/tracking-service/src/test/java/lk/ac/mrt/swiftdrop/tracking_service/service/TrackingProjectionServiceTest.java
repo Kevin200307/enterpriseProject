@@ -13,6 +13,7 @@ import java.util.UUID;
 import lk.ac.mrt.swiftdrop.contracts.domain.ParcelStatus;
 import lk.ac.mrt.swiftdrop.contracts.events.EventEnvelope;
 import lk.ac.mrt.swiftdrop.contracts.events.ParcelStatusChangedV1;
+import lk.ac.mrt.swiftdrop.contracts.events.ParcelStatusChangedV2;
 import lk.ac.mrt.swiftdrop.contracts.events.ParcelTrackingSnapshotV1;
 import lk.ac.mrt.swiftdrop.contracts.events.ParcelTrackingSnapshotV1.SnapshotTimelineEntryV1;
 import lk.ac.mrt.swiftdrop.tracking_service.client.ParcelServiceClient;
@@ -91,6 +92,56 @@ class TrackingProjectionServiceTest {
         assertThat(saved.timeline().get(0).occurredAt()).isEqualTo(t1);
         assertThat(saved.timeline().get(1).status()).isEqualTo(ParcelStatus.IN_TRANSIT);
         assertThat(saved.timeline().get(1).occurredAt()).isEqualTo(t2);
+    }
+
+    @Test
+    void appliesV2StatusEventFromCachedProjectionWithoutParcelServiceCall() {
+        Instant pickedUpAt = Instant.parse("2026-10-10T09:00:00Z");
+        Instant inTransitAt = Instant.parse("2026-10-10T10:00:00Z");
+        TrackingProjection existing = new TrackingProjection(
+                tn,
+                ParcelStatus.PICKED_UP,
+                "Colombo",
+                "Kandy",
+                "Courier",
+                null,
+                pickedUpAt,
+                List.of(new TimelineEntry(ParcelStatus.PICKED_UP, pickedUpAt, null))
+        );
+        when(redisRepository.findByTrackingNumber(tn)).thenReturn(Optional.of(existing));
+
+        var payload = new ParcelStatusChangedV2(
+                UUID.randomUUID(),
+                tn,
+                UUID.randomUUID(),
+                null,
+                UUID.randomUUID(),
+                ParcelStatus.PICKED_UP,
+                ParcelStatus.IN_TRANSIT,
+                UUID.randomUUID(),
+                null,
+                null);
+        var envelope = new EventEnvelope<>(
+                UUID.randomUUID(),
+                ParcelStatusChangedV2.EVENT_TYPE,
+                ParcelStatusChangedV2.VERSION,
+                inTransitAt,
+                "parcel-service",
+                payload);
+
+        projectionService.applyStatusChangedV2(envelope);
+
+        ArgumentCaptor<TrackingProjection> captor = ArgumentCaptor.forClass(TrackingProjection.class);
+        verify(redisRepository).saveProjection(captor.capture());
+        TrackingProjection saved = captor.getValue();
+        assertThat(saved.status()).isEqualTo(ParcelStatus.IN_TRANSIT);
+        assertThat(saved.updatedAt()).isEqualTo(inTransitAt);
+        assertThat(saved.originCity()).isEqualTo("Colombo");
+        assertThat(saved.destinationCity()).isEqualTo("Kandy");
+        assertThat(saved.courierFirstName()).isEqualTo("Courier");
+        assertThat(saved.timeline()).extracting(TimelineEntry::status)
+                .containsExactly(ParcelStatus.PICKED_UP, ParcelStatus.IN_TRANSIT);
+        verify(parcelClient, org.mockito.Mockito.never()).fetchSnapshot(tn);
     }
 
     @Test

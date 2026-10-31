@@ -151,6 +151,40 @@ class NotificationServiceTest {
     }
 
     @Test
+    @DisplayName("Should skip email when the current status is not selected")
+    void shouldSkipEmailWhenStatusIsNotSelected() {
+        UUID userId = UUID.randomUUID();
+        EventEnvelope<ParcelStatusChangedV2> envelope = statusEvent(
+                UUID.randomUUID(), userId, UUID.randomUUID(), ParcelStatus.DELIVERED);
+        NotificationPreference preference = NotificationPreference.builder()
+                .userId(userId)
+                .emailEnabled(true)
+                .emailStatuses("CREATED")
+                .smsEnabled(false)
+                .smsStatuses("")
+                .build();
+
+        when(identityClient.lookupUser(userId)).thenReturn(
+                new IdentityClient.UserLookupDto(userId, "test@swiftdrop.lk", "+94712345678", "Test User"));
+        when(preferenceService.getPreferences(userId)).thenReturn(preference);
+        when(logRepository.existsByEventIdAndChannelAndRecipientRef(
+                any(), eq(NotificationChannel.EMAIL), eq(userId))).thenReturn(false);
+        when(logRepository.existsByEventIdAndChannelAndRecipientRef(
+                any(), eq(NotificationChannel.SMS), eq(userId))).thenReturn(false);
+        when(smsService.maskPhoneNumber(anyString())).thenReturn("+947****567");
+
+        notificationService.handleParcelStatusChanged(envelope);
+
+        verify(channelRouter, never()).route(eq(NotificationChannel.EMAIL), any());
+        verify(channelRouter, never()).route(eq(NotificationChannel.SMS), any());
+        ArgumentCaptor<NotificationLog> captor = ArgumentCaptor.forClass(NotificationLog.class);
+        verify(logRepository, times(2)).save(captor.capture());
+        assertTrue(captor.getAllValues().stream()
+                .anyMatch(log -> log.getChannel() == NotificationChannel.EMAIL
+                        && log.getStatus() == NotificationStatus.SKIPPED));
+    }
+
+    @Test
     @DisplayName("Should skip all processing when global kill switch NOTIFICATIONS_ENABLED is false")
     void shouldSkipAllWhenKillSwitchIsActive() {
         ReflectionTestUtils.setField(notificationService, "notificationsEnabled", false);

@@ -73,7 +73,12 @@ export function MerchantOrdersPage() {
               {q.data.content.map((o) => (
                 <li key={o.trackingNumber} className="rounded-2xl border bg-card p-4">
                   <div className="flex items-start justify-between gap-3">
-                    <p className="font-semibold">{o.merchantRef}</p>
+                    <Link
+                      className="font-semibold underline-offset-4 hover:underline"
+                      to={`/merchant/orders/${o.id}`}
+                    >
+                      {o.merchantRef}
+                    </Link>
                     <StatusChip status={o.status} />
                   </div>
                   <Link
@@ -111,7 +116,12 @@ export function MerchantOrdersPage() {
                   {q.data.content.map((o) => (
                     <tr key={o.trackingNumber} className="border-t">
                       <th scope="row" className="p-3 text-left font-medium">
-                        {o.merchantRef}
+                        <Link
+                          className="underline-offset-4 hover:underline"
+                          to={`/merchant/orders/${o.id}`}
+                        >
+                          {o.merchantRef}
+                        </Link>
                       </th>
                       <td className="p-3 font-mono">
                         <Link

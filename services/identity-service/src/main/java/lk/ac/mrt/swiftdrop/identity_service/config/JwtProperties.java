@@ -1,6 +1,7 @@
 package lk.ac.mrt.swiftdrop.identity_service.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.bind.ConstructorBinding;
 
 /**
  * Configuration properties for JWT issuance, token lifecycle, and cryptographic RSA keys.
@@ -15,6 +16,7 @@ public record JwtProperties(
         String publicKeyPem,
         String keyId
 ) {
+    @ConstructorBinding
     public JwtProperties {
         if (issuer == null || issuer.isBlank()) {
             issuer = "http://identity-service:8080";

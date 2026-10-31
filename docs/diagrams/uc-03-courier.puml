@@ -1,0 +1,99 @@
+@startuml
+title Use Cases — Courier
+
+left to right direction
+
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam defaultFontName "Segoe UI"
+skinparam defaultFontSize 13
+skinparam ArrowColor #555555
+skinparam ArrowFontSize 11
+skinparam usecase {
+  BackgroundColor #F8FAFC
+  BorderColor #64748B
+  FontColor #0F172A
+}
+skinparam actor {
+  BackgroundColor #E2E8F0
+  BorderColor #475569
+}
+skinparam rectangle {
+  BackgroundColor #FFFFFF
+  BorderColor #94A3B8
+}
+
+actor Courier as C
+
+rectangle "SwiftDrop — Courier" {
+
+  package "Daily work" {
+    usecase UC1 as "View today's manifest"
+    usecase UC2 as "View assignment detail
+    --
+    pickup and drop-off"
+  }
+
+  package "Status transitions" {
+    usecase UC3 as "Mark picked up
+    --
+    CREATED to PICKED_UP"
+    usecase UC4 as "Mark in transit
+    --
+    PICKED_UP to IN_TRANSIT"
+    usecase UC5 as "Mark out for delivery
+    --
+    IN_TRANSIT to
+    OUT_FOR_DELIVERY"
+    usecase UC6 as "Mark delivered
+    --
+    OUT_FOR_DELIVERY
+    to DELIVERED"
+    usecase UC7 as "Mark failed
+    --
+    reason required"
+    usecase UC8 as "Reattempt delivery
+    --
+    FAILED back to
+    OUT_FOR_DELIVERY"
+  }
+
+  usecase UC9 as "Upload proof of delivery
+  --
+  photo, max 5 MB"
+  usecase UC10 as "Sign in"
+}
+
+C --> UC10
+C --> UC1
+C --> UC2
+C --> UC3
+C --> UC4
+C --> UC5
+C --> UC6
+C --> UC7
+C --> UC8
+
+UC6 ..> UC9 : <<include>>
+UC1 ..> UC2 : <<extend>>
+
+note right of UC6
+  parcel-service rejects
+  DELIVERED without a proofId
+  that belongs to this parcel
+end note
+
+note right of UC7
+  failedReason is mandatory
+  on FAILED and rejected
+  on every other transition
+end note
+
+note bottom of UC3
+  Only the assigned courier
+  (or a dispatcher) may change
+  a parcel's status, and only
+  after a courier is assigned
+end note
+
+@enduml
