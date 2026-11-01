@@ -24,6 +24,15 @@ services:
       timeout: 5s
       retries: 5
 
+  mailpit:
+    image: axllent/mailpit:latest
+    restart: unless-stopped
+    networks:
+      - swiftdrop
+    ports:
+      - "${MAILPIT_SMTP_PORT:-1025}:1025" # SMTP server
+      - "${MAILPIT_UI_PORT:-8025}:8025"   # Web UI
+
   rabbitmq:
     image: rabbitmq:3-management-alpine
     restart: unless-stopped
@@ -41,16 +50,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-
-  mailpit:
-    image: axllent/mailpit:latest
-    restart: unless-stopped
-    networks:
-      - swiftdrop
-    ports:
-      - "${MAILPIT_SMTP_PORT:-1025}:1025" # SMTP server
-      - "${MAILPIT_UI_PORT:-8025}:8025"   # Web UI
-
 
   # ---------------------------------------------------------------------
   # Application services

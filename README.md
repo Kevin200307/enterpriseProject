@@ -302,10 +302,35 @@ Mobile-friendly tracking page is a first-class public route (responsive).
 
 ## Containers and Kubernetes
 
-**Local:** `infra/docker-compose.yml` starts Redis, RabbitMQ, and the nine Java
-services. Service databases use the external Neon connections configured in
-`infra/.env`. Run the stack with
-`docker compose --env-file infra/.env -f infra/docker-compose.yml up --build`.
+### Local Development (Docker Compose) — PLT-4
+
+Run the entire SwiftDrop stack locally using a single command:
+
+```bash
+# 1. Copy sample environment file and configure credentials
+cp infra/.env.example infra/.env
+
+# 2. Build and start all services in the background
+docker compose --env-file infra/.env -f infra/docker-compose.yml up --build -d
+```
+
+#### Port Reference Table
+
+| Service | Host Port | Protocol / Path | Purpose & URL |
+|---|---|---|---|
+| **Web SPA (Frontend)** | `5174` | HTTP | `http://localhost:5174` — Customer, Courier & Admin UI |
+| **API Gateway** | `8081` | HTTP | `http://localhost:8081` — Unified API Gateway entrypoint |
+| **Mailpit Web UI** | `8025` | HTTP | `http://localhost:8025` — View rendered notification emails (NTF-2) |
+| **Mailpit SMTP** | `1025` | SMTP | Ingestion port used by `notification-service` |
+| **RabbitMQ Management** | `15673` | HTTP | `http://localhost:15673` — Queue & Exchange Dashboard (`guest` / `guest`) |
+| **MinIO Console** | `9001` | HTTP | `http://localhost:9001` — Object storage UI (delivery proofs & receipts) |
+| **MinIO API** | `9000` | HTTP | S3-compatible object storage API |
+| **Redis** | `6379` | TCP | Distributed cache, rate limiter & session store |
+
+> **Email Testing Note:** During parcel booking and status transitions, all customer notification emails are captured by Mailpit. Open `http://localhost:8025` in your browser to inspect responsive HTML templates, tracking buttons, and delivery links without external email credentials.
+
+Service databases use the external Neon connections configured in `infra/.env`.
+
 
 **K8s (bonus):** umbrella Helm chart `infra/k8s/helm/swiftdrop`:
 
