@@ -10,9 +10,9 @@ This document covers the six design deliverables: use case diagrams, the entity-
 
 | | |
 |---|---|
-| **Diagrams** | Every diagram is embedded as a rendered image, with its editable source in a collapsed block directly beneath. All 18 live in [`docs/diagrams/`](./diagrams/) as source (`.mmd` or `.puml`) plus `.png` and `.svg`. |
+| **Diagrams** | Every diagram is embedded as a rendered PNG from [`docs/diagrams/`](./diagrams/), with its Mermaid or PlantUML source in a collapsed block directly beneath it. The collapsed blocks are the authoritative source: paste one into any Mermaid or PlantUML renderer to regenerate or edit that diagram. |
 | **Notation** | Use case diagrams are UML (PlantUML). Everything else is Mermaid, matching the convention already used elsewhere in this repository. |
-| **Export** | Because the diagrams are images, this document exports cleanly to PDF or Word with no diagram-rendering support required. Use the `.svg` files where print quality matters. |
+| **Export** | Because the diagrams are images, this document exports cleanly to PDF or Word with no diagram-rendering support required. |
 | **Scope** | Nine deployable units: eight Spring Boot services plus an API gateway, and a React single-page application. |
 
 ### Contents
@@ -2161,4 +2161,4 @@ This block is repeated in all eight services — the duplication noted in §3.4.
 
 ---
 
-*Every diagram in this document ships as source (`.mmd` / `.puml`) plus rendered `.png` and `.svg` in [`docs/diagrams/`](./diagrams/).*
+*Rendered diagrams live in [`docs/diagrams/`](./diagrams/) as PNG. The source for each is in the collapsed block beneath it above.*

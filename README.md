@@ -1,384 +1,304 @@
----
-name: SwiftDrop Enterprise Plan
-overview: "Greenfield build of SwiftDrop, a fully functional Parcel Delivery & Courier Management System matching the group assignment: microservices, JWT + Google OAuth, RabbitMQ events, Docker Compose, Kubernetes/Helm, tests, and an AI assistant — plus a comprehensive markdown architecture document as the first artifact."
-todos:
-  - id: docs-md
-    content: "Create docs/SWIFTDROP.md: full architecture, use cases, ER, sequences, patterns, security, contribution sheet, setup. Update README."
-    status: pending
-  - id: platform-skeleton
-    content: "Repo skeleton: multi-module Maven, docker-compose, Dockerfiles, shared event/error library, env samples, .gitignore."
-    status: pending
-  - id: identity-gateway
-    content: "identity-service + Spring Cloud Gateway: JWT, refresh, Google OAuth, RBAC, user APIs."
-    status: pending
-  - id: pricing-parcel
-    content: "pricing-service + parcel-service: zones, Strategy pricing, booking, state machine, tracking numbers."
-    status: pending
-  - id: frontend-customer
-    content: "React SPA: auth, create delivery, estimate, history, public mobile tracking page."
-    status: pending
-  - id: events-realtime-notify
-    content: RabbitMQ status events, tracking-service WebSockets, notification-service email/SMS mock.
-    status: pending
-  - id: dispatch-courier
-    content: dispatch-service assignment/workload; courier status updates with proof (MinIO) and failure reasons.
-    status: pending
-  - id: merchant-webhooks
-    content: "merchant-service: approval, API keys/client-credentials, order API, webhook retry/DLQ, merchant UI."
-    status: pending
-  - id: admin-reports
-    content: "Admin: users, merchants, zones/pricing, daily reports; receipt PDF download."
-    status: pending
-  - id: tests-coverage
-    content: Unit/integration/authz tests with Testcontainers; JaCoCo reports; Playwright smoke.
-    status: pending
-  - id: k8s-ci
-    content: Helm umbrella chart (Deployments, Services, ConfigMaps, Secrets, Ingress); GitHub Actions CI.
-    status: pending
-  - id: ai-mcp
-    content: ai-assistant-service chatbot calling backend APIs; expose MCP tools for tracking and fee estimate.
-    status: pending
-isProject: false
+# SwiftDrop
+
+A cloud-native parcel delivery and courier management platform, built as a distributed
+microservices system on Java 21 / Spring Boot with a React single-page application.
+
+Customers book deliveries and track them live. Merchants place orders through a web console or a
+scoped REST API and receive signed webhooks. Couriers work a daily manifest and capture proof of
+delivery. Dispatchers assign work and monitor courier load. An AI assistant answers questions about
+the system in natural language.
+
+![Layered architecture](docs/diagrams/arch-01-layers.png)
+
 ---
 
-# SwiftDrop — Complete Enterprise Implementation Plan
+## Contents
 
-Parcel-service implementation, API examples, configuration, and acceptance checks: [services/parcel-service/README.md](services/parcel-service/README.md).
+- [What it does](#what-it-does)
+- [Architecture](#architecture)
+- [Technology stack](#technology-stack)
+- [Repository layout](#repository-layout)
+- [Quick start](#quick-start)
+- [Local URLs](#local-urls)
+- [Running tests](#running-tests)
+- [Documentation](#documentation)
+- [Project status](#project-status)
+- [Team](#team)
 
-Greenfield repo. Spec: [Group Assignment.pdf](Group Assignment.pdf). First implementation artifact after approval: a full markdown architecture/implementation guide at [docs/SWIFTDROP.md](docs/SWIFTDROP.md) (also summarized in [README.md](README.md)).
+---
 
-## Recommended stack (locked unless you reject this plan)
+## What it does
 
-Chosen for a 10-person University of Moratuwa EAD group, assignment constraints, and Kubernetes bonus marks.
+| Role | Capabilities |
+|---|---|
+| **Guest** | Track any parcel by tracking number, no sign-in required (rate limited) |
+| **Customer** | Estimate a fee, book a delivery, track it live, download a PDF receipt, cancel while pending, manage notification preferences |
+| **Merchant** | Register an organisation, await approval, place orders through the console or REST API, issue and revoke scoped API keys, configure webhooks and replay failed deliveries |
+| **Courier** | Work a daily manifest, advance parcel status through guarded transitions, upload photographic proof of delivery, record failure reasons |
+| **Dispatcher** | Monitor the unassigned queue, inspect courier workload, request assignment suggestions, assign and unassign parcels, manage the courier roster |
+| **Admin** | Everything a dispatcher can do, plus approve merchants, manage users and roles, configure zones and pricing, audit the notification log |
+
+Cross-cutting behaviour worth knowing:
+
+- **Fees are never trusted from the browser.** The price shown while typing is a preview; the
+  server re-quotes it inside the booking transaction and snapshots the result on the parcel.
+- **Bookings are idempotent.** A retried request returns the original parcel rather than creating
+  a duplicate.
+- **Live tracking degrades gracefully.** STOMP over WebSocket falls back to Server-Sent Events,
+  then to 15-second polling, so updates survive proxies that break WebSockets.
+- **Status changes fan out asynchronously.** One courier update reaches the dispatch board, the
+  tracking projection, the notification pipeline and merchant webhooks without the courier's
+  request waiting on any of them.
+
+---
+
+## Architecture
+
+Microservices behind an API gateway that also acts as a backend-for-frontend. Nine deployable
+units: eight Spring Boot services plus the gateway.
+
+**Database per service.** Six services own a PostgreSQL database each, tracking-service keeps its
+read projection entirely in Redis, and the AI assistant holds no durable state. No service has a
+foreign key into another service's database; cross-boundary references are UUID columns enforced in
+application code.
+
+**Event-driven integration.** parcel-service is the only producer. It writes events to a
+transactional outbox in the same transaction as the business change, and a scheduled publisher
+drains that outbox to the `parcel.events` topic exchange. Four consumers react independently, each
+deduplicating on the event id because delivery is at-least-once.
+
+| Service | Responsibility |
+|---|---|
+| `gateway` | Edge routing, JWT validation, CORS, rate limiting, circuit breaking, identity header injection, aggregated API docs |
+| `identity-service` | Registration, login, Google OIDC, RS256 token issuance, JWKS, refresh rotation, role administration |
+| `parcel-service` | Parcel aggregate, booking, guarded state machine, proof upload, PDF receipts, transactional outbox |
+| `pricing-service` | Zones, city resolution, temporal pricing rules, Strategy-based fee engine |
+| `dispatch-service` | Courier roster, dispatch queue projection, assignment commands, workload accounting |
+| `merchant-service` | Merchant onboarding and approval, API key lifecycle, order ingestion, signed outbound webhooks |
+| `tracking-service` | Privacy-reduced read projection in Redis, STOMP and SSE push |
+| `notification-service` | Event-driven email and SMS, per-user preferences, delivery log, retry scheduler |
+| `ai-assistant-service` | Conversational assistant exposing read-oriented domain tools over SSE |
+
+### Parcel lifecycle
+
+```
+CREATED ──► PICKED_UP ──► IN_TRANSIT ──► OUT_FOR_DELIVERY ──► DELIVERED
+   │                                            ▲      │
+   │                                            └──────┤
+   ▼                                           (reattempt)
+CANCELLED                                             FAILED
+```
+
+Cancellation is legal only from `CREATED`. `DELIVERED` requires a proof of delivery belonging to
+that parcel, and `FAILED` requires a reason. `FAILED` is **not** terminal: a failed delivery can be
+reattempted, so the graph contains a cycle.
+
+---
+
+## Technology stack
 
 | Layer | Technology |
 |---|---|
-| Frontend | React 18 + TypeScript + Vite + Tailwind + shadcn/ui + React Query |
-| BFF / Gateway | Spring Cloud Gateway (JWT validation, routing, rate limit) |
-| Backend | Java 21, Spring Boot 3.3, Spring Security, Spring Data JPA, MapStruct |
-| Auth | JWT (access + refresh) + Google OAuth 2.0 (OIDC) + merchant API keys + OAuth2 client-credentials |
-| Real-time | Spring WebSocket (STOMP over SockJS) + public tracking via SSE fallback |
-| Database | PostgreSQL 16 (schema-per-service in one cluster locally) |
-| Cache / sessions | Redis 7 |
-| Message broker | RabbitMQ 3 (topic exchange `parcel.events`) — simpler than Kafka at this scale, still pub/sub |
-| Object storage | MinIO (proof-of-delivery photos, receipt PDFs) |
-| Notifications | Spring AMQP consumer + Mailpit (local) / SMTP (prod); mock SMS adapter |
-| AI assistant | Spring AI + OpenAI-compatible API; MCP tools wrapping parcel/pricing APIs |
-| PDF receipts | OpenPDF / Flying Saucer |
-| Observability | Micrometer + Prometheus + Grafana + Loki + Tempo (OpenTelemetry) |
-| API docs | OpenAPI 3 (springdoc) per service, aggregated at gateway `/docs` |
-| Local orchestration | Docker Compose (all services + infra) |
-| Kubernetes | Kind/Minikube locally; Helm charts; Ingress-NGINX; ConfigMaps + Secrets |
-| CI/CD | GitHub Actions (build, test, coverage, image scan, helm lint) |
-| Quality | JUnit 5, Testcontainers, JaCoCo, ESLint, Playwright smoke tests |
-| Security extras | CORS, CSRF off for APIs + cookie flags, Bean Validation, hashed passwords (BCrypt), PII redaction in logs, OWASP headers |
+| Frontend | React 18.3, TypeScript, Vite, Tailwind CSS, TanStack Query, React Router |
+| Edge | Spring Cloud Gateway (WebFlux / Netty), Redis token-bucket rate limiting, Resilience4j |
+| Backend | Java 21, Spring Boot 4.1.1, Spring Security, Spring Data JPA, Bean Validation |
+| Persistence | PostgreSQL (Neon), one database per service, Flyway migrations |
+| Cache / projection | Redis 7 |
+| Messaging | RabbitMQ 3, topic exchange `parcel.events`, dead-letter exchange `swiftdrop.dlx` |
+| Object storage | MinIO (proof-of-delivery photos) |
+| Mail | Mailpit locally, SMTP in deployed environments |
+| AI | Spring AI with an OpenAI-compatible provider |
+| Orchestration | Docker Compose |
 
-**Architecture style:** microservices with an API Gateway/BFF — justified for 10 contributors, independent deployability, and the K8s bonus. Bounded contexts stay small so the demo remains runnable on a laptop via Compose.
-
-```mermaid
-flowchart TB
-  subgraph clients [Clients]
-    Web[React_Web]
-    MerchantAPI[Merchant_Systems]
-    CourierApp[Courier_Web]
-  end
-
-  subgraph edge [Edge]
-    Ingress[Ingress_or_Compose_Proxy]
-    Gateway[Spring_Cloud_Gateway_BFF]
-  end
-
-  subgraph services [Domain_Services]
-    Identity[identity-service]
-    Parcel[parcel-service]
-    Dispatch[dispatch-service]
-    Merchant[merchant-service]
-    Pricing[pricing-service]
-    Notify[notification-service]
-    Tracking[tracking-service]
-    AI[ai-assistant-service]
-  end
-
-  subgraph data [Data_and_Infra]
-    PG[(PostgreSQL)]
-    Redis[(Redis)]
-    MQ[RabbitMQ]
-    Minio[MinIO]
-    Mail[Mailpit]
-  end
-
-  Web --> Ingress
-  CourierApp --> Ingress
-  MerchantAPI --> Ingress
-  Ingress --> Gateway
-  Gateway --> Identity
-  Gateway --> Parcel
-  Gateway --> Dispatch
-  Gateway --> Merchant
-  Gateway --> Pricing
-  Gateway --> Tracking
-  Gateway --> AI
-  Parcel --> MQ
-  Dispatch --> MQ
-  Merchant --> MQ
-  MQ --> Notify
-  MQ --> Tracking
-  MQ --> Merchant
-  Identity --> PG
-  Parcel --> PG
-  Dispatch --> PG
-  Merchant --> PG
-  Pricing --> PG
-  Parcel --> Minio
-  Tracking --> Redis
-  Gateway --> Redis
-  Notify --> Mail
-```
+---
 
 ## Repository layout
 
 ```
 enterpriseProject/
-  docs/DESIGN.md             # design pack: use cases, ER, architecture, integration, sequences, patterns
-  docs/SWIFTDROP.md          # per-service design notes + setup
-  docs/diagrams/             # mermaid (.mmd) and plantuml (.puml) sources + rendered png/svg
-  apps/web/                  # React SPA (customer, merchant, courier, admin)
-  services/
-    gateway/
-    identity-service/
-    parcel-service/
-    dispatch-service/
-    merchant-service/
-    pricing-service/
-    notification-service/
-    tracking-service/
-    ai-assistant-service/
-  infra/
-    docker-compose.yml       # local service and infrastructure orchestration
-    .env.example             # non-secret local configuration template
-    k8s/helm/swiftdrop/      # umbrella Helm chart
-    observability/           # Grafana dashboards, Prometheus scrape
-  packages/common/           # shared DTOs, error codes, event contracts (Java lib)
-  .github/workflows/
-  README.md
-  docker-compose.yml
+├── apps/web/                 React SPA (customer, merchant, courier, admin)
+├── services/
+│   ├── gateway/              Spring Cloud Gateway edge
+│   ├── identity-service/     Auth, RBAC, JWT, Google OIDC
+│   ├── parcel-service/       Booking, lifecycle, proofs, receipts
+│   ├── pricing-service/      Zones and the Strategy pricing engine
+│   ├── dispatch-service/     Courier roster and assignment
+│   ├── merchant-service/     Merchant API keys, orders, webhooks
+│   ├── tracking-service/     Redis projection, STOMP and SSE
+│   ├── notification-service/ Email and SMS pipeline
+│   └── ai-assistant-service/ Spring AI tool-calling assistant
+├── packages/common/          Shared event contracts, enums, error codes
+├── infra/
+│   ├── docker-compose.yml          Full local stack
+│   ├── docker-compose.parcel.yml   MinIO overlay for proof storage
+│   └── minio/                      Bucket bootstrap
+├── docs/
+│   ├── DESIGN.md             Full design pack (use cases, ER, sequences, patterns)
+│   └── diagrams/             18 rendered diagrams (PNG); drawio/ holds editable sources
+├── report/                   Academic project report (LaTeX + PDF)
+└── tests/                    End-to-end harness
 ```
 
-## Domain model (ER — to be fully drawn in the MD)
+---
 
-Core entities:
+## Quick start
 
-- `users` (id, email, password_hash, name, phone, google_sub, status)
-- `roles` / `user_roles` — CUSTOMER, MERCHANT, COURIER, DISPATCHER, ADMIN
-- `merchants` (org name, webhook_url, status PENDING/APPROVED/SUSPENDED, owner_user_id)
-- `api_keys` (hashed key, merchant_id, scopes, last_used)
-- `oauth_clients` (client_id, client_secret_hash) for client-credentials
-- `zones` (name, polygon/city list, active)
-- `pricing_rules` (zone_from, zone_to, size_band, base_fee, per_kg)
-- `couriers` (user_id, vehicle, current_zone, active)
-- `parcels` (tracking_number, customer_id, merchant_id, pickup/dropoff JSON, size, weight, fee, status, assignee)
-- `parcel_status_history` (parcel_id, from, to, actor, note, proof_url, failed_reason, timestamp)
-- `addresses` stored as structured fields on the parcel (not free-text only) for PII control
-- `webhook_deliveries` (event_id, url, attempts, last_status, next_retry)
-- `notifications` (channel, recipient, template, payload_ref, status)
+### Prerequisites
 
-**Parcel state machine:** `CREATED → PICKED_UP → IN_TRANSIT → OUT_FOR_DELIVERY → DELIVERED | FAILED` (FAILED may allow reattempt back to OUT_FOR_DELIVERY).
+- Docker with Compose v2
+- JDK 21 and Node.js 20+ (only if running services outside Docker)
+- Six PostgreSQL databases. The stack is configured against [Neon](https://neon.tech) branches,
+  one per service; any reachable PostgreSQL 16 will do.
 
-**Pricing Strategy pattern:** `PricingStrategy` implementations (distance/zone-band + weight). Estimate endpoint is request/reply; confirmed fee is snapshotted on the parcel.
+### 1. Configure the environment
 
-## Service responsibilities
-
-- **gateway** — JWT/API-key authn at the edge, `/api/v1/**` versioning, rate limits, CORS, WebSocket upgrade proxy, OpenAPI aggregator, BFF aggregation for dashboards.
-- **identity-service** — signup/login, Google OAuth (authorization-code + PKCE from SPA), refresh tokens in HttpOnly cookies (or rotation store in Redis), RBAC, user admin APIs.
-- **pricing-service** — zone CRUD, fee estimate, persisted pricing rules.
-- **parcel-service** — customer bookings, tracking numbers (`SD-XXXXXXXX`), status commands, receipt PDF generation, history.
-- **dispatch-service** — unassigned queue, assign courier, workload counts, daily courier lists.
-- **merchant-service** — merchant registration/approval, API-key issuance (show once), OAuth2 client-credentials, outbound webhooks with exponential retry + DLQ.
-- **tracking-service** — consumes status events, pushes STOMP topics `/topic/parcels.{trackingNumber}`, public read-only tracking API (no PII beyond masked names).
-- **notification-service** — consumes `parcel.status.changed`, sends email (and mock SMS), never logs full addresses/phones.
-- **ai-assistant-service** — chat UI backend; tools: `getParcelByTrackingNumber`, `estimateFee`, `listMyParcels` (user-scoped). MCP server exposing the same tools.
-
-## Gateway local operation
-
-The API gateway is the public entry point for the local stack. Compose maps host
-port `8081` to gateway container port `8080`.
-
-1. Copy `infra/.env.example` to `infra/.env` and replace every `change-me`
-   placeholder. Never commit `infra/.env`.
-2. Start Docker Desktop or another Docker engine.
-3. Build and start the gateway and its required Redis dependency:
+Create `infra/.env`. There is no committed template, so these are the variables Compose requires:
 
 ```bash
-docker compose --env-file infra/.env -f infra/docker-compose.yml up --build gateway
+# One connection triplet per service database
+IDENTITY_DB_URL=jdbc:postgresql://<host>/<db>
+IDENTITY_DB_USERNAME=...
+IDENTITY_DB_PASSWORD=...
+# repeat for PARCEL_, MERCHANT_, DISPATCH_, PRICING_, NOTIFICATION_
+
+# Infrastructure
+REDIS_PASSWORD=...
+RABBITMQ_USERNAME=...
+RABBITMQ_PASSWORD=...
+
+# Identity: RSA keypair used to sign and verify access tokens
+IDENTITY_JWT_PRIVATE_KEY=...
+IDENTITY_JWT_PUBLIC_KEY=...
+
+# Google OAuth 2.0
+GOOGLE_CLIENT_ID=...
+GOOGLE_CLIENT_SECRET=...
+
+# AI assistant (service will not start without it)
+SPRING_AI_OPENAI_API_KEY=...
 ```
 
-Useful local URLs:
+Never commit `infra/.env`.
+
+### 2. Start the stack
+
+```bash
+# Core stack
+docker compose --env-file infra/.env -f infra/docker-compose.yml up --build
+
+# With MinIO, needed for proof-of-delivery uploads
+docker compose --env-file infra/.env \
+  -f infra/docker-compose.yml \
+  -f infra/docker-compose.parcel.yml up --build
+```
+
+The gateway is the only public entry point. It reports `DEGRADED` with HTTP 200 when an optional
+downstream is unavailable, and unavailable routes return an RFC 7807 problem document rather than
+preventing startup.
+
+### 3. Frontend in development
+
+```bash
+cd apps/web
+npm install
+npm run dev          # Vite dev server on :5173
+```
+
+Point it at the gateway by setting the API base URL to `http://localhost:8081`, and make sure that
+origin is in the gateway's allowed CORS origins.
+
+### Building without Docker
+
+```bash
+./mvnw clean install                      # all modules, including shared contracts
+./mvnw -pl services/gateway -am spring-boot:run
+```
+
+---
+
+## Local URLs
 
 | Purpose | URL |
 |---|---|
+| Web application (container) | `http://localhost:5174` |
+| Web application (Vite dev) | `http://localhost:5173` |
+| API gateway | `http://localhost:8081` |
 | Gateway health | `http://localhost:8081/actuator/health` |
 | Aggregated Swagger UI | `http://localhost:8081/docs` |
-| Versioned APIs | `http://localhost:8081/api/v1/**` |
-| Dashboard BFF | `http://localhost:8081/api/v1/dashboard` |
+| RabbitMQ management | `http://localhost:15673` |
+| Mailpit inbox | `http://localhost:8025` |
+| MinIO console | `http://localhost:9001` (loopback only) |
 
-The health response can be `DEGRADED` with HTTP 200 when an optional downstream
-service is unavailable. Redis is the gateway's only required startup dependency;
-API routes for unavailable services return an RFC 7807 response instead of
-preventing the gateway from starting.
+All APIs are versioned under `/api/v1/**`. Routes under `/api/v1/internal/**` are rejected at the
+edge and reachable only service-to-service.
 
-Gateway configuration is environment-based. Compose supplies safe internal DNS
-defaults for the service URLs, while `infra/.env.example` documents the values
-that developers may override:
+---
 
-| Variable | Purpose / default |
+## Running tests
+
+```bash
+./mvnw test                                   # every module
+./mvnw -pl services/gateway -am test          # one service and its dependencies
+
+cd apps/web
+npm run test                                  # Vitest
+npm run typecheck                             # TypeScript project references
+npm run lint                                  # ESLint
+```
+
+Integration tests use Testcontainers and start real PostgreSQL and RabbitMQ instances, so Docker
+must be running. Tests that require Docker skip themselves when it is unavailable.
+
+---
+
+## Documentation
+
+| Document | Contents |
 |---|---|
-| `GATEWAY_HOST_PORT` | Public host port; defaults to `8081` |
-| `REDIS_PASSWORD` | Password shared with the local Redis container; required |
-| `IDENTITY_JWKS_URI` | JWT verification keys from identity-service |
-| `IDENTITY_SERVICE_URL` | Identity API base URL |
-| `PARCEL_SERVICE_URL` | Parcel API base URL |
-| `PRICING_SERVICE_URL` | Pricing API base URL |
-| `DISPATCH_SERVICE_URL` | Dispatch API base URL |
-| `MERCHANT_SERVICE_URL` | Merchant API base URL |
-| `TRACKING_SERVICE_URL` | Tracking HTTP/SSE base URL |
-| `TRACKING_WEBSOCKET_URL` | Tracking WebSocket base URL |
-| `NOTIFICATION_SERVICE_URL` | Notification API base URL |
-| `AI_ASSISTANT_SERVICE_URL` | AI assistant API base URL |
-| `WEB_ORIGIN` | Exact browser origin allowed by CORS; defaults to `http://localhost:5173` |
-| `DASHBOARD_UPSTREAM_TIMEOUT` | Independent dashboard section timeout; defaults to `2s` |
+| [`docs/DESIGN.md`](docs/DESIGN.md) | Full design pack: use case diagrams, ER model, architecture and justification, integration patterns, sequence diagrams, design patterns, and a record of known defects |
+| [`docs/diagrams/`](docs/diagrams/) | 18 rendered diagrams as PNG. Mermaid and PlantUML source for each is embedded in `DESIGN.md`; `drawio/` holds draw.io versions |
+| [`report/SwiftDrop_Project_Report.pdf`](report/SwiftDrop_Project_Report.pdf) | Academic project report, 46 pages, all diagrams embedded |
+| Service READMEs | Each service documents its own API contracts and configuration |
 
-Run the gateway test suite from the repository root:
+Every claim in the design pack and report was verified against the source code. Where behaviour
+diverges from the intended design, it is recorded rather than smoothed over.
 
-```bash
-mvn -pl services/gateway -am test
-```
+---
 
-Run the consolidated public-edge acceptance contract with:
+## Project status
 
-```bash
-mvn -pl services/gateway -am \
-  -Dtest=GatewayAcceptanceSuite \
-  -Dsurefire.failIfNoSpecifiedTests=false test
-```
+The platform runs end to end: authentication, pricing, booking, dispatch, courier workflow, live
+tracking, notifications and the merchant API are all implemented and covered by tests.
 
-Docker is required only for the Redis-backed rate-limit acceptance scenario;
-JUnit skips that scenario when Docker is unavailable.
+Designed and documented, but not yet built:
 
-## Integration patterns (assignment requirement)
+- Kubernetes deployment via an umbrella Helm chart, with autoscaling on the edge and tracking
+  workloads
+- Playwright browser end-to-end smoke tests
+- Write-capable AI assistant tools (booking, dispatch assignment, merchant operations); the three
+  existing tools are read-only
+- Volumetric dimension-based pricing and merchant volume discounts
+- A production SMS provider behind the existing channel abstraction
 
-| Flow | Pattern | Why |
-|---|---|---|
-| Login, create delivery, estimate fee, assign courier | Request/reply (REST) | Synchronous user-facing |
-| Google login | OAuth 2.0 authorization code + OIDC | Assignment social login |
-| Merchant create order | Request/reply + API key / client-credentials | Partner systems |
-| Status change → notify + webhook + live UI | Pub/sub via RabbitMQ topic | Decouple producers from consumers; retry independently |
-| Webhook delivery | Broker + competing consumers + retry/DLQ | At-least-once, resilient partners |
-| Live tracking | Observer (events) + WebSocket | Push without polling |
+Known defects found during documentation review are listed in
+[`docs/DESIGN.md` §7](docs/DESIGN.md#7-known-gaps).
 
-**Event contract (example):** `parcel.status.changed` v1 `{ eventId, occurredAt, trackingNumber, parcelId, fromStatus, toStatus, actorId, merchantId }`. Idempotency via `eventId`.
+---
 
-## Security (enterprise + assignment)
+## Team
 
-- Passwords BCrypt; API keys SHA-256 hashed; never return secrets after creation.
-- JWT short-lived access (15m) + refresh rotation.
-- Method security: courier can only PATCH own assignments (explicit authz tests).
-- Bean Validation on all inputs; centralized `ProblemDetail` (RFC 7807) errors without stack traces/PII.
-- Log masking for phone/address; structured JSON logs.
-- Secrets only via env / K8s Secrets / Compose `.env` (gitignored).
-- HTTPS at Ingress; security headers; file upload type/size limits for proof photos.
+Group 4, Enterprise Application Development (IN3101), Faculty of Information Technology,
+University of Moratuwa.
 
-## Frontend app map
-
-Single SPA with route guards:
-
-- Public: `/login`, `/signup`, `/track/:trackingNumber`, `/oauth/callback`
-- Customer: `/deliveries/new`, `/deliveries`, `/deliveries/:id`, receipts
-- Merchant: `/merchant/orders`, `/merchant/webhooks`, `/merchant/api-keys`
-- Courier: `/courier/today`, status update + photo + fail reason
-- Dispatcher/Admin: unassigned board, courier workload, users, merchants approval, zones/pricing, reports
-- All: AI chat widget (bonus)
-
-Mobile-friendly tracking page is a first-class public route (responsive).
-
-## Containers and Kubernetes
-
-**Local:** `infra/docker-compose.yml` starts Redis, RabbitMQ, and the nine Java
-services. Service databases use the external Neon connections configured in
-`infra/.env`. Run the stack with
-`docker compose --env-file infra/.env -f infra/docker-compose.yml up --build`.
-
-**K8s (bonus):** umbrella Helm chart `infra/k8s/helm/swiftdrop`:
-
-- Deployments + Services per app
-- ConfigMaps for non-secret config
-- Secrets for DB, JWT, Google client, SMTP, MinIO, OpenAI key
-- Ingress (`swiftdrop.local`) with TLS optional
-- HPA on gateway + parcel-service
-- RabbitMQ and Postgres via Bitnami charts (or single-replica for demo)
-- Init jobs for Flyway migrations
-- NetworkPolicies (default deny + allow gateway→services)
-
-## Testing (15 marks)
-
-- Unit: pricing strategy, state machine, webhook retry policy
-- Slice/integration: Testcontainers (Postgres + RabbitMQ) for status-change → notification consumer
-- Authz: courier A cannot read courier B deliveries; customer cannot assign parcels
-- API contract tests via Spring MockMvc / WebTestClient
-- Frontend: React Testing Library for critical forms; Playwright happy-path smoke
-- JaCoCo + coverage badge in CI; HTML report committed under `docs/test-reports/` at submission
-
-## Design documentation (20 marks) — [`docs/DESIGN.md`](docs/DESIGN.md)
-
-The assignment-ready design pack (exportable to PDF later). Diagram sources and
-rendered images live in [`docs/diagrams/`](docs/diagrams/).
-
-| # | Deliverable | Where |
-|---|---|---|
-| 1 | Use case diagrams (customer, merchant, courier, dispatcher) | `DESIGN.md` §1 |
-| 2 | ER diagram | `DESIGN.md` §2 |
-| 3 | Architecture + layer justification | `DESIGN.md` §3 |
-| 4 | Integration patterns table | `DESIGN.md` §4 |
-| 5 | Sequence diagrams: create delivery, merchant API order, courier status → notifications, Google OAuth | `DESIGN.md` §5 |
-| 6 | SOLID / DRY / Repository / Strategy / Observer note | `DESIGN.md` §6 |
-| 7 | Security decisions | `DESIGN.md` §6.5 and `SWIFTDROP.md` §2 |
-| 8 | 10-member contribution sheet template | _outstanding_ |
-| 9 | Local + K8s setup instructions (copied into README) | _outstanding_ |
-
-`DESIGN.md` §7 additionally records the defects found while verifying the
-documentation against the implementation.
-
-## Implementation order (so the demo stays always runnable)
-
-1. Write `docs/SWIFTDROP.md` + README + Compose skeleton + shared error/event contracts.
-2. identity-service + gateway + login/signup/Google OAuth + RBAC.
-3. pricing-service + parcel-service booking + fee estimate + tracking number.
-4. React customer flows + public track page (polling first).
-5. RabbitMQ events + tracking-service WebSockets + notification-service email.
-6. dispatch-service assignment + courier status + proof upload (MinIO).
-7. merchant-service API keys, order API, webhooks with retry, merchant dashboard.
-8. Admin: users, merchants, zones, reports.
-9. Receipt PDF, history, hardening, env-based config.
-10. Tests + coverage reports.
-11. Helm/K8s + GitHub Actions.
-12. AI assistant + MCP tools.
-
-## 10-member split (contribution sheet)
-
-- M1 Gateway + Compose/K8s platform
-- M2 Identity + Google OAuth + JWT
-- M3 Pricing + zones
-- M4 Parcel booking + receipts
-- M5 Dispatch + courier workload
-- M6 Merchant API + webhooks
-- M7 Tracking realtime + notification consumer
-- M8 React customer + public tracking
-- M9 React courier + dispatcher/admin
-- M10 Testing, CI, AI assistant/MCP, docs polish
-
-## Out of scope (keep demo honest)
-
-- Native mobile apps (responsive web only)
-- Real SMS gateway (mock adapter)
-- Multi-region / multi-cluster
-- Blockchain / crypto payments
-- True Kafka cluster (RabbitMQ satisfies the brief)
+| Member | Area |
+|---|---|
+| Arangala A. P. | Identity and authentication |
+| Kevin Gaveshana | API gateway and edge platform |
+| M.A.P.M. Mallawasekara | Pricing and zone management |
+| L. P. Ishadi | Parcel booking and lifecycle |
+| Methsara | Dispatch and courier workload |
+| Charithma Dassanayake | Merchant API and webhooks |
+| Maheesha Paboth | Live tracking and WebSockets |
+| Thranjaya S. J. K. | Notification pipeline |
+| R.K.T.P. Wijerathna | AI assistant and tooling |
+| K.G.T. Buddhima | Frontend SPA and system design |
