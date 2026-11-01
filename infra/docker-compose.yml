@@ -24,6 +24,15 @@ services:
       timeout: 5s
       retries: 5
 
+  mailpit:
+    image: axllent/mailpit:latest
+    restart: unless-stopped
+    networks:
+      - swiftdrop
+    ports:
+      - "${MAILPIT_SMTP_PORT:-1025}:1025" # SMTP server
+      - "${MAILPIT_UI_PORT:-8025}:8025"   # Web UI
+
   rabbitmq:
     image: rabbitmq:3-management-alpine
     restart: unless-stopped
@@ -42,16 +51,6 @@ services:
       timeout: 5s
       retries: 5
 
-  mailpit:
-    image: axllent/mailpit:latest
-    restart: unless-stopped
-    networks:
-      - swiftdrop
-    ports:
-      - "${MAILPIT_SMTP_PORT:-1025}:1025" # SMTP server
-      - "${MAILPIT_UI_PORT:-8025}:8025"   # Web UI
-
-
   # ---------------------------------------------------------------------
   # Application services
   # ---------------------------------------------------------------------
@@ -61,14 +60,38 @@ services:
       context: ..
       dockerfile: services/gateway/Dockerfile
     ports:
-      - "${GATEWAY_HOST_PORT}:8080"
+      - "${GATEWAY_HOST_PORT:-8081}:8080"
     environment:
       JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=75
+      SERVER_PORT: 8080
       SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
       SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD}
+      IDENTITY_JWKS_URI: ${IDENTITY_JWKS_URI:-http://identity-service:8080/.well-known/jwks.json}
+      IDENTITY_ISSUER_URI: ${IDENTITY_ISSUER_URI:-http://identity-service:8080}
+      JWT_AUDIENCE: ${JWT_AUDIENCE:-swiftdrop}
+      IDENTITY_SERVICE_URL: ${IDENTITY_SERVICE_URL:-http://identity-service:8080}
+      PARCEL_SERVICE_URL: ${PARCEL_SERVICE_URL:-http://parcel-service:8080}
+      PRICING_SERVICE_URL: ${PRICING_SERVICE_URL:-http://pricing-service:8080}
+      DISPATCH_SERVICE_URL: ${DISPATCH_SERVICE_URL:-http://dispatch-service:8080}
+      MERCHANT_SERVICE_URL: ${MERCHANT_SERVICE_URL:-http://merchant-service:8080}
+      TRACKING_SERVICE_URL: ${TRACKING_SERVICE_URL:-http://tracking-service:8080}
+      TRACKING_WEBSOCKET_URL: ${TRACKING_WEBSOCKET_URL:-ws://tracking-service:8080}
+      NOTIFICATION_SERVICE_URL: ${NOTIFICATION_SERVICE_URL:-http://notification-service:8086}
+      AI_ASSISTANT_SERVICE_URL: ${AI_ASSISTANT_SERVICE_URL:-http://ai-assistant-service:8080}
+      WEB_ORIGINS: ${WEB_ORIGINS:-${WEB_ORIGIN:-http://localhost:5173},http://localhost:${WEB_HOST_PORT:-5174}}
+      DASHBOARD_UPSTREAM_TIMEOUT: ${DASHBOARD_UPSTREAM_TIMEOUT:-2s}
     depends_on:
       redis:
         condition: service_healthy
+      identity-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 3s
+      start_period: 30s
+      retries: 3
 
   ai-assistant-service:
     <<: *defaults
@@ -78,7 +101,13 @@ services:
       dockerfile: services/ai-assistant-service/Dockerfile
     environment:
       JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=75
-      SPRING_AI_OPENAI_API_KEY: ${OPENAI_API_KEY}
+      SPRING_AI_OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ASSISTANT_ENABLED: ${ASSISTANT_ENABLED:-true}
+      JWT_JWK_SET_URI: ${IDENTITY_JWKS_URI:-http://identity-service:8080/.well-known/jwks.json}
+      JWT_ISSUER_URI: ${IDENTITY_ISSUER_URI:-http://identity-service:8080}
+      JWT_AUDIENCE: ${JWT_AUDIENCE:-swiftdrop}
+      PARCEL_SERVICE_URL: http://parcel-service:8080
+      PRICING_SERVICE_URL: http://pricing-service:8080
 
   dispatch-service:
     <<: *defaults
@@ -90,12 +119,31 @@ services:
       SPRING_DATASOURCE_URL: ${DISPATCH_DB_URL}
       SPRING_DATASOURCE_USERNAME: ${DISPATCH_DB_USERNAME}
       SPRING_DATASOURCE_PASSWORD: ${DISPATCH_DB_PASSWORD}
+      SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE: ${DB_POOL_SIZE:-10}
+      SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE: ${DB_POOL_MIN_IDLE:-0}
+      SPRING_DATASOURCE_HIKARI_IDLE_TIMEOUT: ${DB_POOL_IDLE_TIMEOUT_MS:-180000}
+      SPRING_DATASOURCE_HIKARI_MAX_LIFETIME: ${DB_POOL_MAX_LIFETIME_MS:-240000}
+      SPRING_DATASOURCE_HIKARI_CONNECTION_TIMEOUT: ${DB_POOL_CONNECTION_TIMEOUT_MS:-10000}
+      SPRING_DATASOURCE_HIKARI_VALIDATION_TIMEOUT: ${DB_POOL_VALIDATION_TIMEOUT_MS:-5000}
       SPRING_RABBITMQ_HOST: rabbitmq
       SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USERNAME}
       SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+      IDENTITY_JWKS_URI: ${IDENTITY_JWKS_URI:-http://identity-service:8080/.well-known/jwks.json}
+      IDENTITY_ISSUER_URI: ${IDENTITY_ISSUER_URI:-http://identity-service:8080}
+      JWT_AUDIENCE: ${JWT_AUDIENCE:-swiftdrop}
+      IDENTITY_SERVICE_URL: http://identity-service:8080
+      PARCEL_SERVICE_URL: http://parcel-service:8080
+      DISPATCH_CLIENT_SECRET: ${DISPATCH_CLIENT_SECRET:-}
     depends_on:
       rabbitmq:
         condition: service_healthy
+
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 10s
+      timeout: 3s
+      start_period: 30s
+      retries: 5
 
   identity-service:
     <<: *defaults
@@ -109,15 +157,35 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${IDENTITY_DB_PASSWORD}
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD}
+      IDENTITY_ISSUER_URI: ${IDENTITY_ISSUER_URI:-http://identity-service:8080}
+      JWT_AUDIENCE: ${JWT_AUDIENCE:-swiftdrop}
+      IDENTITY_JWT_KEY_ID: ${IDENTITY_JWT_KEY_ID:-swiftdrop-v1}
+      IDENTITY_JWT_PRIVATE_KEY: ${IDENTITY_JWT_PRIVATE_KEY}
+      IDENTITY_JWT_PUBLIC_KEY: ${IDENTITY_JWT_PUBLIC_KEY}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-http://localhost:5173/oauth/callback}
+      ADMIN_BOOTSTRAP_ENABLED: ${ADMIN_BOOTSTRAP_ENABLED:-false}
+      ADMIN_BOOTSTRAP_EMAIL: ${ADMIN_BOOTSTRAP_EMAIL:-admin@swiftdrop.lk}
+      ADMIN_BOOTSTRAP_PASSWORD: ${ADMIN_BOOTSTRAP_PASSWORD:-}
+      DISPATCH_CLIENT_SECRET: ${DISPATCH_CLIENT_SECRET:-}
     depends_on:
       redis:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 10s
+      timeout: 3s
+      start_period: 30s
+      retries: 5
 
   merchant-service:
     <<: *defaults
     build:
       context: ..
       dockerfile: services/merchant-service/Dockerfile
+    ports:
+      - "${MERCHANT_HOST_PORT:-8080}:8080"
     environment:
       JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=75
       SPRING_DATASOURCE_URL: ${MERCHANT_DB_URL}
@@ -126,17 +194,38 @@ services:
       SPRING_RABBITMQ_HOST: rabbitmq
       SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USERNAME}
       SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+      IDENTITY_SERVICE_URL: ${IDENTITY_SERVICE_URL:-http://identity-service:8080}
+      IDENTITY_JWKS_URI: ${IDENTITY_JWKS_URI:-http://identity-service:8080/.well-known/jwks.json}
+      JWT_ISSUER_URI: ${IDENTITY_ISSUER_URI:-http://identity-service:8080}
+      JWT_JWK_SET_URI: ${IDENTITY_JWKS_URI:-http://identity-service:8080/.well-known/jwks.json}
+      JWT_AUDIENCE: ${JWT_AUDIENCE:-swiftdrop}
+      PRICING_SERVICE_URL: ${PRICING_SERVICE_URL:-http://pricing-service:8080}
     depends_on:
       rabbitmq:
         condition: service_healthy
+      identity-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 10s
+      timeout: 3s
+      start_period: 30s
+      retries: 5
 
   notification-service:
     <<: *defaults
     build:
       context: ..
       dockerfile: services/notification-service/Dockerfile
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8086/actuator/health"]
+      interval: 30s
+      timeout: 3s
+      start_period: 30s
+      retries: 5
     environment:
       JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=75
+      PORT: 8086
       SPRING_DATASOURCE_URL: ${NOTIFICATION_DB_URL}
       SPRING_DATASOURCE_USERNAME: ${NOTIFICATION_DB_USERNAME}
       SPRING_DATASOURCE_PASSWORD: ${NOTIFICATION_DB_PASSWORD}
@@ -162,9 +251,18 @@ services:
       SPRING_DATASOURCE_URL: ${PARCEL_DB_URL}
       SPRING_DATASOURCE_USERNAME: ${PARCEL_DB_USERNAME}
       SPRING_DATASOURCE_PASSWORD: ${PARCEL_DB_PASSWORD}
+      SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE: ${DB_POOL_SIZE:-10}
+      SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE: ${DB_POOL_MIN_IDLE:-0}
+      SPRING_DATASOURCE_HIKARI_IDLE_TIMEOUT: ${DB_POOL_IDLE_TIMEOUT_MS:-180000}
+      SPRING_DATASOURCE_HIKARI_MAX_LIFETIME: ${DB_POOL_MAX_LIFETIME_MS:-240000}
+      SPRING_DATASOURCE_HIKARI_CONNECTION_TIMEOUT: ${DB_POOL_CONNECTION_TIMEOUT_MS:-10000}
+      SPRING_DATASOURCE_HIKARI_VALIDATION_TIMEOUT: ${DB_POOL_VALIDATION_TIMEOUT_MS:-5000}
       SPRING_RABBITMQ_HOST: rabbitmq
       SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USERNAME}
       SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+      JWT_ISSUER_URI: ${IDENTITY_ISSUER_URI:-http://identity-service:8080}
+      JWT_JWK_SET_URI: ${IDENTITY_JWKS_URI:-http://identity-service:8080/.well-known/jwks.json}
+      JWT_AUDIENCE: ${JWT_AUDIENCE:-swiftdrop}
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -179,6 +277,11 @@ services:
       SPRING_DATASOURCE_URL: ${PRICING_DB_URL}
       SPRING_DATASOURCE_USERNAME: ${PRICING_DB_USERNAME}
       SPRING_DATASOURCE_PASSWORD: ${PRICING_DB_PASSWORD}
+      IDENTITY_JWKS_URI: ${IDENTITY_JWKS_URI:-http://identity-service:8080/.well-known/jwks.json}
+      IDENTITY_ISSUER_URI: ${IDENTITY_ISSUER_URI:-http://identity-service:8080}
+      JWT_AUDIENCE: ${JWT_AUDIENCE:-swiftdrop}
+      PRICING_INCLUDED_WEIGHT_KG: ${PRICING_INCLUDED_WEIGHT_KG:-1.00}
+      PRICING_EXPRESS_PERCENT: ${PRICING_EXPRESS_PERCENT:-15.00}
 
   tracking-service:
     <<: *defaults
@@ -192,6 +295,7 @@ services:
       SPRING_RABBITMQ_HOST: rabbitmq
       SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USERNAME}
       SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+      WEB_ORIGINS: ${WEB_ORIGINS:-${WEB_ORIGIN:-http://localhost:5173}}
     depends_on:
       redis:
         condition: service_healthy
@@ -200,7 +304,7 @@ services:
 
   # Static SPA served by nginx. API_BASE_URL is the gateway URL as the *browser* sees it
   # (host port), not the Compose DNS name. Add http://localhost:${WEB_HOST_PORT} to the
-  # gateway's WEB_ORIGIN (CORS) allow-list.
+  # gateway's WEB_ORIGINS (CORS) allow-list.
   web:
     <<: *defaults
     mem_limit: 64m

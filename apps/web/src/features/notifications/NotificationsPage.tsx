@@ -29,6 +29,7 @@ const STATUSES: ParcelStatus[] = [
   'OUT_FOR_DELIVERY',
   'DELIVERED',
   'FAILED',
+  'CANCELLED',
 ]
 
 function Preferences() {

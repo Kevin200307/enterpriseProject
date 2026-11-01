@@ -101,7 +101,7 @@ describe('courier today', () => {
     renderApp('/courier/today')
     await userEvent.click(await screen.findByRole('button', { name: 'Picked up' }))
     expect(await screen.findByRole('button', { name: 'In transit' })).toBeInTheDocument()
-    expect(body).toMatchObject({ toStatus: 'PICKED_UP' })
+    expect(body).toMatchObject({ status: 'PICKED_UP' })
   })
 
   it('rolls the card back and explains when the server says 409', async () => {
@@ -125,8 +125,8 @@ describe('courier today', () => {
     serve([assignment({ status: 'OUT_FOR_DELIVERY' })])
     server.use(
       http.post(
-        `${API}/api/v1/parcels/p-1/proof`,
-        () => (order.push('proof'), HttpResponse.json({ proofUrl: 'https://files/p.jpg' })),
+        `${API}/api/v1/parcels/p-1/proofs`,
+        () => (order.push('proof'), HttpResponse.json({ id: 'proof-1', contentType: 'image/jpeg', sizeBytes: 10, createdAt: new Date().toISOString() })),
       ),
       http.patch(`${API}/api/v1/parcels/p-1/status`, async ({ request }) => {
         order.push('status')
@@ -139,14 +139,16 @@ describe('courier today', () => {
     renderApp('/courier/today')
     await userEvent.click(await screen.findByRole('button', { name: 'Delivered' }))
     const sheet = await screen.findByRole('dialog')
+    expect(within(sheet).getByRole('button', { name: 'Confirm delivered' })).toBeDisabled()
     await userEvent.upload(
       within(sheet).getByLabelText(/Proof photo/),
       new File(['img'], 'door.jpg', { type: 'image/jpeg' }),
     )
     expect(await within(sheet).findByAltText('Proof preview')).toBeInTheDocument()
+    expect(within(sheet).getByRole('button', { name: 'Confirm delivered' })).toBeEnabled()
     await userEvent.click(within(sheet).getByRole('button', { name: 'Confirm delivered' }))
     await waitFor(() => expect(order).toEqual(['proof', 'status']))
-    expect(patch).toMatchObject({ toStatus: 'DELIVERED', proofUrl: 'https://files/p.jpg' })
+    expect(patch).toMatchObject({ status: 'DELIVERED', proofId: 'proof-1' })
   })
 
   it('rejects a non-image in the proof sheet before any upload', async () => {
@@ -184,7 +186,7 @@ describe('courier today', () => {
     await userEvent.click(within(sheet).getByLabelText('Wrong address'))
     await userEvent.click(within(sheet).getByRole('button', { name: 'Mark failed' }))
     await waitFor(() =>
-      expect(patch).toMatchObject({ toStatus: 'FAILED', failureReason: 'Wrong address' }),
+      expect(patch).toMatchObject({ status: 'FAILED', failedReason: 'Wrong address' }),
     )
   })
 

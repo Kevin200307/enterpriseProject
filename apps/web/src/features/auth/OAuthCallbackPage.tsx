@@ -3,7 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { authApi } from '@/api/endpoints/auth'
 import { describeError } from '@/api/errorMessages'
 import { useAuth } from '@/auth/authContext'
-import { roleLanding, safeReturnTo } from '@/auth/landing'
+import { roleLanding, safeRoleReturnTo } from '@/auth/landing'
 import { decodeClaims } from '@/auth/jwt'
 import { oauthPending, oauthRedirectUri } from '@/auth/pkce'
 import { Button } from '@/components/ui/button'
@@ -32,10 +32,8 @@ export function OAuthCallbackPage() {
       .googleCallback(code, state, pending.verifier, oauthRedirectUri())
       .then(({ accessToken }) => {
         signInWithToken(accessToken)
-        navigate(
-          safeReturnTo(pending.returnTo, roleLanding(decodeClaims(accessToken)?.roles ?? [])),
-          { replace: true },
-        )
+        const roles = decodeClaims(accessToken)?.roles ?? []
+        navigate(safeRoleReturnTo(pending.returnTo, roleLanding(roles), roles), { replace: true })
       })
       .catch((e) => setError(describeError(e).message))
   }, [params, signInWithToken, navigate])

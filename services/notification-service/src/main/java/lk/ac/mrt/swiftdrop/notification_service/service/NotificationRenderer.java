@@ -52,6 +52,7 @@ public class NotificationRenderer {
             case OUT_FOR_DELIVERY -> "out-for-delivery";
             case DELIVERED -> "delivered";
             case FAILED -> "delivery-failed";
+            case CANCELLED -> "cancelled";
         };
     }
 
@@ -63,6 +64,7 @@ public class NotificationRenderer {
             case OUT_FOR_DELIVERY -> "SwiftDrop: Parcel " + trackingNumber + " is out for delivery today!";
             case DELIVERED -> "SwiftDrop: Parcel " + trackingNumber + " has been delivered";
             case FAILED -> "SwiftDrop: Delivery attempt failed for parcel " + trackingNumber;
+            case CANCELLED -> "SwiftDrop: Parcel " + trackingNumber + " has been cancelled";
         };
     }
 
@@ -81,6 +83,7 @@ public class NotificationRenderer {
                 sb.append("Download delivery receipt: ").append(receiptUrl).append("\n");
             }
             case FAILED -> sb.append("A delivery attempt for parcel (").append(trackingNumber).append(") was unsuccessful. We will reschedule shortly.\n");
+            case CANCELLED -> sb.append("Your parcel booking (").append(trackingNumber).append(") has been cancelled.\n");
         }
 
         sb.append("\nTrack your parcel online: ").append(trackingUrl).append("\n\n");

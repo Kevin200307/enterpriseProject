@@ -1,0 +1,100 @@
+@startuml
+title Use Cases — Customer
+
+left to right direction
+
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam defaultFontName "Segoe UI"
+skinparam defaultFontSize 13
+skinparam ArrowColor #555555
+skinparam ArrowFontSize 11
+skinparam usecase {
+  BackgroundColor #F8FAFC
+  BorderColor #64748B
+  FontColor #0F172A
+}
+skinparam actor {
+  BackgroundColor #E2E8F0
+  BorderColor #475569
+}
+skinparam rectangle {
+  BackgroundColor #FFFFFF
+  BorderColor #94A3B8
+}
+
+actor Customer as C
+
+rectangle "SwiftDrop — Customer" {
+
+  package "Account" {
+    usecase UC1 as "Register an account"
+    usecase UC2 as "Sign in with password"
+    usecase UC3 as "Sign in with Google"
+    usecase UC4 as "Update profile"
+    usecase UC5 as "Sign out"
+  }
+
+  package "Booking" {
+    usecase UC6 as "Estimate delivery fee"
+    usecase UC7 as "Book a delivery"
+    usecase UC8 as "Cancel a delivery
+    --
+    only while CREATED"
+  }
+
+  package "Tracking" {
+    usecase UC9 as "View my deliveries"
+    usecase UC10 as "View delivery detail"
+    usecase UC11 as "Track a parcel
+    --
+    live updates"
+    usecase UC12 as "Download receipt (PDF)"
+    usecase UC13 as "Share tracking link"
+  }
+
+  package "Preferences" {
+    usecase UC14 as "Manage notification
+    preferences"
+    usecase UC15 as "View my notifications"
+  }
+
+  usecase UC16 as "Apply to become
+  a merchant"
+  usecase UC17 as "Ask the AI assistant"
+}
+
+C --> UC1
+C --> UC2
+C --> UC3
+C --> UC4
+C --> UC5
+C --> UC6
+C --> UC7
+C --> UC8
+C --> UC9
+C --> UC10
+C --> UC11
+C --> UC12
+C --> UC13
+C --> UC14
+C --> UC15
+C --> UC16
+C --> UC17
+
+UC7 ..> UC6 : <<include>>
+UC10 ..> UC11 : <<include>>
+
+note right of UC7
+  The server re-quotes the fee
+  from pricing-service during
+  booking; the price shown in
+  the browser is never trusted
+end note
+
+note right of UC12
+  Only once the parcel
+  reaches DELIVERED
+end note
+
+@enduml

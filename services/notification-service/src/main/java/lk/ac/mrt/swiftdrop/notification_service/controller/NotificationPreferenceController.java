@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import java.util.UUID;
 import lk.ac.mrt.swiftdrop.notification_service.domain.NotificationPreference;
 import lk.ac.mrt.swiftdrop.notification_service.dto.NotificationPreferenceDto;
+import lk.ac.mrt.swiftdrop.notification_service.dto.NotificationPreferenceUpdateRequest;
 import lk.ac.mrt.swiftdrop.notification_service.service.NotificationPreferenceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -12,7 +13,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -27,7 +28,8 @@ public class NotificationPreferenceController {
     private final NotificationPreferenceService preferenceService;
 
     @GetMapping
-    public ResponseEntity<NotificationPreferenceDto> getPreferences(@RequestParam UUID userId) {
+    public ResponseEntity<NotificationPreferenceDto> getPreferences(
+            @RequestHeader("X-User-Id") UUID userId) {
         log.info("Fetching notification preferences for userId={}", userId);
         NotificationPreference preference = preferenceService.getPreferences(userId);
         return ResponseEntity.ok(NotificationPreferenceDto.fromEntity(preference));
@@ -35,9 +37,10 @@ public class NotificationPreferenceController {
 
     @PutMapping
     public ResponseEntity<NotificationPreferenceDto> updatePreferences(
-            @Valid @RequestBody NotificationPreferenceDto request) {
-        log.info("Updating notification preferences for userId={}", request.userId());
-        NotificationPreference updated = preferenceService.updatePreferences(request);
+            @RequestHeader("X-User-Id") UUID userId,
+            @Valid @RequestBody NotificationPreferenceUpdateRequest request) {
+        log.info("Updating notification preferences for userId={}", userId);
+        NotificationPreference updated = preferenceService.updatePreferences(request.forUser(userId));
         return ResponseEntity.ok(NotificationPreferenceDto.fromEntity(updated));
     }
 }

@@ -41,10 +41,10 @@ class RabbitMQConfigTest {
         Queue queue = rabbitMQConfig.notificationQueue();
 
         assertNotNull(queue);
-        assertEquals(Queues.NOTIFICATION_PARCEL_STATUS_CHANGED, queue.getName());
+        assertEquals(Queues.NOTIFICATION_PARCEL_STATUS_CHANGED_V2, queue.getName());
         assertTrue(queue.isDurable());
         assertEquals("", queue.getArguments().get("x-dead-letter-exchange"));
-        assertEquals(Queues.deadLetterOf(Queues.NOTIFICATION_PARCEL_STATUS_CHANGED),
+        assertEquals(Queues.deadLetterOf(Queues.NOTIFICATION_PARCEL_STATUS_CHANGED_V2),
                 queue.getArguments().get("x-dead-letter-routing-key"));
     }
 
@@ -54,7 +54,7 @@ class RabbitMQConfigTest {
         Queue dlq = rabbitMQConfig.notificationDeadLetterQueue();
 
         assertNotNull(dlq);
-        assertEquals(Queues.deadLetterOf(Queues.NOTIFICATION_PARCEL_STATUS_CHANGED), dlq.getName());
+        assertEquals(Queues.deadLetterOf(Queues.NOTIFICATION_PARCEL_STATUS_CHANGED_V2), dlq.getName());
         assertTrue(dlq.isDurable());
     }
 
@@ -67,9 +67,9 @@ class RabbitMQConfigTest {
         Binding binding = rabbitMQConfig.notificationBinding(queue, exchange);
 
         assertNotNull(binding);
-        assertEquals(Queues.NOTIFICATION_PARCEL_STATUS_CHANGED, binding.getDestination());
+        assertEquals(Queues.NOTIFICATION_PARCEL_STATUS_CHANGED_V2, binding.getDestination());
         assertEquals(Exchanges.PARCEL_EVENTS, binding.getExchange());
-        assertEquals(RoutingKeys.PARCEL_STATUS_CHANGED_V1, binding.getRoutingKey());
+        assertEquals(RoutingKeys.PARCEL_STATUS_CHANGED_V2, binding.getRoutingKey());
     }
 
     @Test

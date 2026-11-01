@@ -8,9 +8,10 @@ import { describeError } from '@/api/errorMessages'
 import { applyViolations } from '@/api/formErrors'
 import { pricingApi } from '@/api/endpoints/pricing'
 import { parcelsApi } from '@/api/endpoints/parcels'
+import { merchantApi } from '@/api/endpoints/merchant'
 import { usersApi } from '@/api/endpoints/auth'
 import { qk } from '@/api/queryKeys'
-import type { EstimateInput, Parcel } from '@/api/types'
+import type { EstimateInput } from '@/api/types'
 import { CopyField } from '@/components/common/CopyField'
 import { FormField } from '@/components/common/FormField'
 import { PageHeader } from '@/components/common/PageHeader'
@@ -36,7 +37,7 @@ import { readSavedDetails } from './savedDetails'
 export function NewDeliveryPage({ merchant = false }: { merchant?: boolean }) {
   const cityListId = useId()
   const qc = useQueryClient()
-  const [created, setCreated] = useState<Parcel>()
+  const [created, setCreated] = useState<{ id?: string; trackingNumber: string }>()
   const [formError, setFormError] = useState<string>()
   const [reference, setReference] = useState('')
   const [refError, setRefError] = useState<string>()
@@ -88,15 +89,27 @@ export function NewDeliveryPage({ merchant = false }: { merchant?: boolean }) {
   const blocked = isReady && (!settled || estimate.isFetching || !!estimate.error)
 
   // --- submit --------------------------------------------------------------
-  const book = useMutation({
-    mutationFn: (v: BookingForm) =>
-      parcelsApi.create({
-        ...v,
+  const book = useMutation<{ id?: string; trackingNumber: string }, unknown, BookingForm>({
+    mutationFn: (v: BookingForm) => {
+      if (!estimate.data) throw new Error('A current price estimate is required to book a delivery')
+      if (merchant) {
+        return merchantApi.createOrder({
+          merchantRef: reference.trim(),
+          pickup: bookingAddress(v.pickup, estimate.data.zoneFrom),
+          dropoff: bookingAddress(v.dropoff, estimate.data.zoneTo),
+          size: v.size,
+          weightKg: Number(v.weightKg),
+          express: v.express,
+        })
+      }
+      return parcelsApi.create({
+        pickup: bookingAddress(v.pickup, estimate.data.zoneFrom),
+        dropoff: bookingAddress(v.dropoff, estimate.data.zoneTo),
+        size: v.size,
         weightKg: Number(v.weightKg),
-        pickup: clean(v.pickup),
-        dropoff: clean(v.dropoff),
-        merchantRef: merchant ? reference.trim() : undefined,
-      }),
+        express: v.express,
+      })
+    },
     onSuccess: (parcel) => {
       setCreated(parcel)
       void qc.invalidateQueries({ queryKey: qk.parcels.all })
@@ -114,13 +127,11 @@ export function NewDeliveryPage({ merchant = false }: { merchant?: boolean }) {
       const details = readSavedDetails(me.email)
       const saved = details.line1 || details.city || details.postalCode
       setValue('pickup.contactName', details.contactName || me.fullName, { shouldDirty: true })
-      setValue('pickup.phone', details.phone || me.phone, { shouldDirty: true })
-      if (saved) {
-        setValue('pickup.line1', details.line1, { shouldDirty: true })
-        setValue('pickup.line2', details.line2 ?? '', { shouldDirty: true })
-        setValue('pickup.city', details.city, { shouldDirty: true })
-        setValue('pickup.postalCode', details.postalCode, { shouldDirty: true })
-      }
+      setValue('pickup.phone', saved ? details.phone : me.phone, { shouldDirty: true })
+      setValue('pickup.line1', details.line1, { shouldDirty: true })
+      setValue('pickup.line2', details.line2 ?? '', { shouldDirty: true })
+      setValue('pickup.city', details.city, { shouldDirty: true })
+      setValue('pickup.postalCode', details.postalCode, { shouldDirty: true })
       toast.success(saved ? 'Saved delivery details applied' : 'Your profile details applied')
     } catch (e) {
       toast.error(describeError(e).message)
@@ -160,7 +171,12 @@ export function NewDeliveryPage({ merchant = false }: { merchant?: boolean }) {
           <Card>
             <CardHeader className="flex-row items-center justify-between">
               <CardTitle>Pickup</CardTitle>
-              <Button type="button" variant="outline" size="sm" onClick={() => void fillMyDetails()}>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => void fillMyDetails()}
+              >
                 Use my details
               </Button>
             </CardHeader>
@@ -258,7 +274,6 @@ export function NewDeliveryPage({ merchant = false }: { merchant?: boolean }) {
             loading={isReady && (!settled || estimate.isFetching)}
             data={isReady && settled ? estimate.data : undefined}
             error={isReady && settled ? estimate.error : undefined}
-            toCity={wanted.toCity}
           />
           {formError && (
             <p role="alert" className="text-sm text-destructive">
@@ -271,12 +286,7 @@ export function NewDeliveryPage({ merchant = false }: { merchant?: boolean }) {
             className="fixed inset-x-0 bottom-[68px] z-20 border-t bg-background/95 p-4 backdrop-blur-md lg:static lg:border-0 lg:bg-transparent lg:p-0 lg:backdrop-blur-none"
             style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
           >
-            <Button
-              type="submit"
-              size="lg"
-              className="w-full"
-              disabled={blocked || book.isPending}
-            >
+            <Button type="submit" size="lg" className="w-full" disabled={blocked || book.isPending}>
               {book.isPending ? 'Booking…' : 'Book delivery'}
             </Button>
           </div>
@@ -325,6 +335,13 @@ export function NewDeliveryPage({ merchant = false }: { merchant?: boolean }) {
   )
 }
 
-function clean(a: BookingForm['pickup']) {
-  return { ...a, line2: a.line2 || undefined }
+function bookingAddress(a: BookingForm['pickup'], zone: string) {
+  return {
+    contactName: a.contactName,
+    phone: a.phone,
+    line1: a.line1,
+    city: a.city,
+    postalCode: a.postalCode,
+    zone,
+  }
 }

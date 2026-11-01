@@ -21,7 +21,7 @@ import java.util.Set;
 import java.util.UUID;
 import lk.ac.mrt.swiftdrop.contracts.domain.ParcelStatus;
 import lk.ac.mrt.swiftdrop.contracts.events.EventEnvelope;
-import lk.ac.mrt.swiftdrop.contracts.events.ParcelStatusChangedV1;
+import lk.ac.mrt.swiftdrop.contracts.events.ParcelStatusChangedV2;
 import lk.ac.mrt.swiftdrop.notification_service.channel.ChannelRouter;
 import lk.ac.mrt.swiftdrop.notification_service.domain.NotificationChannel;
 import lk.ac.mrt.swiftdrop.notification_service.domain.NotificationLog;
@@ -78,15 +78,15 @@ class NotificationServiceTest {
     void shouldSendEmailAndSmsWhenNotProcessed() {
         UUID eventId = UUID.randomUUID();
         UUID parcelId = UUID.randomUUID();
-        ParcelStatusChangedV1 payload = new ParcelStatusChangedV1(
-                parcelId, "SD-12345678", ParcelStatus.CREATED, ParcelStatus.DELIVERED, null, null);
-        EventEnvelope<ParcelStatusChangedV1> envelope = EventEnvelope.of(
-                ParcelStatusChangedV1.EVENT_TYPE, ParcelStatusChangedV1.VERSION, "parcel-service", payload);
+        UUID customerId = UUID.randomUUID();
+        UUID courierId = UUID.randomUUID();
+        EventEnvelope<ParcelStatusChangedV2> envelope = statusEvent(
+                parcelId, customerId, courierId, ParcelStatus.DELIVERED);
 
         when(identityClient.lookupUser(any())).thenReturn(
-                new IdentityClient.UserLookupDto(parcelId, "test@swiftdrop.lk", "+94712345678", "Test User"));
+                new IdentityClient.UserLookupDto(customerId, "test@swiftdrop.lk", "+94712345678", "Test User"));
         when(preferenceService.getPreferences(any())).thenReturn(
-                NotificationPreference.defaultFor(parcelId)); // SMS default allows DELIVERED
+                NotificationPreference.defaultFor(customerId)); // SMS default allows DELIVERED
         when(logRepository.existsByEventIdAndChannelAndRecipientRef(any(), eq(NotificationChannel.EMAIL), any())).thenReturn(false);
         when(logRepository.existsByEventIdAndChannelAndRecipientRef(any(), eq(NotificationChannel.SMS), any())).thenReturn(false);
         when(emailService.buildSubject(anyString(), any())).thenReturn("Subject");
@@ -95,6 +95,9 @@ class NotificationServiceTest {
         when(smsService.maskPhoneNumber(anyString())).thenReturn("+947****567");
 
         notificationService.handleParcelStatusChanged(envelope);
+
+        verify(identityClient).lookupUser(customerId);
+        verify(identityClient, never()).lookupUser(courierId);
 
         verify(channelRouter, times(1)).route(eq(NotificationChannel.EMAIL), any());
         verify(channelRouter, times(1)).route(eq(NotificationChannel.SMS), any());
@@ -120,10 +123,8 @@ class NotificationServiceTest {
     void shouldSkipSmsWhenDisabledInPreferences() {
         UUID eventId = UUID.randomUUID();
         UUID parcelId = UUID.randomUUID();
-        ParcelStatusChangedV1 payload = new ParcelStatusChangedV1(
-                parcelId, "SD-12345678", ParcelStatus.CREATED, ParcelStatus.DELIVERED, null, null);
-        EventEnvelope<ParcelStatusChangedV1> envelope = EventEnvelope.of(
-                ParcelStatusChangedV1.EVENT_TYPE, ParcelStatusChangedV1.VERSION, "parcel-service", payload);
+        EventEnvelope<ParcelStatusChangedV2> envelope = statusEvent(
+                parcelId, parcelId, UUID.randomUUID(), ParcelStatus.DELIVERED);
 
         NotificationPreference preferenceNoSms = NotificationPreference.builder()
                 .userId(parcelId)
@@ -150,15 +151,47 @@ class NotificationServiceTest {
     }
 
     @Test
+    @DisplayName("Should skip email when the current status is not selected")
+    void shouldSkipEmailWhenStatusIsNotSelected() {
+        UUID userId = UUID.randomUUID();
+        EventEnvelope<ParcelStatusChangedV2> envelope = statusEvent(
+                UUID.randomUUID(), userId, UUID.randomUUID(), ParcelStatus.DELIVERED);
+        NotificationPreference preference = NotificationPreference.builder()
+                .userId(userId)
+                .emailEnabled(true)
+                .emailStatuses("CREATED")
+                .smsEnabled(false)
+                .smsStatuses("")
+                .build();
+
+        when(identityClient.lookupUser(userId)).thenReturn(
+                new IdentityClient.UserLookupDto(userId, "test@swiftdrop.lk", "+94712345678", "Test User"));
+        when(preferenceService.getPreferences(userId)).thenReturn(preference);
+        when(logRepository.existsByEventIdAndChannelAndRecipientRef(
+                any(), eq(NotificationChannel.EMAIL), eq(userId))).thenReturn(false);
+        when(logRepository.existsByEventIdAndChannelAndRecipientRef(
+                any(), eq(NotificationChannel.SMS), eq(userId))).thenReturn(false);
+        when(smsService.maskPhoneNumber(anyString())).thenReturn("+947****567");
+
+        notificationService.handleParcelStatusChanged(envelope);
+
+        verify(channelRouter, never()).route(eq(NotificationChannel.EMAIL), any());
+        verify(channelRouter, never()).route(eq(NotificationChannel.SMS), any());
+        ArgumentCaptor<NotificationLog> captor = ArgumentCaptor.forClass(NotificationLog.class);
+        verify(logRepository, times(2)).save(captor.capture());
+        assertTrue(captor.getAllValues().stream()
+                .anyMatch(log -> log.getChannel() == NotificationChannel.EMAIL
+                        && log.getStatus() == NotificationStatus.SKIPPED));
+    }
+
+    @Test
     @DisplayName("Should skip all processing when global kill switch NOTIFICATIONS_ENABLED is false")
     void shouldSkipAllWhenKillSwitchIsActive() {
         ReflectionTestUtils.setField(notificationService, "notificationsEnabled", false);
 
         UUID parcelId = UUID.randomUUID();
-        ParcelStatusChangedV1 payload = new ParcelStatusChangedV1(
-                parcelId, "SD-12345678", ParcelStatus.CREATED, ParcelStatus.DELIVERED, null, null);
-        EventEnvelope<ParcelStatusChangedV1> envelope = EventEnvelope.of(
-                ParcelStatusChangedV1.EVENT_TYPE, ParcelStatusChangedV1.VERSION, "parcel-service", payload);
+        EventEnvelope<ParcelStatusChangedV2> envelope = statusEvent(
+                parcelId, parcelId, UUID.randomUUID(), ParcelStatus.DELIVERED);
 
         notificationService.handleParcelStatusChanged(envelope);
 
@@ -172,10 +205,8 @@ class NotificationServiceTest {
     void shouldSkipIfAlreadySent() {
         UUID eventId = UUID.randomUUID();
         UUID parcelId = UUID.randomUUID();
-        ParcelStatusChangedV1 payload = new ParcelStatusChangedV1(
-                parcelId, "SD-12345678", ParcelStatus.CREATED, ParcelStatus.DELIVERED, null, null);
-        EventEnvelope<ParcelStatusChangedV1> envelope = EventEnvelope.of(
-                ParcelStatusChangedV1.EVENT_TYPE, ParcelStatusChangedV1.VERSION, "parcel-service", payload);
+        EventEnvelope<ParcelStatusChangedV2> envelope = statusEvent(
+                parcelId, parcelId, UUID.randomUUID(), ParcelStatus.DELIVERED);
 
         when(identityClient.lookupUser(any())).thenReturn(
                 new IdentityClient.UserLookupDto(parcelId, "test@swiftdrop.lk", "+94712345678", "Test User"));
@@ -193,10 +224,8 @@ class NotificationServiceTest {
     @DisplayName("Should record FAILED status in logRepository when channel routing throws exception")
     void shouldRecordFailedStatusOnException() {
         UUID parcelId = UUID.randomUUID();
-        ParcelStatusChangedV1 payload = new ParcelStatusChangedV1(
-                parcelId, "SD-12345678", ParcelStatus.CREATED, ParcelStatus.OUT_FOR_DELIVERY, null, null);
-        EventEnvelope<ParcelStatusChangedV1> envelope = EventEnvelope.of(
-                ParcelStatusChangedV1.EVENT_TYPE, ParcelStatusChangedV1.VERSION, "parcel-service", payload);
+        EventEnvelope<ParcelStatusChangedV2> envelope = statusEvent(
+                parcelId, parcelId, UUID.randomUUID(), ParcelStatus.OUT_FOR_DELIVERY);
 
         when(identityClient.lookupUser(any())).thenReturn(
                 new IdentityClient.UserLookupDto(parcelId, "test@swiftdrop.lk", "+94712345678", "Test User"));
@@ -322,5 +351,25 @@ class NotificationServiceTest {
         assertEquals(1, results.size());
         assertEquals(userId, results.get(0).getRecipientRef());
         verify(logRepository, times(1)).findByRecipientRefOrderByCreatedAtDesc(userId);
+    }
+
+    private static EventEnvelope<ParcelStatusChangedV2> statusEvent(
+            UUID parcelId, UUID customerId, UUID changedByUserId, ParcelStatus toStatus) {
+        ParcelStatusChangedV2 payload = new ParcelStatusChangedV2(
+                parcelId,
+                "SD-12345678",
+                customerId,
+                null,
+                changedByUserId,
+                ParcelStatus.CREATED,
+                toStatus,
+                changedByUserId,
+                null,
+                null);
+        return EventEnvelope.of(
+                ParcelStatusChangedV2.EVENT_TYPE,
+                ParcelStatusChangedV2.VERSION,
+                "parcel-service",
+                payload);
     }
 }

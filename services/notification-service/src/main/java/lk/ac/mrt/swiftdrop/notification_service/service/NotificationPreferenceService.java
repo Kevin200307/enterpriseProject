@@ -28,8 +28,9 @@ public class NotificationPreferenceService {
         NotificationPreference preference = repository.findById(dto.userId())
                 .orElseGet(() -> NotificationPreference.defaultFor(dto.userId()));
 
-        preference.setEmailEnabled(dto.emailEnabled());
-        preference.setSmsEnabled(dto.smsEnabled());
+        preference.setEmailEnabled(dto.emailStatuses() != null && !dto.emailStatuses().isEmpty());
+        preference.setParsedEmailStatuses(dto.emailStatuses());
+        preference.setSmsEnabled(dto.smsStatuses() != null && !dto.smsStatuses().isEmpty());
         preference.setParsedSmsStatuses(dto.smsStatuses());
         preference.setUpdatedAt(Instant.now());
 

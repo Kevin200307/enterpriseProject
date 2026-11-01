@@ -348,7 +348,7 @@ Sign-in, sign-up and the Google callback render **full screen** in `AuthShell`: 
 
 ### 7.3 Public tracking — FE-3 (the marker's screen)
 
-**`/track`** shows one large input with format hint `SD-XXXXXXXX`, auto-uppercases, and validates `^SD-[A-HJ-NP-Z2-9]{8}$` before navigating.
+**`/track`** shows one large input with format hint `SD-XXXXXXXX`, auto-uppercases, and validates the parcel service's base-36 format (`^SD-[0-9A-Z]{8}$`) before navigating.
 
 **`/track/:trackingNumber`** uses `PublicShell` only: a small logo and nothing else.
 - Hero: the large status label, an icon, "Updated 2 min ago", and a "Live" connection dot.

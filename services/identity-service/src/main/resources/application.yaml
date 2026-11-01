@@ -1,3 +1,86 @@
+server:
+  port: 8080
+  shutdown: graceful
+
 spring:
   application:
     name: identity-service
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:${IDENTITY_DB_URL:jdbc:postgresql://localhost:5432/identity_db}}
+    username: ${SPRING_DATASOURCE_USERNAME:${IDENTITY_DB_USERNAME:identity_user}}
+    password: ${SPRING_DATASOURCE_PASSWORD:${IDENTITY_DB_PASSWORD:identity_pass}}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      pool-name: IdentityHikariPool
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+  data:
+    redis:
+      host: ${SPRING_DATA_REDIS_HOST:localhost}
+      port: ${SPRING_DATA_REDIS_PORT:6379}
+      password: ${SPRING_DATA_REDIS_PASSWORD:${REDIS_PASSWORD:}}
+      timeout: 2000ms
+
+# Application-specific security & identity configuration
+app:
+  security:
+    jwt:
+      issuer: ${IDENTITY_ISSUER_URI:http://identity-service:8080}
+      audience: ${JWT_AUDIENCE:swiftdrop}
+      key-id: ${IDENTITY_JWT_KEY_ID:swiftdrop-v1}
+      access-token-ttl-seconds: 900 # 15 minutes 
+      refresh-token-ttl-seconds: 604800 # 7 days
+      private-key-pem: ${IDENTITY_JWT_PRIVATE_KEY:}
+      public-key-pem: ${IDENTITY_JWT_PUBLIC_KEY:}
+    rate-limit:
+      max-failed-login-attempts: 5 # 5 wrong attempts rate-limited 
+      window-seconds: 60
+    oauth2:
+      google:
+        client-id: ${GOOGLE_CLIENT_ID:mock-google-client-id.apps.googleusercontent.com}
+        client-secret: ${GOOGLE_CLIENT_SECRET:mock-google-client-secret}
+        redirect-uri: ${GOOGLE_REDIRECT_URI:http://localhost:5173/oauth/callback}
+        authorization-uri: https://accounts.google.com/o/oauth2/v2/auth
+        token-uri: https://oauth2.googleapis.com/token
+        user-info-uri: https://openidconnect.googleapis.com/v1/userinfo
+        jwk-set-uri: https://www.googleapis.com/oauth2/v3/certs
+        issuer: https://accounts.google.com
+    admin:
+      enabled: ${ADMIN_BOOTSTRAP_ENABLED:false}
+      bootstrap-email: ${ADMIN_BOOTSTRAP_EMAIL:}
+      bootstrap-password: ${ADMIN_BOOTSTRAP_PASSWORD:}
+      bootstrap-name: ${ADMIN_BOOTSTRAP_NAME:SwiftDrop Platform Administrator}
+      bootstrap-phone: ${ADMIN_BOOTSTRAP_PHONE:+94770000001}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when_authorized
+      probes:
+        enabled: true
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html

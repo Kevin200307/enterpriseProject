@@ -25,15 +25,15 @@ public class RabbitMQConfig {
     // delare the queues
     @Bean
     public Queue notificationDeadLetterQueue() {
-        String dlqName = Queues.deadLetterOf(Queues.NOTIFICATION_PARCEL_STATUS_CHANGED);
+        String dlqName = Queues.deadLetterOf(Queues.NOTIFICATION_PARCEL_STATUS_CHANGED_V2);
         return QueueBuilder.durable(dlqName).build();
     }
 
     // set the event to Dead Letter Queue (DLQ) if it was failed
     @Bean
     public Queue notificationQueue() {
-        String dlqName = Queues.deadLetterOf(Queues.NOTIFICATION_PARCEL_STATUS_CHANGED);
-        return QueueBuilder.durable(Queues.NOTIFICATION_PARCEL_STATUS_CHANGED)
+        String dlqName = Queues.deadLetterOf(Queues.NOTIFICATION_PARCEL_STATUS_CHANGED_V2);
+        return QueueBuilder.durable(Queues.NOTIFICATION_PARCEL_STATUS_CHANGED_V2)
                 .deadLetterExchange("")
                 .deadLetterRoutingKey(dlqName)
                 .build();
@@ -44,7 +44,7 @@ public class RabbitMQConfig {
     public Binding notificationBinding(Queue notificationQueue, TopicExchange parcelEventsExchange) {
         return BindingBuilder.bind(notificationQueue)
                 .to(parcelEventsExchange)
-                .with(RoutingKeys.PARCEL_STATUS_CHANGED_V1);
+                .with(RoutingKeys.PARCEL_STATUS_CHANGED_V2);
     }
 
     // use json message converter

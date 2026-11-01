@@ -1,36 +1,21 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import {
-  AlertCircle,
-  ArrowRight,
-  Clock,
-  Eye,
-  EyeOff,
-  Loader2,
-  Lock,
-  Mail,
-} from 'lucide-react'
-import { Suspense, lazy, useEffect, useState } from 'react'
+import { AlertCircle, ArrowRight, Clock, Eye, EyeOff, Loader2, Lock, Mail } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { isApiError } from '@/api/ApiError'
 import { authApi } from '@/api/endpoints/auth'
 import { describeError } from '@/api/errorMessages'
 import { useAuth } from '@/auth/authContext'
-import { roleLanding, safeReturnTo } from '@/auth/landing'
+import { roleLanding, safeRoleReturnTo } from '@/auth/landing'
 import { decodeClaims } from '@/auth/jwt'
 import { FormField } from '@/components/common/FormField'
 import { LoadingScreen } from '@/components/common/LoadingScreen'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { env } from '@/config/env'
 import { GoogleButton } from './GoogleButton'
 import { waitForLoginMinimum } from './loginLoading'
 import { loginSchema, type LoginInput } from './schemas'
-
-const DemoAccounts =
-  import.meta.env.PROD && import.meta.env.VITE_DEMO_MODE !== 'true'
-    ? null
-    : lazy(() => import('./DemoAccounts'))
 
 export function LoginPage() {
   const { status, claims, signInWithToken } = useAuth()
@@ -55,7 +40,9 @@ export function LoginPage() {
   }, [wait])
 
   if (status === 'authenticated' && claims)
-    return <Navigate to={safeReturnTo(returnTo, roleLanding(claims.roles))} replace />
+    return (
+      <Navigate to={safeRoleReturnTo(returnTo, roleLanding(claims.roles), claims.roles)} replace />
+    )
 
   if (isSubmitting || loginLoading) return <LoadingScreen />
 
@@ -68,9 +55,8 @@ export function LoginPage() {
       const { accessToken } = await authApi.login(values.email, values.password)
       await waitForLoginMinimum(startedAt)
       signInWithToken(accessToken)
-      navigate(safeReturnTo(returnTo, roleLanding(decodeClaims(accessToken)?.roles ?? [])), {
-        replace: true,
-      })
+      const roles = decodeClaims(accessToken)?.roles ?? []
+      navigate(safeRoleReturnTo(returnTo, roleLanding(roles), roles), { replace: true })
     } catch (e) {
       await waitForLoginMinimum(startedAt)
       setLoginLoading(false)
@@ -184,12 +170,6 @@ export function LoginPage() {
         </div>
 
         <GoogleButton returnTo={returnTo ?? undefined} />
-
-        {DemoAccounts && env.useMocks && (
-          <Suspense fallback={null}>
-            <DemoAccounts returnTo={returnTo ?? undefined} />
-          </Suspense>
-        )}
 
         <p className="text-center text-xs text-muted-foreground">
           New to SwiftDrop?{' '}

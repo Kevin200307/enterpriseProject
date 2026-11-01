@@ -16,21 +16,26 @@ const addr = (city: string) => ({
 const parcel = (over: Partial<Parcel> = {}): Parcel => ({
   id: 'p-1',
   trackingNumber: 'SD-ABCD2345',
+  customerId: 'u-1',
+  merchantId: null,
+  assigneeId: null,
   status: 'CREATED',
   size: 'SMALL',
   weightKg: 1.5,
-  express: false,
   fee: 600,
+  currency: 'LKR',
   pickup: addr('Colombo'),
   dropoff: addr('Kandy'),
   createdAt: '2026-10-08T05:00:00Z',
+  updatedAt: '2026-10-08T05:00:00Z',
+  version: 0,
   ...over,
 })
 const page = (content: Parcel[], totalPages = 1, number = 0) => ({
   content,
   totalElements: content.length,
   totalPages,
-  number,
+  page: number,
   size: 20,
 })
 
@@ -124,11 +129,12 @@ describe('deliveries list', () => {
 })
 
 const history = [
-  { fromStatus: null, toStatus: 'CREATED', occurredAt: '2026-10-08T05:00:00Z' },
+  { id: 'h-1', fromStatus: null, toStatus: 'CREATED', actorId: 'u-1', occurredAt: '2026-10-08T05:00:00Z' },
   {
+    id: 'h-2',
     fromStatus: 'CREATED',
     toStatus: 'PICKED_UP',
-    actorName: 'Kasun',
+    actorId: 'u-2',
     occurredAt: '2026-10-08T07:00:00Z',
   },
 ]
@@ -136,18 +142,19 @@ const history = [
 function mockParcel(p: Parcel) {
   server.use(
     http.get(`${API}/api/v1/parcels/${p.id}`, () => HttpResponse.json(p)),
-    http.get(`${API}/api/v1/parcels/${p.id}/history`, () => HttpResponse.json(history)),
+    http.get(`${API}/api/v1/parcels/${p.id}/history`, () =>
+      HttpResponse.json({ content: history, page: 0, size: 100, totalElements: 2, totalPages: 1 }),
+    ),
   )
 }
 
 describe('delivery detail', () => {
-  it('shows the timeline newest first with the actor', async () => {
+  it('shows the timeline newest first', async () => {
     mockParcel(parcel({ status: 'PICKED_UP' }))
     renderApp('/deliveries/p-1')
     const timeline = await screen.findByRole('list', { name: 'Status history' })
     const items = within(timeline).getAllByRole('listitem')
     expect(items[0]).toHaveTextContent('Picked up')
-    expect(items[0]).toHaveTextContent('Kasun')
     expect(items[1]).toHaveTextContent('Created')
   })
 
@@ -200,9 +207,62 @@ describe('delivery detail', () => {
   })
 
   it('shows the failure reason and proof image when relevant', async () => {
-    mockParcel(parcel({ status: 'FAILED', failureReason: 'Recipient unavailable' }))
+    mockParcel(parcel({ status: 'FAILED' }))
+    server.use(
+      http.get(`${API}/api/v1/parcels/p-1/history`, () =>
+        HttpResponse.json({
+          content: [
+            {
+              id: 'h-failed',
+              fromStatus: 'OUT_FOR_DELIVERY',
+              toStatus: 'FAILED',
+              actorId: 'courier-1',
+              failedReason: 'Recipient unavailable',
+              occurredAt: '2026-10-08T07:00:00Z',
+            },
+          ],
+          page: 0,
+          size: 100,
+          totalElements: 1,
+          totalPages: 1,
+        }),
+      ),
+    )
     renderApp('/deliveries/p-1')
     expect(await screen.findByRole('alert')).toHaveTextContent('Recipient unavailable')
+  })
+
+  it('loads the short-lived proof URL from the delivered history entry', async () => {
+    mockParcel(parcel({ status: 'DELIVERED' }))
+    server.use(
+      http.get(`${API}/api/v1/parcels/p-1/history`, () =>
+        HttpResponse.json({
+          content: [
+            {
+              id: 'h-delivered',
+              fromStatus: 'OUT_FOR_DELIVERY',
+              toStatus: 'DELIVERED',
+              actorId: 'courier-1',
+              proofId: 'proof-1',
+              occurredAt: '2026-10-08T07:00:00Z',
+            },
+          ],
+          page: 0,
+          size: 100,
+          totalElements: 1,
+          totalPages: 1,
+        }),
+      ),
+      http.get(`${API}/api/v1/parcels/p-1/proofs/proof-1/url`, () =>
+        HttpResponse.json({
+          url: 'https://storage.test/proof.png',
+          expiresAt: '2026-10-08T07:05:00Z',
+        }),
+      ),
+    )
+    renderApp('/deliveries/p-1')
+    const proof = await screen.findByRole('img', { name: 'Proof of delivery' })
+    expect(proof).toHaveAttribute('src', 'https://storage.test/proof.png')
   })
 
   it('downloads the receipt through an authenticated blob request', async () => {

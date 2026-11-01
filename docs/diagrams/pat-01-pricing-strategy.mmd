@@ -1,0 +1,42 @@
+---
+title: Strategy Pattern — Pricing Engine
+---
+classDiagram
+    class PricingEngine {
+      -List~PricingStrategy~ strategies
+      +calculate(PricingContext) Result
+    }
+    class PricingStrategy {
+      <<interface>>
+      +order() int
+      +apply(PricingContext, PricingBreakdown) PricingBreakdown
+    }
+    class ZoneBandStrategy {
+      +order() 10
+    }
+    class WeightSurchargeStrategy {
+      +order() 20
+    }
+    class ExpressSurchargeStrategy {
+      +order() 30
+    }
+    class PricingContext {
+      +PricingRule rule
+      +BigDecimal weightKg
+      +boolean express
+      +Instant at
+    }
+    class PricingBreakdown {
+      +BigDecimal baseFee
+      +BigDecimal weightSurcharge
+      +BigDecimal expressSurcharge
+    }
+
+    PricingEngine --> PricingStrategy : ordered list, injected by Spring
+    PricingStrategy <|.. ZoneBandStrategy
+    PricingStrategy <|.. WeightSurchargeStrategy
+    PricingStrategy <|.. ExpressSurchargeStrategy
+    PricingEngine ..> PricingContext
+    PricingEngine ..> PricingBreakdown
+
+    note for PricingEngine "Constructor sorts the injected list by order().\ncalculate() reduces over it, threading the\nbreakdown through each strategy in turn.\nAdding a surcharge means adding one\n@Component — the engine never changes."

@@ -43,6 +43,8 @@ isProject: false
 
 # SwiftDrop — Complete Enterprise Implementation Plan
 
+Parcel-service implementation, API examples, configuration, and acceptance checks: [services/parcel-service/README.md](services/parcel-service/README.md).
+
 Greenfield repo. Spec: [Group Assignment.pdf](Group Assignment.pdf). First implementation artifact after approval: a full markdown architecture/implementation guide at [docs/SWIFTDROP.md](docs/SWIFTDROP.md) (also summarized in [README.md](README.md)).
 
 ## Recommended stack (locked unless you reject this plan)
@@ -137,8 +139,9 @@ flowchart TB
 
 ```
 enterpriseProject/
-  docs/SWIFTDROP.md          # full architecture + setup (created first)
-  docs/diagrams/             # mermaid sources used in the MD
+  docs/DESIGN.md             # design pack: use cases, ER, architecture, integration, sequences, patterns
+  docs/SWIFTDROP.md          # per-service design notes + setup
+  docs/diagrams/             # mermaid (.mmd) and plantuml (.puml) sources + rendered png/svg
   apps/web/                  # React SPA (customer, merchant, courier, admin)
   services/
     gateway/
@@ -151,7 +154,8 @@ enterpriseProject/
     tracking-service/
     ai-assistant-service/
   infra/
-    docker/                  # Dockerfiles, compose, Mailpit, MinIO init
+    docker-compose.yml       # local service and infrastructure orchestration
+    .env.example             # non-secret local configuration template
     k8s/helm/swiftdrop/      # umbrella Helm chart
     observability/           # Grafana dashboards, Prometheus scrape
   packages/common/           # shared DTOs, error codes, event contracts (Java lib)
@@ -194,6 +198,72 @@ Core entities:
 - **notification-service** — consumes `parcel.status.changed`, sends email (and mock SMS), never logs full addresses/phones.
 - **ai-assistant-service** — chat UI backend; tools: `getParcelByTrackingNumber`, `estimateFee`, `listMyParcels` (user-scoped). MCP server exposing the same tools.
 
+## Gateway local operation
+
+The API gateway is the public entry point for the local stack. Compose maps host
+port `8081` to gateway container port `8080`.
+
+1. Copy `infra/.env.example` to `infra/.env` and replace every `change-me`
+   placeholder. Never commit `infra/.env`.
+2. Start Docker Desktop or another Docker engine.
+3. Build and start the gateway and its required Redis dependency:
+
+```bash
+docker compose --env-file infra/.env -f infra/docker-compose.yml up --build gateway
+```
+
+Useful local URLs:
+
+| Purpose | URL |
+|---|---|
+| Gateway health | `http://localhost:8081/actuator/health` |
+| Aggregated Swagger UI | `http://localhost:8081/docs` |
+| Versioned APIs | `http://localhost:8081/api/v1/**` |
+| Dashboard BFF | `http://localhost:8081/api/v1/dashboard` |
+
+The health response can be `DEGRADED` with HTTP 200 when an optional downstream
+service is unavailable. Redis is the gateway's only required startup dependency;
+API routes for unavailable services return an RFC 7807 response instead of
+preventing the gateway from starting.
+
+Gateway configuration is environment-based. Compose supplies safe internal DNS
+defaults for the service URLs, while `infra/.env.example` documents the values
+that developers may override:
+
+| Variable | Purpose / default |
+|---|---|
+| `GATEWAY_HOST_PORT` | Public host port; defaults to `8081` |
+| `REDIS_PASSWORD` | Password shared with the local Redis container; required |
+| `IDENTITY_JWKS_URI` | JWT verification keys from identity-service |
+| `IDENTITY_SERVICE_URL` | Identity API base URL |
+| `PARCEL_SERVICE_URL` | Parcel API base URL |
+| `PRICING_SERVICE_URL` | Pricing API base URL |
+| `DISPATCH_SERVICE_URL` | Dispatch API base URL |
+| `MERCHANT_SERVICE_URL` | Merchant API base URL |
+| `TRACKING_SERVICE_URL` | Tracking HTTP/SSE base URL |
+| `TRACKING_WEBSOCKET_URL` | Tracking WebSocket base URL |
+| `NOTIFICATION_SERVICE_URL` | Notification API base URL |
+| `AI_ASSISTANT_SERVICE_URL` | AI assistant API base URL |
+| `WEB_ORIGIN` | Exact browser origin allowed by CORS; defaults to `http://localhost:5173` |
+| `DASHBOARD_UPSTREAM_TIMEOUT` | Independent dashboard section timeout; defaults to `2s` |
+
+Run the gateway test suite from the repository root:
+
+```bash
+mvn -pl services/gateway -am test
+```
+
+Run the consolidated public-edge acceptance contract with:
+
+```bash
+mvn -pl services/gateway -am \
+  -Dtest=GatewayAcceptanceSuite \
+  -Dsurefire.failIfNoSpecifiedTests=false test
+```
+
+Docker is required only for the Redis-backed rate-limit acceptance scenario;
+JUnit skips that scenario when Docker is unavailable.
+
 ## Integration patterns (assignment requirement)
 
 | Flow | Pattern | Why |
@@ -232,7 +302,35 @@ Mobile-friendly tracking page is a first-class public route (responsive).
 
 ## Containers and Kubernetes
 
-**Local:** `docker-compose.yml` starts Postgres, Redis, RabbitMQ, MinIO, Mailpit, all 9 Java services, and the Nginx-served SPA. One command: `docker compose up --build`.
+### Local Development (Docker Compose) — PLT-4
+
+Run the entire SwiftDrop stack locally using a single command:
+
+```bash
+# 1. Copy sample environment file and configure credentials
+cp infra/.env.example infra/.env
+
+# 2. Build and start all services in the background
+docker compose --env-file infra/.env -f infra/docker-compose.yml up --build -d
+```
+
+#### Port Reference Table
+
+| Service | Host Port | Protocol / Path | Purpose & URL |
+|---|---|---|---|
+| **Web SPA (Frontend)** | `5174` | HTTP | `http://localhost:5174` — Customer, Courier & Admin UI |
+| **API Gateway** | `8081` | HTTP | `http://localhost:8081` — Unified API Gateway entrypoint |
+| **Mailpit Web UI** | `8025` | HTTP | `http://localhost:8025` — View rendered notification emails (NTF-2) |
+| **Mailpit SMTP** | `1025` | SMTP | Ingestion port used by `notification-service` |
+| **RabbitMQ Management** | `15673` | HTTP | `http://localhost:15673` — Queue & Exchange Dashboard (`guest` / `guest`) |
+| **MinIO Console** | `9001` | HTTP | `http://localhost:9001` — Object storage UI (delivery proofs & receipts) |
+| **MinIO API** | `9000` | HTTP | S3-compatible object storage API |
+| **Redis** | `6379` | TCP | Distributed cache, rate limiter & session store |
+
+> **Email Testing Note:** During parcel booking and status transitions, all customer notification emails are captured by Mailpit. Open `http://localhost:8025` in your browser to inspect responsive HTML templates, tracking buttons, and delivery links without external email credentials.
+
+Service databases use the external Neon connections configured in `infra/.env`.
+
 
 **K8s (bonus):** umbrella Helm chart `infra/k8s/helm/swiftdrop`:
 
@@ -254,19 +352,25 @@ Mobile-friendly tracking page is a first-class public route (responsive).
 - Frontend: React Testing Library for critical forms; Playwright happy-path smoke
 - JaCoCo + coverage badge in CI; HTML report committed under `docs/test-reports/` at submission
 
-## Design documentation (20 marks) — all inside `docs/SWIFTDROP.md`
+## Design documentation (20 marks) — [`docs/DESIGN.md`](docs/DESIGN.md)
 
-The MD file is the assignment-ready design pack (exportable to PDF later):
+The assignment-ready design pack (exportable to PDF later). Diagram sources and
+rendered images live in [`docs/diagrams/`](docs/diagrams/).
 
-1. Use case diagrams (customer, merchant, courier, dispatcher)
-2. ER diagram
-3. Architecture + layer justification
-4. Integration patterns table
-5. Sequence diagrams: create delivery, merchant API order, courier status → notifications, Google OAuth
-6. SOLID / DRY / Repository / Strategy / Observer note
-7. Security decisions
-8. 10-member contribution sheet template
-9. Local + K8s setup instructions (copied into README)
+| # | Deliverable | Where |
+|---|---|---|
+| 1 | Use case diagrams (customer, merchant, courier, dispatcher) | `DESIGN.md` §1 |
+| 2 | ER diagram | `DESIGN.md` §2 |
+| 3 | Architecture + layer justification | `DESIGN.md` §3 |
+| 4 | Integration patterns table | `DESIGN.md` §4 |
+| 5 | Sequence diagrams: create delivery, merchant API order, courier status → notifications, Google OAuth | `DESIGN.md` §5 |
+| 6 | SOLID / DRY / Repository / Strategy / Observer note | `DESIGN.md` §6 |
+| 7 | Security decisions | `DESIGN.md` §6.5 and `SWIFTDROP.md` §2 |
+| 8 | 10-member contribution sheet template | _outstanding_ |
+| 9 | Local + K8s setup instructions (copied into README) | _outstanding_ |
+
+`DESIGN.md` §7 additionally records the defects found while verifying the
+documentation against the implementation.
 
 ## Implementation order (so the demo stays always runnable)
 

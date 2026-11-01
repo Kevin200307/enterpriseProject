@@ -1,12 +1,8 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "VITE_USE_MOCKS=true VITE_DEMO_MODE=true npm run vercel-build",
+  "buildCommand": "npm run vercel-build",
   "outputDirectory": "dist",
   "framework": "vite",
-  "env": {
-    "VITE_USE_MOCKS": "true",
-    "VITE_DEMO_MODE": "true"
-  },
   "rewrites": [{ "source": "/((?!assets/|.*\\..*).*)", "destination": "/index.html" }],
   "headers": [
     {

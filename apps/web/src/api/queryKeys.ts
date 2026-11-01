@@ -10,6 +10,8 @@ export const qk = {
     queue: (zone?: string) => ['dispatch', 'queue', zone ?? ''] as const,
     suggest: (parcelId: string) => ['dispatch', 'suggest', parcelId] as const,
     workload: ['dispatch', 'workload'] as const,
+    manifest: (courierId: string, date: string) => ['dispatch', 'manifest', courierId, date] as const,
+    command: (commandId: string) => ['dispatch', 'command', commandId] as const,
     all: ['dispatch'] as const,
   },
   admin: {
@@ -24,6 +26,7 @@ export const qk = {
   merchant: {
     me: ['merchant', 'me'] as const,
     orders: (f: object) => ['merchant', 'orders', f] as const,
+    order: (id: string) => ['merchant', 'order', id] as const,
     keys: ['merchant', 'keys'] as const,
     deliveries: (f: object) => ['merchant', 'deliveries', f] as const,
     all: ['merchant'] as const,
@@ -32,6 +35,7 @@ export const qk = {
     prefs: ['notifications', 'prefs'] as const,
     mine: (page: number) => ['notifications', 'mine', page] as const,
     log: (f: object) => ['notifications', 'log', f] as const,
+    byTracking: (tn: string) => ['notifications', 'byTracking', tn] as const,
     all: ['notifications'] as const,
   },
   courier: { today: ['courier', 'today'] as const },

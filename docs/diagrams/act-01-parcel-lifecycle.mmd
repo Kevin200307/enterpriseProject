@@ -1,0 +1,45 @@
+---
+title: Parcel Lifecycle State Machine
+---
+stateDiagram-v2
+    direction TB
+
+    [*] --> CREATED : customer books<br/>or merchant order placed
+
+    CREATED --> PICKED_UP : courier collects
+    CREATED --> CANCELLED : customer cancels
+
+    PICKED_UP --> IN_TRANSIT : departs origin
+
+    IN_TRANSIT --> OUT_FOR_DELIVERY : arrives at<br/>destination hub
+
+    OUT_FOR_DELIVERY --> DELIVERED : proof of delivery<br/>uploaded
+    OUT_FOR_DELIVERY --> FAILED : failedReason<br/>required
+
+    FAILED --> OUT_FOR_DELIVERY : reattempt
+
+    DELIVERED --> [*]
+    CANCELLED --> [*]
+
+    note right of CREATED
+        Cancellation is only legal here.
+        Once a courier has collected the
+        parcel the customer can no longer
+        cancel it.
+    end note
+
+    note right of OUT_FOR_DELIVERY
+        parcel-service rejects DELIVERED
+        unless a proofId is supplied and
+        that proof belongs to this parcel.
+    end note
+
+    note right of FAILED
+        FAILED is not terminal — a failed
+        delivery can be reattempted, which
+        is why the graph contains a cycle.
+    end note
+
+    note left of DELIVERED
+        Terminal. Enables receipt download.
+    end note

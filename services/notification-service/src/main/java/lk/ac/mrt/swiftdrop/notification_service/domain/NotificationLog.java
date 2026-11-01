@@ -50,7 +50,7 @@ public class NotificationLog {
     private NotificationChannel channel;
 
     @Column(name = "recipient_ref", nullable = false)
-    private UUID recipientRef; // User ID / Actor ID
+    private UUID recipientRef; // Identity Service user ID
 
     @Column(name = "recipient", nullable = false)
     private String recipient; // Resolved email or masked phone

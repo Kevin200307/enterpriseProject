@@ -94,6 +94,13 @@ export const routes = [
             ),
           },
           {
+            path: 'merchant/orders/:id',
+            ...page(
+              () => import('@/features/merchant/MerchantOrderDetailPage'),
+              'MerchantOrderDetailPage',
+            ),
+          },
+          {
             path: 'merchant/api-keys',
             ...page(() => import('@/features/merchant/ApiKeysPage'), 'ApiKeysPage'),
           },

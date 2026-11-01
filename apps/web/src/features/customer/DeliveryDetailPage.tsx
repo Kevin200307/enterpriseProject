@@ -45,11 +45,10 @@ function toTimeline(history: HistoryEntry[]): TimelineItem[] {
     .map((h) => ({
       status: h.toStatus,
       occurredAt: h.occurredAt,
-      actor: h.actorName,
       note: h.note,
-      extra: h.failureReason ? (
+      extra: h.failedReason ? (
         <p className="mt-1 rounded-md bg-red-50 p-2 text-sm text-red-900">
-          Reason: {h.failureReason}
+          Reason: {h.failedReason}
         </p>
       ) : undefined,
     }))
@@ -70,6 +69,16 @@ export function DeliveryDetailPage() {
     queryKey: [...qk.parcels.detail(id), 'history'],
     queryFn: () => parcelsApi.history(id),
     enabled: parcel.isSuccess,
+  })
+  const proofId = history.data?.content.find((entry) => entry.proofId)?.proofId
+  const proofUrl = useQuery({
+    queryKey: [...qk.parcels.detail(id), 'proof-url', proofId],
+    queryFn: () => {
+      if (!proofId) throw new Error('Proof is not available')
+      return parcelsApi.proofUrl(id, proofId)
+    },
+    enabled: parcel.data?.status === 'DELIVERED' && !!proofId,
+    staleTime: 4 * 60_000,
   })
 
   // Live updates: the pushed payload is the masked public shape, so only use it as a "something changed"
@@ -132,6 +141,7 @@ export function DeliveryDetailPage() {
   }
 
   const p = parcel.data
+  const failureReason = history.data?.content.find((entry) => entry.toStatus === 'FAILED')?.failedReason
   return (
     <div className="flex flex-col gap-6">
       <PageHeader title="Delivery details" />
@@ -143,12 +153,12 @@ export function DeliveryDetailPage() {
         <StatusChip status={p.status} />
       </div>
 
-      {p.status === 'FAILED' && p.failureReason && (
+      {p.status === 'FAILED' && failureReason && (
         <p
           role="alert"
           className="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-900"
         >
-          Delivery failed: {p.failureReason}
+          Delivery failed: {failureReason}
         </p>
       )}
 
@@ -164,19 +174,22 @@ export function DeliveryDetailPage() {
               ) : history.isError ? (
                 <ErrorState error={history.error} onRetry={() => void history.refetch()} />
               ) : (
-                <StatusTimeline items={toTimeline(history.data)} />
+                <StatusTimeline items={toTimeline(history.data.content)} />
               )}
             </CardContent>
           </Card>
-          {p.status === 'DELIVERED' && p.proofUrl && (
+          {p.status === 'DELIVERED' && proofUrl.isError && (
+            <ErrorState error={proofUrl.error} onRetry={() => void proofUrl.refetch()} />
+          )}
+          {p.status === 'DELIVERED' && proofUrl.data && (
             <Card>
               <CardHeader>
                 <CardTitle>Proof of delivery</CardTitle>
               </CardHeader>
               <CardContent>
-                <a href={p.proofUrl} target="_blank" rel="noopener noreferrer">
+                <a href={proofUrl.data.url} target="_blank" rel="noopener noreferrer">
                   <img
-                    src={p.proofUrl}
+                    src={proofUrl.data.url}
                     alt="Proof of delivery"
                     className="max-h-80 rounded-md border object-contain"
                   />
@@ -197,14 +210,6 @@ export function DeliveryDetailPage() {
                 <dd>{p.size}</dd>
                 <dt className="text-muted-foreground">Weight</dt>
                 <dd>{p.weightKg} kg</dd>
-                <dt className="text-muted-foreground">Express</dt>
-                <dd>{p.express ? 'Yes' : 'No'}</dd>
-                {p.courierName && (
-                  <>
-                    <dt className="text-muted-foreground">Courier</dt>
-                    <dd>{p.courierName}</dd>
-                  </>
-                )}
                 <dt className="border-t pt-2 font-semibold">Fee</dt>
                 <dd className="border-t pt-2 font-semibold">
                   <MoneyLKR value={p.fee} />

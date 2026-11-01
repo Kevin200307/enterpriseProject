@@ -11,7 +11,7 @@ const parse = (raw: string): PublicTracking | null => {
   }
 }
 
-/** STOMP over SockJS (TRK-4). Libraries are imported lazily so they never weigh on first paint. */
+/** STOMP over native WebSocket (TRK-4); SSE and polling remain the compatibility fallbacks. */
 export const stompTransport: Transport = {
   state: 'live',
   start(tn, h) {
@@ -22,12 +22,14 @@ export const stompTransport: Transport = {
       if (!cancelled && tooManyFailures()) h.onFail()
     }
 
-    void Promise.all([import('@stomp/stompjs'), import('sockjs-client')])
-      .then(([{ Client }, sockjs]) => {
+    void import('@stomp/stompjs')
+      .then(({ Client }) => {
         if (cancelled) return
-        const SockJS = sockjs.default
+        const brokerUrl = new URL(env.wsUrl)
+        if (brokerUrl.protocol === 'http:') brokerUrl.protocol = 'ws:'
+        if (brokerUrl.protocol === 'https:') brokerUrl.protocol = 'wss:'
         const c = new Client({
-          webSocketFactory: () => new SockJS(env.wsUrl),
+          brokerURL: brokerUrl.toString(),
           reconnectDelay: 3000,
           heartbeatIncoming: 20000,
           heartbeatOutgoing: 20000,
@@ -61,7 +63,7 @@ export const sseTransport: Transport = {
       queueMicrotask(h.onFail)
       return () => {}
     }
-    const es = new EventSource(`${env.apiBaseUrl}/api/v1/tracking/${encodeURIComponent(tn)}/stream`)
+    const es = new EventSource(`${env.apiBaseUrl}/api/v1/tracking/public/${encodeURIComponent(tn)}/stream`)
     es.onopen = h.onOpen
     es.onmessage = (e) => {
       const t = parse(e.data as string)

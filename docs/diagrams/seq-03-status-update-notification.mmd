@@ -1,0 +1,60 @@
+---
+title: Flow 3 — Courier status update triggers notifications
+---
+sequenceDiagram
+    autonumber
+    actor CR as Courier (SPA)
+    participant PS as parcel-service
+    participant MQ as RabbitMQ
+    participant NS as notification-service
+    participant ID as identity-service
+    participant SMTP as Mailpit / SMS
+
+    rect rgb(240, 253, 244)
+    Note over CR,PS: Marking a parcel DELIVERED — proof is uploaded first
+    CR->>PS: POST /api/v1/parcels/{id}/proofs (multipart, ≤5 MB)
+    activate PS
+    PS->>PS: store object in MinIO, insert delivery_proofs row
+    PS-->>CR: 201 {proofId}
+    deactivate PS
+    Note right of CR: Proof first — if the upload fails<br/>nothing has changed and the courier retries
+
+    CR->>PS: PATCH /api/v1/parcels/{id}/status<br/>{status: DELIVERED, proofId}
+    activate PS
+    PS->>PS: authorise — assigned courier or dispatcher only
+    PS->>PS: ParcelStateMachine.validate(OUT_FOR_DELIVERY → DELIVERED)
+    PS->>PS: guards — DELIVERED requires a proofId<br/>belonging to this parcel, and FAILED requires a reason
+    PS->>PS: update parcel, insert history,<br/>insert 2 outbox rows (one transaction)
+    PS-->>CR: 200 ParcelView
+    deactivate PS
+    end
+
+    PS->>MQ: OutboxPublisher → parcel.events<br/>parcel.status.changed.v2
+
+    rect rgb(255, 251, 235)
+    Note over MQ,SMTP: Three consumers react independently
+    par Notification
+        MQ->>NS: notification.parcel.status.changed.v2
+        activate NS
+        NS->>NS: recipient = payload.customerUserId<br/>(the parcel owner, not the courier)
+        NS->>ID: GET /internal/users/lookup?id=…
+        ID-->>NS: email, phone, name
+        Note right of NS: ⚠ Sent without an Authorization header —<br/>on failure it falls back to a placeholder address
+        NS->>NS: load preferences — is this status<br/>enabled for EMAIL / SMS?
+        NS->>NS: idempotency check on<br/>(event_id, channel, recipient_ref)
+        alt eligible and not already sent
+            NS->>SMTP: ChannelRouter → EmailChannelHandler<br/>Thymeleaf template, PII masked in the log
+            SMTP-->>NS: accepted
+            NS->>NS: persist SENT
+        else disabled for this status
+            NS->>NS: persist SKIPPED with a reason
+        end
+        deactivate NS
+    and Tracking projection
+        MQ->>MQ: tracking.parcel.status.changed.v2
+        Note right of MQ: tracking-service dedupes in Redis,<br/>fetches a privacy-safe snapshot from parcel-service,<br/>writes the projection, then pushes over STOMP and SSE
+    and Merchant webhook
+        MQ->>MQ: merchant-webhook.parcel.status.changed.v2
+        Note right of MQ: merchant-service signs the payload with HMAC<br/>and POSTs it to the merchant's endpoint
+    end
+    end
