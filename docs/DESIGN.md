@@ -1149,7 +1149,7 @@ flowchart TB
 
     subgraph PRES["① Presentation layer"]
         direction TB
-        SPA["React 19 + TypeScript SPA<br/>TanStack Query · React Router<br/>role-based route guards"]
+        SPA["React 18 + TypeScript SPA<br/>TanStack Query · React Router<br/>role-based route guards"]
         RT["Realtime ladder<br/>STOMP over WebSocket → SSE → 15 s polling"]
         SPA --- RT
     end
@@ -1237,7 +1237,7 @@ flowchart TB
 
 ### 3.2 The layers
 
-**① Presentation.** A React 19 + TypeScript SPA. It holds no business rules — route guards mirror the server's roles for user experience, but every decision is re-made server-side. Server state lives in TanStack Query rather than a client-side store, so the cache is the source of truth and live updates are applied by writing into it. The access token is held in memory only, never in `localStorage`.
+**① Presentation.** A React 18 + TypeScript SPA. It holds no business rules — route guards mirror the server's roles for user experience, but every decision is re-made server-side. Server state lives in TanStack Query rather than a client-side store, so the cache is the source of truth and live updates are applied by writing into it. The access token is held in memory only, never in `localStorage`.
 
 **② Edge.** Spring Cloud Gateway on WebFlux. It is the only publicly reachable component and the single place where cross-cutting concerns are implemented: JWT validation (issuer *and* audience), CORS, security headers, Redis-backed token-bucket rate limiting, Resilience4j circuit breakers per route, request-id propagation, and identity header injection. It strips any client-supplied `X-User-Id` / `X-User-Roles` / `X-Merchant-Id` header and re-adds them only from a validated token, so a downstream service can trust them. `/api/v1/internal/**` is denied outright at the edge.
 
