@@ -11,9 +11,9 @@ import static org.mockito.Mockito.*;
 class DispatchServiceTokenControllerTest {
     @Test void acceptsOnlyConfiguredClientCredentialsAndDisablesEmptySecrets() {
         var tokens=mock(JwtTokenService.class);
-        when(tokens.createServiceToken(DispatchServiceTokenController.SUBJECT,"dispatch.internal")).thenReturn("signed-token");
+        when(tokens.createServiceToken(DispatchServiceTokenController.DISPATCH_SUBJECT,"dispatch.internal")).thenReturn("signed-token");
         String secret="a-random-test-secret-at-least-32-characters";
-        var controller=new DispatchServiceTokenController(secret,tokens);
+        var controller=new DispatchServiceTokenController(secret,"",tokens);
         String basic="Basic "+Base64.getEncoder().encodeToString(("dispatch-service:"+secret).getBytes(StandardCharsets.UTF_8));
         var result=controller.token(basic,"client_credentials");
         assertThat(result.getBody().access_token()).isEqualTo("signed-token");
@@ -21,7 +21,7 @@ class DispatchServiceTokenControllerTest {
         for (String bad : new String[]{"","Basic invalid","Bearer token","Basic "+Base64.getEncoder().encodeToString("dispatch-service:wrong".getBytes(StandardCharsets.UTF_8))})
             assertThatThrownBy(() -> controller.token(bad,"client_credentials")).isInstanceOf(BadCredentialsException.class);
         assertThatThrownBy(() -> controller.token(basic,"password")).isInstanceOf(BadCredentialsException.class);
-        assertThatThrownBy(() -> new DispatchServiceTokenController("",tokens).token("Basic ZGlzcGF0Y2gtc2VydmljZTo=","client_credentials"))
+        assertThatThrownBy(() -> new DispatchServiceTokenController("","",tokens).token("Basic ZGlzcGF0Y2gtc2VydmljZTo=","client_credentials"))
                 .isInstanceOf(BadCredentialsException.class);
     }
 }

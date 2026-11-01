@@ -2,6 +2,7 @@ package lk.ac.mrt.swiftdrop.notification_service.controller;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -138,13 +139,14 @@ class NotificationControllerTest {
         when(logRepository.findByTrackingNumberOrderByCreatedAtDesc(trackingNumber))
                 .thenReturn(List.of(mockLog));
 
-        ResponseEntity<List<NotificationLog>> response =
+        ResponseEntity<List<AdminNotificationView>> response =
                 notificationController.getNotificationsByTrackingNumber(trackingNumber);
 
         assertNotNull(response);
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals(1, response.getBody().size());
-        assertEquals(trackingNumber, response.getBody().get(0).getTrackingNumber());
+        assertEquals("CREATED", response.getBody().get(0).templateKey());
+        assertNull(response.getBody().get(0).recipientRef());
         verify(logRepository, times(1)).findByTrackingNumberOrderByCreatedAtDesc(trackingNumber);
     }
 
@@ -167,13 +169,13 @@ class NotificationControllerTest {
 
         when(notificationService.resendNotification(id)).thenReturn(mockResent);
 
-        ResponseEntity<NotificationLog> response = notificationController.resendNotification(id);
+        ResponseEntity<AdminNotificationView> response = notificationController.resendNotification(id);
 
         assertNotNull(response);
         assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertEquals(id, response.getBody().getId());
-        assertEquals(NotificationStatus.SENT, response.getBody().getStatus());
-        assertEquals(2, response.getBody().getAttempts());
+        assertEquals(id, response.getBody().id());
+        assertEquals(NotificationStatus.SENT, response.getBody().status());
+        assertEquals(2, response.getBody().attempts());
         verify(notificationService, times(1)).resendNotification(id);
     }
 

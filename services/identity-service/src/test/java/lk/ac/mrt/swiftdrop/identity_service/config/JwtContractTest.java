@@ -47,7 +47,7 @@ class JwtContractTest {
         assertThat(tokens.expiresIn()).isEqualTo(900);
 
         var serviceToken = config.jwtDecoder(rsaKey,properties).decode(tokens.createServiceToken(
-            lk.ac.mrt.swiftdrop.identity_service.api.DispatchServiceTokenController.SUBJECT,"dispatch.internal"));
+            lk.ac.mrt.swiftdrop.identity_service.api.DispatchServiceTokenController.DISPATCH_SUBJECT,"dispatch.internal"));
         assertThat(serviceToken.getClaimAsString("client_id")).isEqualTo("dispatch-service");
         assertThat(serviceToken.getClaimAsString("scope")).isEqualTo("dispatch.internal");
         assertThat(serviceToken.getClaimAsStringList("roles")).isEmpty();

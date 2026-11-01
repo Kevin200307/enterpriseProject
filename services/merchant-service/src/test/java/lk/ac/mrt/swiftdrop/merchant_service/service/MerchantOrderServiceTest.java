@@ -25,6 +25,7 @@ import reactor.netty.http.server.HttpServer;
 class MerchantOrderServiceTest {
     @Mock MerchantRepository merchants;
     @Mock MerchantOrderRepository orders;
+    @Mock ServiceTokenProvider serviceTokenProvider;
     Merchant merchant;
     Address pickup = new Address("Sender", "+94770000000", "1 Main", "Colombo", "00100", "CMB");
     Address dropoff = new Address("Receiver", "+94771111111", "2 Lake", "Kandy", "20000", "KDY");
@@ -48,7 +49,8 @@ class MerchantOrderServiceTest {
         try {
             when(orders.findByMerchantIdAndMerchantRef(merchant.getId(), "ERP-1")).thenReturn(Optional.empty());
             when(orders.save(any())).thenAnswer(i -> { MerchantOrder o=i.getArgument(0); o.setId(UUID.randomUUID()); return o; });
-            var service = new MerchantOrderService(merchants, orders, WebClient.builder(), "http://127.0.0.1:"+server.port());
+            var service = new MerchantOrderService(merchants, orders, WebClient.builder(), serviceTokenProvider,
+                    "http://127.0.0.1:"+server.port());
             var result = service.create(merchant.getOwnerUserId(),
                     new Create("ERP-1", pickup, dropoff, PackageSize.SMALL, BigDecimal.ONE, true), "token");
             assertEquals(new BigDecimal("725.00"), result.fee());
@@ -62,14 +64,14 @@ class MerchantOrderServiceTest {
                 .fee(BigDecimal.TEN).currency("LKR").requestHash(hashFor(
                         new Create("ERP-2", pickup, dropoff, PackageSize.SMALL, BigDecimal.ONE, false))).build();
         when(orders.findByMerchantIdAndMerchantRef(merchant.getId(), "ERP-2")).thenReturn(Optional.of(existing));
-        var service = new MerchantOrderService(merchants, orders, WebClient.builder(), "http://127.0.0.1:1");
+        var service = new MerchantOrderService(merchants, orders, WebClient.builder(), serviceTokenProvider, "http://127.0.0.1:1");
         assertEquals(existing.getId(), service.create(merchant.getOwnerUserId(),
                 new Create("ERP-2", pickup, dropoff, PackageSize.SMALL, BigDecimal.ONE, false), "token").id());
     }
 
     @Test void getDoesNotLeakAnotherMerchantsOrder() {
         UUID id=UUID.randomUUID(); when(orders.findByIdAndMerchantId(id, merchant.getId())).thenReturn(Optional.empty());
-        var service = new MerchantOrderService(merchants, orders, WebClient.builder(), "http://127.0.0.1:1");
+        var service = new MerchantOrderService(merchants, orders, WebClient.builder(), serviceTokenProvider, "http://127.0.0.1:1");
         assertThrows(ResponseStatusException.class, () -> service.get(merchant.getOwnerUserId(), id));
     }
 

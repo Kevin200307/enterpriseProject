@@ -23,7 +23,6 @@ the system in natural language.
 - [Running tests](#running-tests)
 - [Documentation](#documentation)
 - [Project status](#project-status)
-- [Team](#team)
 
 ---
 
@@ -284,21 +283,3 @@ Known defects found during documentation review are listed in
 [`docs/DESIGN.md` §7](docs/DESIGN.md#7-known-gaps).
 
 ---
-
-## Team
-
-Group 4, Enterprise Application Development (IN3101), Faculty of Information Technology,
-University of Moratuwa.
-
-| Member | Area |
-|---|---|
-| Arangala A. P. | Identity and authentication |
-| Kevin Gaveshana | API gateway and edge platform |
-| M.A.P.M. Mallawasekara | Pricing and zone management |
-| L. P. Ishadi | Parcel booking and lifecycle |
-| Methsara | Dispatch and courier workload |
-| Charithma Dassanayake | Merchant API and webhooks |
-| Maheesha Paboth | Live tracking and WebSockets |
-| Thranjaya S. J. K. | Notification pipeline |
-| R.K.T.P. Wijerathna | AI assistant and tooling |
-| K.G.T. Buddhima | Frontend SPA and system design |
