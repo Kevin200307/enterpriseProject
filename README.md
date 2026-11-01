@@ -134,7 +134,7 @@ enterpriseProject/
 │   └── minio/                      Bucket bootstrap
 ├── docs/
 │   ├── DESIGN.md             Full design pack (use cases, ER, sequences, patterns)
-│   └── diagrams/             18 rendered diagrams (PNG); drawio/ holds editable sources
+│   └── diagrams/             18 rendered diagrams (PNG)
 ├── report/                   Academic project report (LaTeX + PDF)
 └── tests/                    End-to-end harness
 ```
@@ -256,7 +256,7 @@ must be running. Tests that require Docker skip themselves when it is unavailabl
 | Document | Contents |
 |---|---|
 | [`docs/DESIGN.md`](docs/DESIGN.md) | Full design pack: use case diagrams, ER model, architecture and justification, integration patterns, sequence diagrams, design patterns, and a record of known defects |
-| [`docs/diagrams/`](docs/diagrams/) | 18 rendered diagrams as PNG. Mermaid and PlantUML source for each is embedded in `DESIGN.md`; `drawio/` holds draw.io versions |
+| [`docs/diagrams/`](docs/diagrams/) | 18 rendered diagrams as PNG. The Mermaid or PlantUML source for each is embedded in `DESIGN.md` |
 | [`report/SwiftDrop_Project_Report.pdf`](report/SwiftDrop_Project_Report.pdf) | Academic project report, 46 pages, all diagrams embedded |
 | Service READMEs | Each service documents its own API contracts and configuration |
 
