@@ -2,6 +2,10 @@ global:
   environment: local
   imagePullPolicy: Never
 
+namespacePolicy:
+  create: true
+  enforce: baseline
+
 config:
   webOrigins: http://swiftdrop.local:8088
 

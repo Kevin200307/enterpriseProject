@@ -63,6 +63,11 @@ never add credentials to this repository.
 - Production secrets come from a secret manager, not checked-in Kubernetes Secret manifests.
 - Only immutable version or Git-SHA images may be deployed to production.
 
+Each workload gets a dedicated ServiceAccount with API token automount disabled. The chart uses
+the RuntimeDefault seccomp profile, non-root execution, no privilege escalation, and drops all
+Linux capabilities. The local chart may create its dedicated namespace with Pod Security labels;
+production namespace ownership should remain with the platform team.
+
 ## Deployment lifecycle
 
 The intended order is infrastructure readiness, database migrations, identity and domain

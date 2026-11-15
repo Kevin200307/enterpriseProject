@@ -13,6 +13,20 @@ serviceAccount:
   create: true
   annotations: {}
 
+namespacePolicy:
+  create: false
+  enforce: baseline
+
+podSecurityContext:
+  runAsNonRoot: true
+  seccompProfile:
+    type: RuntimeDefault
+
+containerSecurityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop: ["ALL"]
+
 config:
   jwtAudience: swiftdrop
   identityIssuerUri: http://identity-service:8080
