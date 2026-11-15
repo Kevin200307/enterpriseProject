@@ -71,3 +71,19 @@ the associated rollout. CI renders and validates both local and production value
 release is allowed.
 
 Detailed commands and recovery procedures are added alongside the implementation commits.
+
+## Create the local cluster
+
+Install Kind, then run:
+
+```powershell
+.\infra\kubernetes\scripts\create-local-cluster.ps1
+```
+
+The script operates only on the cluster named `swiftdrop`. It is idempotent and will not delete
+or replace other clusters. Local Ingress ports are mapped to `http://localhost:8088` and
+`https://localhost:8443`. Delete the disposable cluster explicitly with:
+
+```powershell
+.\infra\kubernetes\scripts\destroy-local-cluster.ps1
+```
