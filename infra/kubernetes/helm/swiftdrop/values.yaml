@@ -181,6 +181,7 @@ mailpit:
 
 autoscaling:
   enabled: false
+  services: [web, gateway, identity-service, parcel-service, ai-assistant-service]
   minReplicas: 2
   maxReplicas: 6
   targetCPUUtilizationPercentage: 70

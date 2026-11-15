@@ -1,0 +1,58 @@
+global:
+  imageRegistry: ghcr.io/your-org
+  imagePullPolicy: IfNotPresent
+  environment: production
+
+config:
+  webOrigins: https://swiftdrop.example.com
+  webApiBaseUrl: https://swiftdrop.example.com
+
+services:
+  web: {replicas: 3, image: {repository: swiftdrop-web, tag: "0.1.0"}}
+  gateway: {replicas: 3, image: {repository: swiftdrop-gateway, tag: "0.1.0"}}
+  identity-service: {replicas: 3, image: {repository: swiftdrop-identity-service, tag: "0.1.0"}}
+  parcel-service: {replicas: 3, image: {repository: swiftdrop-parcel-service, tag: "0.1.0"}}
+  pricing-service: {replicas: 2, image: {repository: swiftdrop-pricing-service, tag: "0.1.0"}}
+  dispatch-service: {replicas: 2, image: {repository: swiftdrop-dispatch-service, tag: "0.1.0"}}
+  merchant-service: {replicas: 2, image: {repository: swiftdrop-merchant-service, tag: "0.1.0"}}
+  tracking-service: {replicas: 2, image: {repository: swiftdrop-tracking-service, tag: "0.1.0"}}
+  notification-service: {replicas: 2, image: {repository: swiftdrop-notification-service, tag: "0.1.0"}}
+  ai-assistant-service: {replicas: 2, image: {repository: swiftdrop-ai-assistant-service, tag: "0.1.0"}}
+
+redis:
+  enabled: false
+  host: managed-redis.example.internal
+
+rabbitmq:
+  enabled: false
+  host: managed-rabbitmq.example.internal
+
+mailpit:
+  enabled: false
+  smtpHost: smtp.example.internal
+  smtpPort: 587
+
+ingress:
+  enabled: true
+  className: nginx
+  host: swiftdrop.example.com
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-production
+  tls:
+    enabled: true
+    secretName: swiftdrop-tls
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 8
+
+podDisruptionBudget:
+  enabled: true
+
+namespacePolicy:
+  create: false
+
+networkPolicy:
+  enabled: true
+  ingressNamespace: ingress-nginx

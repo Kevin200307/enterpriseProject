@@ -77,6 +77,14 @@ release is allowed.
 
 Detailed commands and recovery procedures are added alongside the implementation commits.
 
+## Availability and scaling
+
+Replicated application pods are spread across nodes and prefer not to colocate. Production values
+enable PodDisruptionBudgets and CPU-based `autoscaling/v2` HPAs for web, gateway, identity,
+parcel, and assistant workloads. HPA scale-down is intentionally slow, and the assistant maximum
+must stay within Gemini and downstream service quotas. Metrics Server is required before enabling
+autoscaling.
+
 ## Network isolation
 
 NetworkPolicy starts with default-deny, permits cluster DNS, permits traffic among pods belonging
