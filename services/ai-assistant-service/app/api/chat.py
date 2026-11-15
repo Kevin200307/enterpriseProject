@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, Request
 from fastapi.responses import StreamingResponse
 
 from app.api.conversations import get_conversations, require_enabled
+from app.graph.runner import AssistantRunner
 from app.models.chat import ChatRequest
 from app.models.conversation import ConversationMessage
 from app.persistence.conversation_repository import ConversationRepository
@@ -21,6 +22,7 @@ async def _placeholder_stream(
     body: ChatRequest,
     principal: AssistantPrincipal,
     conversations: ConversationRepository,
+    runner: AssistantRunner,
 ) -> AsyncIterator[bytes]:
     conversation_id: UUID = body.conversationId or await conversations.create(principal.subject)
     history = await conversations.append(
@@ -32,10 +34,14 @@ async def _placeholder_stream(
         yield encode_sse("error", {"message": "Conversation not found."})
         return
 
-    response = "The Python assistant is ready; model orchestration is being connected."
-    if await request.is_disconnected():
-        return
-    yield encode_sse("token", {"text": response})
+    answer: list[str] = []
+    async for event in runner.run(body.message, principal):
+        if await request.is_disconnected():
+            return
+        if event.event == "token":
+            answer.append(str(event.data.get("text", "")))
+        yield encode_sse(event.event, event.data)
+    response = "".join(answer)
     await conversations.append(
         conversation_id,
         principal.subject,
@@ -52,8 +58,9 @@ async def stream_chat(
     conversations: Annotated[ConversationRepository, Depends(get_conversations)],
     _: Annotated[None, Depends(require_enabled)],
 ) -> StreamingResponse:
+    runner: AssistantRunner = request.app.state.assistant_runner
     return StreamingResponse(
-        _placeholder_stream(request, body, principal, conversations),
+        _placeholder_stream(request, body, principal, conversations, runner),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-store",

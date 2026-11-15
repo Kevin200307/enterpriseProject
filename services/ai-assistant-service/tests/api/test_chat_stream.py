@@ -1,10 +1,12 @@
 import json
 import re
+from collections.abc import AsyncIterator
 from uuid import UUID, uuid4
 
 from fastapi.testclient import TestClient
 
 from app.config import Settings
+from app.graph.runner import AssistantEvent
 from app.main import create_app
 from app.security.dependencies import require_principal
 from app.security.principal import AssistantPrincipal
@@ -17,7 +19,16 @@ def make_client(*, enabled: bool = True) -> TestClient:
         roles=frozenset({"CUSTOMER"}),
         token="fixture",  # noqa: S106
     )
+    app.state.assistant_runner = FakeRunner()
     return TestClient(app)
+
+
+class FakeRunner:
+    async def run(
+        self, message: str, principal: AssistantPrincipal
+    ) -> AsyncIterator[AssistantEvent]:
+        del principal
+        yield AssistantEvent("token", {"text": f"Reply to {message}"})
 
 
 def parse_events(body: str) -> list[tuple[str, dict[str, object]]]:
@@ -42,7 +53,7 @@ def test_stream_emits_compatible_events_and_persists_history() -> None:
     assert response.headers["cache-control"] == "no-store"
     assert [name for name, _ in events] == ["token", "done"]
     assert history.json()["messages"][0] == {"role": "user", "content": "Hello"}
-    assert history.json()["messages"][1]["role"] == "assistant"
+    assert history.json()["messages"][1] == {"role": "assistant", "content": "Reply to Hello"}
 
 
 def test_missing_owned_conversation_returns_sse_error() -> None:
