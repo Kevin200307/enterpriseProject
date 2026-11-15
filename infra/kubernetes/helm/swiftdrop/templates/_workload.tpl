@@ -108,6 +108,7 @@ spec:
           imagePullPolicy: {{ $root.Values.global.imagePullPolicy }}
           securityContext:
             {{- toYaml $root.Values.containerSecurityContext | nindent 12 }}
+            runAsUser: {{ $service.runAsUser }}
             readOnlyRootFilesystem: {{ if hasKey $service "readOnlyRootFilesystem" }}{{ $service.readOnlyRootFilesystem }}{{ else }}true{{ end }}
           ports:
             - {name: http, containerPort: {{ $service.port }}}

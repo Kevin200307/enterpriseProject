@@ -3,7 +3,7 @@ global:
   imagePullPolicy: Never
 
 namespacePolicy:
-  create: true
+  create: false
   enforce: baseline
 
 config:
@@ -29,6 +29,9 @@ rabbitmq:
   enabled: true
 
 mailpit:
+  enabled: true
+
+localPostgresql:
   enabled: true
 
 ingress:

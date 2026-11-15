@@ -36,6 +36,7 @@ spec:
     spec:
       automountServiceAccountToken: false
       securityContext:
+        runAsNonRoot: true
         seccompProfile: {type: RuntimeDefault}
       containers:
         - name: mailpit
@@ -55,4 +56,6 @@ spec:
           securityContext:
             allowPrivilegeEscalation: false
             capabilities: {drop: ["ALL"]}
+            runAsNonRoot: true
+            runAsUser: 1000
 {{- end }}

@@ -36,6 +36,7 @@ spec:
           args: ["--spring.main.web-application-type=none", "--spring.main.lazy-initialization=true"]
           securityContext:
             {{- toYaml $.Values.containerSecurityContext | nindent 12 }}
+            runAsUser: {{ $service.runAsUser }}
             readOnlyRootFilesystem: true
           envFrom:
             - configMapRef: {name: {{ include "swiftdrop.fullname" $ }}-config}
@@ -93,6 +94,7 @@ spec:
                 secretKeyRef: {name: {{ .Values.existingSecret }}, key: ASSISTANT_DATABASE_URL}
           securityContext:
             {{- toYaml .Values.containerSecurityContext | nindent 12 }}
+            runAsUser: {{ $assistant.runAsUser }}
             readOnlyRootFilesystem: true
           resources:
             requests: {cpu: 50m, memory: 128Mi}

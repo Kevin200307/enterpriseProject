@@ -77,6 +77,27 @@ release is allowed.
 
 Detailed commands and recovery procedures are added alongside the implementation commits.
 
+## Clean local installation
+
+```powershell
+.\infra\kubernetes\scripts\create-local-cluster.ps1
+.\infra\kubernetes\scripts\install-local-addons.ps1
+kubectl create namespace swiftdrop
+kubectl label namespace swiftdrop pod-security.kubernetes.io/enforce=baseline --overwrite
+.\infra\kubernetes\scripts\create-local-secret.ps1
+.\infra\kubernetes\scripts\load-images.ps1 -Tag dev
+helm upgrade --install swiftdrop .\infra\kubernetes\helm\swiftdrop `
+  --namespace swiftdrop `
+  --values .\infra\kubernetes\helm\swiftdrop\values-local.yaml `
+  --atomic --wait --timeout 15m
+.\infra\kubernetes\scripts\verify-cluster.ps1
+.\infra\kubernetes\tests\smoke-tests.ps1
+```
+
+The local PostgreSQL StatefulSet creates separate users and databases for every owning service.
+It is disposable test infrastructure, not a production database design. See `RECOVERY.md` for
+rollback, restore, rotation, certificate, pod, and incident procedures.
+
 ## Image publishing and deployment
 
 The release workflow builds every image once, publishes it under the immutable Git SHA, attaches
@@ -172,7 +193,7 @@ Install Kind, then run:
 
 The script operates only on the cluster named `swiftdrop`. It is idempotent and will not delete
 or replace other clusters. Local Ingress ports are mapped to `http://localhost:8088` and
-`https://localhost:8443`. Delete the disposable cluster explicitly with:
+`https://localhost:18443`. Delete the disposable cluster explicitly with:
 
 ```powershell
 .\infra\kubernetes\scripts\destroy-local-cluster.ps1

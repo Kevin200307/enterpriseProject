@@ -1,0 +1,119 @@
+{{- if .Values.localPostgresql.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: swiftdrop-postgres-init
+  labels:
+    {{- include "swiftdrop.labels" . | nindent 4 }}
+data:
+  10-create-service-databases.sh: |-
+    #!/bin/sh
+    set -eu
+    create_database() {
+      service="$1"
+      user="$2"
+      password="$3"
+      database="$4"
+      echo "Creating local database boundary for $service"
+      psql --username "$POSTGRES_USER" --dbname postgres \
+        --set=user="$user" --set=password="$password" --set=db="$database" <<'SQL'
+    SELECT format('CREATE ROLE %I LOGIN PASSWORD %L', :'user', :'password')
+      WHERE NOT EXISTS (SELECT FROM pg_roles WHERE rolname = :'user') \gexec
+    SELECT format('CREATE DATABASE %I OWNER %I', :'db', :'user')
+      WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = :'db') \gexec
+    SQL
+    }
+    create_database identity "$IDENTITY_DB_USERNAME" "$IDENTITY_DB_PASSWORD" identity
+    create_database parcel "$PARCEL_DB_USERNAME" "$PARCEL_DB_PASSWORD" parcel
+    create_database pricing "$PRICING_DB_USERNAME" "$PRICING_DB_PASSWORD" pricing
+    create_database dispatch "$DISPATCH_DB_USERNAME" "$DISPATCH_DB_PASSWORD" dispatch
+    create_database merchant "$MERCHANT_DB_USERNAME" "$MERCHANT_DB_PASSWORD" merchant
+    create_database notification "$NOTIFICATION_DB_USERNAME" "$NOTIFICATION_DB_PASSWORD" notification
+    create_database assistant assistant "$ASSISTANT_DB_PASSWORD" assistant
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  labels:
+    {{- include "swiftdrop.labels" . | nindent 4 }}
+    app.kubernetes.io/component: postgres
+spec:
+  clusterIP: None
+  selector:
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: postgres
+  ports:
+    - {name: postgres, port: 5432, targetPort: postgres}
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+  labels:
+    {{- include "swiftdrop.labels" . | nindent 4 }}
+    app.kubernetes.io/component: postgres
+spec:
+  serviceName: postgres
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: postgres
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/component: postgres
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: postgres
+          image: {{ .Values.localPostgresql.image | quote }}
+          ports:
+            - {name: postgres, containerPort: 5432}
+          env:
+            - {name: POSTGRES_USER, value: postgres}
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef: {name: {{ .Values.existingSecret }}, key: POSTGRES_ADMIN_PASSWORD}
+{{- range $key := list "IDENTITY_DB_USERNAME" "IDENTITY_DB_PASSWORD" "PARCEL_DB_USERNAME" "PARCEL_DB_PASSWORD" "PRICING_DB_USERNAME" "PRICING_DB_PASSWORD" "DISPATCH_DB_USERNAME" "DISPATCH_DB_PASSWORD" "MERCHANT_DB_USERNAME" "MERCHANT_DB_PASSWORD" "NOTIFICATION_DB_USERNAME" "NOTIFICATION_DB_PASSWORD" "ASSISTANT_DB_PASSWORD" }}
+            - name: {{ $key }}
+              valueFrom:
+                secretKeyRef: {name: {{ $.Values.existingSecret }}, key: {{ $key }}}
+{{- end }}
+            - {name: PGDATA, value: /var/lib/postgresql/data/pgdata}
+          readinessProbe:
+            exec: {command: ["sh", "-ec", "pg_isready -U postgres -d postgres"]}
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          livenessProbe:
+            exec: {command: ["sh", "-ec", "pg_isready -U postgres -d postgres"]}
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          resources:
+            requests: {cpu: 100m, memory: 256Mi}
+            limits: {cpu: "1", memory: 1Gi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: {drop: ["ALL"]}
+            runAsUser: 999
+            readOnlyRootFilesystem: false
+          volumeMounts:
+            - {name: data, mountPath: /var/lib/postgresql/data}
+            - {name: init, mountPath: /docker-entrypoint-initdb.d/10-create-service-databases.sh, subPath: 10-create-service-databases.sh}
+      volumes:
+        - name: init
+          configMap:
+            name: swiftdrop-postgres-init
+            defaultMode: 0755
+  volumeClaimTemplates:
+    - metadata: {name: data}
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests: {storage: {{ .Values.localPostgresql.storage }}}
+{{- end }}
