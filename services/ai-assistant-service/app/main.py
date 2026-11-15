@@ -2,6 +2,7 @@ from uuid import uuid4
 
 from fastapi import FastAPI
 from fastapi import Request as FastApiRequest
+from langgraph.checkpoint.memory import InMemorySaver
 from starlette.middleware.base import RequestResponseEndpoint
 from starlette.responses import Response
 
@@ -58,7 +59,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
     application.state.parcel_client = parcel_client
     application.state.pricing_client = pricing_client
-    application.state.assistant_runner = AssistantRunner(parcel_client, pricing_client)
+    application.state.assistant_runner = AssistantRunner(
+        parcel_client,
+        pricing_client,
+        application.state.model_provider,
+        InMemorySaver(),
+    )
     if resolved.redis_url is None:
         application.state.rate_limiter = AllowAllRateLimiter()
     else:

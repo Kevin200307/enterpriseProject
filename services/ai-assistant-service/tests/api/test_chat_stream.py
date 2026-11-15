@@ -25,8 +25,12 @@ def make_client(*, enabled: bool = True) -> TestClient:
 
 class FakeRunner:
     async def run(
-        self, message: str, principal: AssistantPrincipal
+        self,
+        message: str,
+        principal: AssistantPrincipal,
+        conversation_id: UUID | None = None,
     ) -> AsyncIterator[AssistantEvent]:
+        assert conversation_id is not None
         del principal
         yield AssistantEvent("token", {"text": f"Reply to {message}"})
 

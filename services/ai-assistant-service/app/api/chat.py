@@ -35,7 +35,7 @@ async def _placeholder_stream(
         return
 
     answer: list[str] = []
-    async for event in runner.run(body.message, principal):
+    async for event in runner.run(body.message, principal, conversation_id):
         if await request.is_disconnected():
             return
         if event.event == "token":
