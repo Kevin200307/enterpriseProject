@@ -18,6 +18,9 @@ class Settings(BaseSettings):
     environment: str = "development"
     log_level: str = "INFO"
     port: int = Field(default=8080, ge=1, le=65535)
+    identity_jwks_uri: str = "http://identity-service:8080/.well-known/jwks.json"
+    identity_issuer_uri: str = "http://identity-service:8080"
+    jwt_audience: str = "swiftdrop"
 
 
 @lru_cache

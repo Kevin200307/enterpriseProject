@@ -2,6 +2,7 @@ from fastapi import FastAPI
 
 from app.api.health import router as health_router
 from app.config import Settings, get_settings
+from app.security.jwt import JwtTokenValidator
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -14,6 +15,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         openapi_url=None,
     )
     application.state.settings = resolved
+    application.state.token_validator = JwtTokenValidator(
+        resolved.identity_jwks_uri,
+        resolved.identity_issuer_uri,
+        resolved.jwt_audience,
+    )
     application.include_router(health_router)
     return application
 
