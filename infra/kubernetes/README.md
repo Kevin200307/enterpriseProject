@@ -77,6 +77,12 @@ release is allowed.
 
 Detailed commands and recovery procedures are added alongside the implementation commits.
 
+The AI assistant uses the same internal DNS names as Compose, validates identity-service JWKS,
+and forwards user JWTs to downstream services. Its Redis and PostgreSQL URLs come from the
+external Secret. Gemini remains optional: an absent `GOOGLE_API_KEY` disables model-backed
+responses safely while deterministic assistant behavior remains available. Autoscaling defaults
+remain conservative to protect Gemini quota and Java downstream capacity.
+
 The chart never creates application credentials. Create the Secret named by `existingSecret`
 through a secret manager integration. `secret-keys.example.yaml` documents its key contract and
 contains no usable values. Generated local Secret files match `*secret*.local.yaml` and are

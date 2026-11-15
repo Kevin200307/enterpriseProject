@@ -29,6 +29,9 @@ data:
   SPRING_MAIL_PORT: {{ .Values.mailpit.smtpPort | default 1025 | quote }}
   ASSISTANT_ENABLED: {{ .Values.config.assistantEnabled | quote }}
   GEMINI_MODEL: {{ .Values.config.geminiModel | quote }}
+  ASSISTANT_REQUESTS_PER_HOUR: "20"
+  MAX_MODEL_CALLS_PER_TURN: "2"
+  MAX_TOOL_CALLS_PER_TURN: "3"
   JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=75"
   SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE: "10"
   SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE: "0"
