@@ -78,3 +78,53 @@ class CustomerWriteTools:
             key: result.get(key)
             for key in ("id", "trackingNumber", "status", "fee", "currency")
         }
+
+    async def prepare_cancellation(
+        self,
+        conversation_id: UUID,
+        principal: AssistantPrincipal,
+        tracking_number: str,
+    ) -> dict[str, object]:
+        if not principal.has_role("CUSTOMER"):
+            return {"error": "You don't have permission to cancel this delivery."}
+        try:
+            details = await self._parcels.details_by_tracking(tracking_number, principal.token)
+        except DownstreamError:
+            return {"error": "The delivery could not be checked for cancellation."}
+        if not isinstance(details, dict) or not details.get("id"):
+            return {"error": "The delivery could not be checked for cancellation."}
+        if details.get("status") != "CREATED":
+            return {"error": "Only deliveries in CREATED status can be cancelled."}
+        operation = await self._operations.prepare(
+            conversation_id,
+            principal.subject,
+            "CANCEL_DELIVERY",
+            {"parcelId": str(details["id"]), "trackingNumber": tracking_number},
+            "CUSTOMER",
+        )
+        return {
+            "operationId": str(operation.id),
+            "confirmationRequired": True,
+            "expiresAt": operation.expires_at.isoformat(),
+            "summary": f"Cancel parcel {tracking_number}",
+        }
+
+    async def cancel_delivery(
+        self, operation_id: UUID, principal: AssistantPrincipal
+    ) -> dict[str, object]:
+        operation = await self._confirmations.claim_for_execution(operation_id, principal)
+        if operation.operation_type != "CANCEL_DELIVERY":
+            return {"error": "The confirmed operation is not a cancellation."}
+        parcel_id = operation.request_payload.get("parcelId")
+        if not isinstance(parcel_id, str):
+            return {"error": "The cancellation request is invalid."}
+        try:
+            result = await self._parcels.cancel(parcel_id, principal.token)
+        except DownstreamError:
+            return {"error": "The parcel is no longer eligible for cancellation."}
+        if not isinstance(result, dict):
+            return {"error": "Cancellation returned an invalid response."}
+        return {
+            key: result.get(key)
+            for key in ("id", "trackingNumber", "status", "updatedAt")
+        }
