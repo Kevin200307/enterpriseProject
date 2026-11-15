@@ -25,3 +25,8 @@ class MerchantClient(DownstreamClient):
             token,
             params={"page": 0, "size": 20},
         )
+
+    async def list_all(self, token: str, status: str | None = None) -> Any:
+        return await self.request_json(
+            "GET", "/api/v1/merchants", token, params={"status": status, "page": 0, "size": 20}
+        )

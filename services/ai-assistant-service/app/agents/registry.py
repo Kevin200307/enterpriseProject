@@ -49,7 +49,17 @@ AGENTS = {
     "admin": AgentSpec(
         "admin",
         "Perform only explicitly requested, authorized, confirmed, and audited admin operations.",
-        frozenset(),
+        frozenset(
+            {
+                "adminUsers",
+                "adminMerchants",
+                "adminPricing",
+                "adminNotificationFailures",
+                "dispatchQueue",
+                "dispatchWorkload",
+                "suggestCourier",
+            }
+        ),
         "ADMIN",
     ),
 }

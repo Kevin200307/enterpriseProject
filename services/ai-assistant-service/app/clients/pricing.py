@@ -22,3 +22,9 @@ class PricingClient(DownstreamClient):
             token,
             json_body=request,
         )
+
+    async def rules(self, token: str) -> Any:
+        return await self.request_json("GET", "/api/v1/pricing/rules", token)
+
+    async def zones(self, token: str) -> Any:
+        return await self.request_json("GET", "/api/v1/pricing/zones", token)

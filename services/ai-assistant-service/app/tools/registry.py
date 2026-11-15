@@ -58,6 +58,14 @@ DISPATCH_UNASSIGN = ToolSpec(
     EmptyArguments,
     "HIGH_IMPACT",
 )
+ADMIN_USERS = ToolSpec("adminUsers", "List users with role and status filters.", EmptyArguments)
+ADMIN_MERCHANTS = ToolSpec(
+    "adminMerchants", "List merchant applications by status.", EmptyArguments
+)
+ADMIN_PRICING = ToolSpec("adminPricing", "View pricing rules and zones.", EmptyArguments)
+ADMIN_NOTIFICATION_FAILURES = ToolSpec(
+    "adminNotificationFailures", "View failed notifications.", EmptyArguments
+)
 
 
 def allowed_tools(principal: AssistantPrincipal) -> tuple[ToolSpec, ...]:
@@ -78,4 +86,6 @@ def allowed_tools(principal: AssistantPrincipal) -> tuple[ToolSpec, ...]:
                 DISPATCH_UNASSIGN,
             )
         )
+    if principal.has_role("ADMIN"):
+        tools.extend((ADMIN_USERS, ADMIN_MERCHANTS, ADMIN_PRICING, ADMIN_NOTIFICATION_FAILURES))
     return tuple(tools)
