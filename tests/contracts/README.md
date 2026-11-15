@@ -17,6 +17,9 @@ The required matrix is covered by the module suites:
 
 Tests must use isolated fixtures and must not require a shared external database unless explicitly marked as a live integration test.
 
+The assistant compatibility contract is frozen separately under `assistant/`. Validate it with
+`node tests/contracts/assistant/verify-contract.mjs`.
+
 Docker Desktop (or another Testcontainers-compatible Docker daemon) must be running.
 Several service suites provision isolated PostgreSQL and RabbitMQ containers and stop
 during test initialization when no Docker environment is available.

@@ -1,0 +1,21 @@
+{
+  "service": "ai-assistant-service",
+  "basePath": "/api/v1/assistant",
+  "authentication": { "type": "bearer", "required": true, "algorithm": "RS256", "claims": ["sub", "roles", "iss", "aud", "exp"] },
+  "endpoints": [
+    {
+      "method": "POST",
+      "path": "/api/v1/assistant/chat/stream",
+      "request": { "contentType": "application/json", "required": ["message"], "properties": { "message": { "type": "string", "minLength": 1, "maxLength": 2000 }, "conversationId": { "type": ["string", "null"], "format": "uuid" } } },
+      "response": { "status": 200, "contentType": "text/event-stream", "headers": { "Cache-Control": "no-store", "X-Accel-Buffering": "no" }, "events": { "token": { "text": "string" }, "tool": { "name": "string", "arguments": "object" }, "done": { "conversationId": "uuid" }, "error": { "message": "string" } } }
+    },
+    { "method": "GET", "path": "/api/v1/assistant/conversations/{conversationId}", "response": { "status": 200, "body": { "conversationId": "uuid", "messages": [{ "role": "user|assistant", "content": "string" }] } }, "notFoundWhenMissingOrNotOwned": true },
+    { "method": "DELETE", "path": "/api/v1/assistant/conversations/{conversationId}", "response": { "status": 204 }, "notFoundWhenMissingOrNotOwned": true },
+    { "method": "GET", "path": "/actuator/health", "authenticationRequired": false, "response": { "status": 200, "body": { "status": "UP" } } }
+  ],
+  "tools": [
+    { "name": "trackParcel", "roles": ["authenticated"], "arguments": { "trackingNumber": "^SD-[0-9A-Z]{8}$" } },
+    { "name": "estimateFee", "roles": ["authenticated"], "arguments": { "fromCity": "string", "toCity": "string", "size": "SMALL|MEDIUM|LARGE", "weightKg": "positive decimal", "express": "boolean" } },
+    { "name": "listMyParcels", "roles": ["CUSTOMER"], "arguments": {} }
+  ]
+}
