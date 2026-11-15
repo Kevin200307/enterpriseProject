@@ -1,0 +1,10 @@
+{{- $parcelEnv := include "swiftdrop.databaseEnv" (dict "root" . "prefix" "PARCEL") }}
+{{- $parcelEnv = printf "%s\n%s" $parcelEnv (include "swiftdrop.rabbitEnv" .) }}
+{{ include "swiftdrop.applicationWorkload" (dict "root" . "name" "parcel-service" "env" $parcelEnv) }}
+---
+{{- $pricingEnv := include "swiftdrop.databaseEnv" (dict "root" . "prefix" "PRICING") }}
+{{ include "swiftdrop.applicationWorkload" (dict "root" . "name" "pricing-service" "env" $pricingEnv) }}
+---
+{{- $trackingEnv := include "swiftdrop.rabbitEnv" . }}
+{{- $trackingEnv = printf "%s\n%s" $trackingEnv (include "swiftdrop.redisEnv" .) }}
+{{ include "swiftdrop.applicationWorkload" (dict "root" . "name" "tracking-service" "env" $trackingEnv) }}

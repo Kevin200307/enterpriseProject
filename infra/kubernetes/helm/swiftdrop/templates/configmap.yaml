@@ -9,6 +9,8 @@ data:
   JWT_AUDIENCE: {{ .Values.config.jwtAudience | quote }}
   IDENTITY_ISSUER_URI: {{ .Values.config.identityIssuerUri | quote }}
   IDENTITY_JWKS_URI: {{ .Values.config.identityJwksUri | quote }}
+  JWT_ISSUER_URI: {{ .Values.config.identityIssuerUri | quote }}
+  JWT_JWK_SET_URI: {{ .Values.config.identityJwksUri | quote }}
   WEB_ORIGINS: {{ .Values.config.webOrigins | quote }}
   IDENTITY_SERVICE_URL: "http://identity-service:8080"
   PARCEL_SERVICE_URL: "http://parcel-service:8080"
@@ -27,3 +29,8 @@ data:
   SPRING_MAIL_PORT: {{ .Values.mailpit.smtpPort | default 1025 | quote }}
   ASSISTANT_ENABLED: {{ .Values.config.assistantEnabled | quote }}
   GEMINI_MODEL: {{ .Values.config.geminiModel | quote }}
+  JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=75"
+  SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE: "10"
+  SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE: "0"
+  PRICING_INCLUDED_WEIGHT_KG: "1.00"
+  PRICING_EXPRESS_PERCENT: "15.00"
