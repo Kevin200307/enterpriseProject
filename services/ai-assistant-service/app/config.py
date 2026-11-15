@@ -30,6 +30,8 @@ class Settings(BaseSettings):
     gemini_max_output_tokens: int = Field(default=500, ge=64, le=2048)
     gemini_timeout_seconds: float = Field(default=30, gt=0, le=120)
     gemini_max_retries: int = Field(default=1, ge=0, le=3)
+    assistant_database_url: SecretStr | None = None
+    conversation_retention_days: int = Field(default=30, ge=1, le=365)
 
 
 @lru_cache
