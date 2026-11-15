@@ -146,16 +146,22 @@ ingress:
 redis:
   enabled: false
   image: redis:7.4-alpine
+  host: redis
+  port: 6379
   storage: 2Gi
 
 rabbitmq:
   enabled: false
   image: rabbitmq:4.1-management-alpine
+  host: rabbitmq
+  port: 5672
   storage: 5Gi
 
 mailpit:
   enabled: false
   image: axllent/mailpit:v1.27
+  smtpHost: mailpit
+  smtpPort: 1025
 
 autoscaling:
   enabled: false

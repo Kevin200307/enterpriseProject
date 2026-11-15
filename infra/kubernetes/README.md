@@ -72,6 +72,11 @@ release is allowed.
 
 Detailed commands and recovery procedures are added alongside the implementation commits.
 
+The chart never creates application credentials. Create the Secret named by `existingSecret`
+through a secret manager integration. `secret-keys.example.yaml` documents its key contract and
+contains no usable values. Generated local Secret files match `*secret*.local.yaml` and are
+ignored by Git.
+
 ## Create the local cluster
 
 Install Kind, then run:

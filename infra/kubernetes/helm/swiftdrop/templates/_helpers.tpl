@@ -32,3 +32,7 @@ app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- printf "%s:%s" .service.image.repository .service.image.tag -}}
 {{- end -}}
 {{- end }}
+
+{{- define "swiftdrop.configChecksum" -}}
+{{- include (print $.Template.BasePath "/configmap.yaml") . | sha256sum -}}
+{{- end }}

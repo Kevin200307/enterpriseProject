@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "swiftdrop.fullname" . }}-config
+  labels:
+    {{- include "swiftdrop.labels" . | nindent 4 }}
+data:
+  ENVIRONMENT: {{ .Values.global.environment | quote }}
+  JWT_AUDIENCE: {{ .Values.config.jwtAudience | quote }}
+  IDENTITY_ISSUER_URI: {{ .Values.config.identityIssuerUri | quote }}
+  IDENTITY_JWKS_URI: {{ .Values.config.identityJwksUri | quote }}
+  WEB_ORIGINS: {{ .Values.config.webOrigins | quote }}
+  IDENTITY_SERVICE_URL: "http://identity-service:8080"
+  PARCEL_SERVICE_URL: "http://parcel-service:8080"
+  PRICING_SERVICE_URL: "http://pricing-service:8080"
+  DISPATCH_SERVICE_URL: "http://dispatch-service:8080"
+  MERCHANT_SERVICE_URL: "http://merchant-service:8080"
+  TRACKING_SERVICE_URL: "http://tracking-service:8080"
+  TRACKING_WEBSOCKET_URL: "ws://tracking-service:8080"
+  NOTIFICATION_SERVICE_URL: "http://notification-service:8086"
+  AI_ASSISTANT_SERVICE_URL: "http://ai-assistant-service:8080"
+  SPRING_DATA_REDIS_HOST: {{ .Values.redis.host | default "redis" | quote }}
+  SPRING_DATA_REDIS_PORT: {{ .Values.redis.port | default 6379 | quote }}
+  SPRING_RABBITMQ_HOST: {{ .Values.rabbitmq.host | default "rabbitmq" | quote }}
+  SPRING_RABBITMQ_PORT: {{ .Values.rabbitmq.port | default 5672 | quote }}
+  SPRING_MAIL_HOST: {{ .Values.mailpit.smtpHost | default "mailpit" | quote }}
+  SPRING_MAIL_PORT: {{ .Values.mailpit.smtpPort | default 1025 | quote }}
+  ASSISTANT_ENABLED: {{ .Values.config.assistantEnabled | quote }}
+  GEMINI_MODEL: {{ .Values.config.geminiModel | quote }}
