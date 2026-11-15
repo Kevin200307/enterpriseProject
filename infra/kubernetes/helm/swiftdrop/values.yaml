@@ -189,3 +189,15 @@ podDisruptionBudget:
 
 networkPolicy:
   enabled: true
+
+migrations:
+  enabled: true
+  backoffLimit: 1
+  activeDeadlineSeconds: 300
+  javaServices:
+    - identity-service
+    - parcel-service
+    - pricing-service
+    - dispatch-service
+    - merchant-service
+    - notification-service

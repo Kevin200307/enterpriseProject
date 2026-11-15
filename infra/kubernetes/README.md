@@ -77,6 +77,19 @@ release is allowed.
 
 Detailed commands and recovery procedures are added alongside the implementation commits.
 
+## Database migrations
+
+The Helm release creates bounded migration Jobs. Java services launch their packaged Spring Boot
+application in non-web mode so embedded Flyway migrations run and the process exits. The AI
+assistant executes `alembic upgrade head`. Jobs retry once, time out, use service-specific
+database keys, and are removed after success. A failed Job fails an atomic Helm operation; inspect
+it before retrying:
+
+```powershell
+kubectl get jobs -n swiftdrop
+kubectl logs job/<migration-job-name> -n swiftdrop
+```
+
 The AI assistant uses the same internal DNS names as Compose, validates identity-service JWKS,
 and forwards user JWTs to downstream services. Its Redis and PostgreSQL URLs come from the
 external Secret. Gemini remains optional: an absent `GOOGLE_API_KEY` disables model-backed
