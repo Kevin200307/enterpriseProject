@@ -77,6 +77,19 @@ release is allowed.
 
 Detailed commands and recovery procedures are added alongside the implementation commits.
 
+## Continuous validation
+
+The Kubernetes workflow lints and renders local and production values, checks required workload
+controls, validates standard schemas with pinned kubeconform, scans configuration for high/critical
+findings, and runs secret detection. Rendered manifests are temporary CI artifacts and must not
+contain real Secret values.
+
+Run the repository checks locally with:
+
+```powershell
+.\infra\kubernetes\tests\helm-render-tests.ps1
+```
+
 ## Observability
 
 When `monitoring.enabled=true`, the chart emits Prometheus Operator `ServiceMonitor` and
