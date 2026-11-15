@@ -66,6 +66,30 @@ ADMIN_PRICING = ToolSpec("adminPricing", "View pricing rules and zones.", EmptyA
 ADMIN_NOTIFICATION_FAILURES = ToolSpec(
     "adminNotificationFailures", "View failed notifications.", EmptyArguments
 )
+ADMIN_USER_STATUS = ToolSpec(
+    "adminUpdateUserStatus",
+    "Update user status after confirmation.",
+    EmptyArguments,
+    "HIGH_IMPACT",
+)
+ADMIN_USER_ROLES = ToolSpec(
+    "adminUpdateUserRoles",
+    "Replace user roles after confirmation.",
+    EmptyArguments,
+    "HIGH_IMPACT",
+)
+ADMIN_MERCHANT_DECISION = ToolSpec(
+    "adminMerchantDecision",
+    "Approve, reject, or suspend a merchant after confirmation.",
+    EmptyArguments,
+    "HIGH_IMPACT",
+)
+ADMIN_NOTIFICATION_RESEND = ToolSpec(
+    "adminResendNotification",
+    "Resend a failed notification after confirmation.",
+    EmptyArguments,
+    "HIGH_IMPACT",
+)
 
 
 def allowed_tools(principal: AssistantPrincipal) -> tuple[ToolSpec, ...]:
@@ -87,5 +111,16 @@ def allowed_tools(principal: AssistantPrincipal) -> tuple[ToolSpec, ...]:
             )
         )
     if principal.has_role("ADMIN"):
-        tools.extend((ADMIN_USERS, ADMIN_MERCHANTS, ADMIN_PRICING, ADMIN_NOTIFICATION_FAILURES))
+        tools.extend(
+            (
+                ADMIN_USERS,
+                ADMIN_MERCHANTS,
+                ADMIN_PRICING,
+                ADMIN_NOTIFICATION_FAILURES,
+                ADMIN_USER_STATUS,
+                ADMIN_USER_ROLES,
+                ADMIN_MERCHANT_DECISION,
+                ADMIN_NOTIFICATION_RESEND,
+            )
+        )
     return tuple(tools)

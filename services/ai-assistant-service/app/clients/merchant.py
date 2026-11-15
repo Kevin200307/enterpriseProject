@@ -30,3 +30,13 @@ class MerchantClient(DownstreamClient):
         return await self.request_json(
             "GET", "/api/v1/merchants", token, params={"status": status, "page": 0, "size": 20}
         )
+
+    async def decide(
+        self, merchant_id: str, decision: str, token: str, reason: str | None = None
+    ) -> Any:
+        return await self.request_json(
+            "POST",
+            f"/api/v1/merchants/{merchant_id}/{decision.lower()}",
+            token,
+            json_body={"reason": reason} if reason else None,
+        )
