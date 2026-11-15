@@ -35,6 +35,10 @@ class Settings(BaseSettings):
     checkpoint_database_url: SecretStr | None = None
     redis_url: SecretStr | None = None
     assistant_requests_per_hour: int = Field(default=20, ge=1, le=1000)
+    max_model_calls_per_turn: int = Field(default=2, ge=1, le=5)
+    max_tool_calls_per_turn: int = Field(default=3, ge=1, le=10)
+    max_recent_messages: int = Field(default=6, ge=2, le=20)
+    max_summary_characters: int = Field(default=2000, ge=200, le=10000)
 
 
 @lru_cache
