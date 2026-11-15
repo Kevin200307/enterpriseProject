@@ -8,3 +8,10 @@ pricingv1plan.md
 dispatchv1plan.md
 trackingv1plan.md
 agentcommitplan.md
+kubernetesclusterimplementationplan.md
+
+# Local Kubernetes state and rendered secrets
+infra/kubernetes/.kube/
+infra/kubernetes/rendered/
+infra/kubernetes/**/*secret*.local.yaml
+infra/kubernetes/**/*.kubeconfig
