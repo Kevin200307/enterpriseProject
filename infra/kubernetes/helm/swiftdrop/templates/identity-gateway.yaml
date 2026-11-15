@@ -1,0 +1,7 @@
+{{- $identityEnv := include "swiftdrop.databaseEnv" (dict "root" . "prefix" "IDENTITY") }}
+{{- $identityEnv = printf "%s\n%s" $identityEnv (include "swiftdrop.redisEnv" .) }}
+{{- $identityEnv = printf "%s\n%s" $identityEnv "- name: IDENTITY_JWT_PRIVATE_KEY\n  valueFrom:\n    secretKeyRef: {name: {{ .Values.existingSecret }}, key: IDENTITY_JWT_PRIVATE_KEY}\n- name: IDENTITY_JWT_PUBLIC_KEY\n  valueFrom:\n    secretKeyRef: {name: {{ .Values.existingSecret }}, key: IDENTITY_JWT_PUBLIC_KEY}\n- name: GOOGLE_CLIENT_ID\n  valueFrom:\n    secretKeyRef: {name: {{ .Values.existingSecret }}, key: GOOGLE_CLIENT_ID}\n- name: GOOGLE_CLIENT_SECRET\n  valueFrom:\n    secretKeyRef: {name: {{ .Values.existingSecret }}, key: GOOGLE_CLIENT_SECRET}" }}
+{{ include "swiftdrop.applicationWorkload" (dict "root" . "name" "identity-service" "env" $identityEnv) }}
+---
+{{- $gatewayEnv := include "swiftdrop.redisEnv" . }}
+{{ include "swiftdrop.applicationWorkload" (dict "root" . "name" "gateway" "env" $gatewayEnv) }}
