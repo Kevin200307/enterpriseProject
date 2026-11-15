@@ -77,6 +77,22 @@ release is allowed.
 
 Detailed commands and recovery procedures are added alongside the implementation commits.
 
+## Image publishing and deployment
+
+The release workflow builds every image once, publishes it under the immutable Git SHA, attaches
+BuildKit provenance/SBOM data, scans it, and signs its digest through GitHub OIDC. Production
+deployment runs only on an environment-protected runner labelled `kubernetes-deployer`. That
+runner is expected to be a Kubernetes pod with a short-lived projected ServiceAccount token and
+least-privilege Helm permissions; the workflow creates an ephemeral context from that token and
+stores no long-lived kubeconfig credential.
+
+`deployer-rbac.yaml` is the namespace-scoped bootstrap policy for that runner. A platform
+administrator applies it once. The runner pod must explicitly mount a projected, short-lived
+token for `github-deployer`; the ServiceAccount disables automatic token mounting.
+
+Helm uses `--atomic --wait`, so failed Jobs or readiness checks roll the release back. GitHub's
+production Environment must require human approval and restrict which tags can deploy.
+
 ## Continuous validation
 
 The Kubernetes workflow lints and renders local and production values, checks required workload
