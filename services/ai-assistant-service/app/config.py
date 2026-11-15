@@ -33,6 +33,8 @@ class Settings(BaseSettings):
     assistant_database_url: SecretStr | None = None
     conversation_retention_days: int = Field(default=30, ge=1, le=365)
     checkpoint_database_url: SecretStr | None = None
+    redis_url: SecretStr | None = None
+    assistant_requests_per_hour: int = Field(default=20, ge=1, le=1000)
 
 
 @lru_cache

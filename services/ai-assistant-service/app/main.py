@@ -7,6 +7,7 @@ from app.clients.parcel import ParcelClient
 from app.clients.pricing import PricingClient
 from app.config import Settings, get_settings
 from app.graph.runner import AssistantRunner
+from app.infrastructure.redis import AllowAllRateLimiter, RedisRateLimiter, create_redis
 from app.llm.gemini import create_model_provider
 from app.persistence.memory_conversation_repository import InMemoryConversationRepository
 from app.security.jwt import JwtTokenValidator
@@ -40,6 +41,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.state.parcel_client = parcel_client
     application.state.pricing_client = pricing_client
     application.state.assistant_runner = AssistantRunner(parcel_client, pricing_client)
+    if resolved.redis_url is None:
+        application.state.rate_limiter = AllowAllRateLimiter()
+    else:
+        redis = create_redis(resolved.redis_url.get_secret_value())
+        application.state.redis = redis
+        application.state.rate_limiter = RedisRateLimiter(
+            redis,
+            resolved.assistant_requests_per_hour,
+        )
     application.include_router(health_router)
     application.include_router(chat_router)
     application.include_router(conversations_router)

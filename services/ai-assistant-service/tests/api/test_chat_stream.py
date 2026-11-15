@@ -77,3 +77,14 @@ def test_disabled_assistant_returns_503() -> None:
     with make_client(enabled=False) as client:
         response = client.post("/api/v1/assistant/chat/stream", json={"message": "hello"})
     assert response.status_code == 503
+
+
+def test_rate_limit_is_enforced_before_streaming() -> None:
+    class DenyAll:
+        async def allow(self, user_id: str) -> bool:
+            return False
+
+    with make_client() as client:
+        client.app.state.rate_limiter = DenyAll()
+        response = client.post("/api/v1/assistant/chat/stream", json={"message": "hello"})
+    assert response.status_code == 429

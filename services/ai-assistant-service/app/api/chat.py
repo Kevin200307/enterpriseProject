@@ -2,7 +2,7 @@ from collections.abc import AsyncIterator
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import StreamingResponse
 
 from app.api.conversations import get_conversations, require_enabled
@@ -58,6 +58,11 @@ async def stream_chat(
     conversations: Annotated[ConversationRepository, Depends(get_conversations)],
     _: Annotated[None, Depends(require_enabled)],
 ) -> StreamingResponse:
+    if not await request.app.state.rate_limiter.allow(principal.subject):
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Assistant request limit exceeded",
+        )
     runner: AssistantRunner = request.app.state.assistant_runner
     return StreamingResponse(
         _placeholder_stream(request, body, principal, conversations, runner),
