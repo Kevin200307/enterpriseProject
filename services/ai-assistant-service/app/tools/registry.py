@@ -46,6 +46,18 @@ COURIER_STATUS = ToolSpec(
     EmptyArguments,
     "HIGH_IMPACT",
 )
+DISPATCH_QUEUE = ToolSpec("dispatchQueue", "View the unassigned parcel queue.", EmptyArguments)
+DISPATCH_WORKLOAD = ToolSpec("dispatchWorkload", "View courier workloads.", EmptyArguments)
+DISPATCH_SUGGEST = ToolSpec("suggestCourier", "Suggest couriers for a parcel.", EmptyArguments)
+DISPATCH_ASSIGN = ToolSpec(
+    "assignCourier", "Assign a courier after explicit confirmation.", EmptyArguments, "HIGH_IMPACT"
+)
+DISPATCH_UNASSIGN = ToolSpec(
+    "unassignCourier",
+    "Unassign a courier with a reason after explicit confirmation.",
+    EmptyArguments,
+    "HIGH_IMPACT",
+)
 
 
 def allowed_tools(principal: AssistantPrincipal) -> tuple[ToolSpec, ...]:
@@ -56,4 +68,14 @@ def allowed_tools(principal: AssistantPrincipal) -> tuple[ToolSpec, ...]:
         tools.extend((MERCHANT_OVERVIEW, MERCHANT_ORDERS, WEBHOOK_FAILURES))
     if principal.has_role("COURIER"):
         tools.extend((COURIER_ASSIGNMENTS, COURIER_STATUS))
+    if principal.has_role("DISPATCHER") or principal.has_role("ADMIN"):
+        tools.extend(
+            (
+                DISPATCH_QUEUE,
+                DISPATCH_WORKLOAD,
+                DISPATCH_SUGGEST,
+                DISPATCH_ASSIGN,
+                DISPATCH_UNASSIGN,
+            )
+        )
     return tuple(tools)

@@ -35,7 +35,15 @@ AGENTS = {
     "dispatcher": AgentSpec(
         "dispatcher",
         "Help dispatchers assign work without bypassing dispatch-service rules.",
-        frozenset(),
+        frozenset(
+            {
+                "dispatchQueue",
+                "dispatchWorkload",
+                "suggestCourier",
+                "assignCourier",
+                "unassignCourier",
+            }
+        ),
         "DISPATCHER",
     ),
     "admin": AgentSpec(
@@ -55,6 +63,4 @@ def agent_for(name: str, principal: AssistantPrincipal) -> AgentSpec | None:
 
 
 def tools_for_agent(spec: AgentSpec, principal: AssistantPrincipal) -> tuple[ToolSpec, ...]:
-    return tuple(
-        tool for tool in allowed_tools(principal) if tool.name in spec.allowed_tool_names
-    )
+    return tuple(tool for tool in allowed_tools(principal) if tool.name in spec.allowed_tool_names)

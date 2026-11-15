@@ -18,9 +18,7 @@ AGENTS = ("support", "tracking", "customer", "merchant", "courier", "dispatcher"
 
 def build_assistant_graph(
     checkpointer: BaseCheckpointSaver[Any] | None = None,
-) -> CompiledStateGraph[
-    AssistantState, None, AssistantState, AssistantState
-]:
+) -> CompiledStateGraph[AssistantState, None, AssistantState, AssistantState]:
     graph = StateGraph(
         AssistantState,
         input_schema=AssistantState,

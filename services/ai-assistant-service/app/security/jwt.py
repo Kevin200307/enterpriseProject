@@ -56,9 +56,7 @@ class JwtTokenValidator:
         if not isinstance(value, Sequence) or isinstance(value, str | bytes):
             return frozenset()
         return frozenset(
-            normalize_role(role)
-            for role in value
-            if isinstance(role, str) and normalize_role(role)
+            normalize_role(role) for role in value if isinstance(role, str) and normalize_role(role)
         )
 
 

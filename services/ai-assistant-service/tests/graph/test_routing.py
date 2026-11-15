@@ -16,18 +16,14 @@ from app.graph.builder import build_assistant_graph, graph_mermaid
         ("How does SwiftDrop work?", (), "support"),
     ],
 )
-def test_routes_authorized_requests(
-    message: str, roles: tuple[str, ...], expected: str
-) -> None:
+def test_routes_authorized_requests(message: str, roles: tuple[str, ...], expected: str) -> None:
     result = build_assistant_graph().invoke({"message": message, "roles": roles})
     assert result["selected_agent"] == expected
     assert result["workflow_status"] == "READY"
 
 
 def test_customer_cannot_reach_admin_node() -> None:
-    result = build_assistant_graph().invoke(
-        {"message": "Approve merchant", "roles": ("CUSTOMER",)}
-    )
+    result = build_assistant_graph().invoke({"message": "Approve merchant", "roles": ("CUSTOMER",)})
     assert result["selected_agent"] == "denied"
     assert result["workflow_status"] == "DENIED"
     assert result["error_code"] == "FORBIDDEN"

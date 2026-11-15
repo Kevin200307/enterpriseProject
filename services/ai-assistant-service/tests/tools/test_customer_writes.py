@@ -47,7 +47,10 @@ async def test_prepare_confirm_and_create_delivery() -> None:
     store = InMemoryOperationStore()
     confirmations = ConfirmationService(store)
     tools = CustomerWriteTools(
-        FakeParcelClient(), FakePricingClient(), store, confirmations  # type: ignore[arg-type]
+        FakeParcelClient(),
+        FakePricingClient(),
+        store,
+        confirmations,  # type: ignore[arg-type]
     )
     principal = AssistantPrincipal("owner", frozenset({"CUSTOMER"}), "fixture")
     draft = DeliveryDraft(
@@ -70,12 +73,13 @@ async def test_prepare_confirm_and_cancel_eligible_delivery() -> None:
     store = InMemoryOperationStore()
     confirmations = ConfirmationService(store)
     tools = CustomerWriteTools(
-        FakeParcelClient(), FakePricingClient(), store, confirmations  # type: ignore[arg-type]
+        FakeParcelClient(),
+        FakePricingClient(),
+        store,
+        confirmations,  # type: ignore[arg-type]
     )
     principal = AssistantPrincipal("owner", frozenset({"CUSTOMER"}), "fixture")
-    prepared = await tools.prepare_cancellation(
-        uuid4(), principal, "SD-12AB34CD"
-    )
+    prepared = await tools.prepare_cancellation(uuid4(), principal, "SD-12AB34CD")
     operation_id = UUID(str(prepared["operationId"]))
     await confirmations.confirm(operation_id, principal)
 

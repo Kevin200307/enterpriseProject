@@ -22,3 +22,25 @@ class DispatchClient(DownstreamClient):
         return await self.request_json(
             "GET", "/api/v1/dispatch/suggest", token, params={"parcelId": parcel_id}
         )
+
+    async def assign(
+        self, parcel_id: str, courier_id: str, token: str, idempotency_key: str
+    ) -> Any:
+        return await self.request_json(
+            "POST",
+            "/api/v1/dispatch/assignments",
+            token,
+            extra_headers={"Idempotency-Key": idempotency_key},
+            json_body={"parcelId": parcel_id, "courierId": courier_id},
+        )
+
+    async def unassign(
+        self, assignment_id: str, reason: str, token: str, idempotency_key: str
+    ) -> Any:
+        return await self.request_json(
+            "DELETE",
+            f"/api/v1/dispatch/assignments/{assignment_id}",
+            token,
+            extra_headers={"Idempotency-Key": idempotency_key},
+            json_body={"reason": reason},
+        )

@@ -12,9 +12,7 @@ def principal(subject: str = "owner", *roles: str) -> AssistantPrincipal:
     return AssistantPrincipal(subject, frozenset(roles or ("CUSTOMER",)), "fixture")
 
 
-async def prepared(
-    store: InMemoryOperationStore, *, ttl: timedelta = timedelta(minutes=10)
-):
+async def prepared(store: InMemoryOperationStore, *, ttl: timedelta = timedelta(minutes=10)):
     return await store.prepare(
         uuid4(),
         "owner",

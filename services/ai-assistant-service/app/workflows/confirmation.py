@@ -19,9 +19,7 @@ class ConfirmationService:
     def __init__(self, store: InMemoryOperationStore) -> None:
         self._store = store
 
-    async def confirm(
-        self, operation_id: UUID, principal: AssistantPrincipal
-    ) -> PendingOperation:
+    async def confirm(self, operation_id: UUID, principal: AssistantPrincipal) -> PendingOperation:
         operation = await self._require_owned(operation_id, principal)
         now = datetime.now(UTC)
         if operation.expires_at <= now:

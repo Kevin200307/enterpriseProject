@@ -34,8 +34,6 @@ async def webhook_failures(client: MerchantClient, token: str) -> dict[str, Any]
         return {"error": "Invalid webhook delivery response."}
     content = value.get("content", [])
     failures = [
-        item
-        for item in content
-        if isinstance(item, dict) and item.get("state") == "FAILED"
+        item for item in content if isinstance(item, dict) and item.get("state") == "FAILED"
     ]
     return {"deliveries": failures, "count": len(failures)}

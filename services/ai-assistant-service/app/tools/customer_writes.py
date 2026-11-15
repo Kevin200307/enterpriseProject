@@ -75,8 +75,7 @@ class CustomerWriteTools:
         if not isinstance(result, dict):
             return {"error": "Delivery creation returned an invalid response."}
         return {
-            key: result.get(key)
-            for key in ("id", "trackingNumber", "status", "fee", "currency")
+            key: result.get(key) for key in ("id", "trackingNumber", "status", "fee", "currency")
         }
 
     async def prepare_cancellation(
@@ -124,7 +123,4 @@ class CustomerWriteTools:
             return {"error": "The parcel is no longer eligible for cancellation."}
         if not isinstance(result, dict):
             return {"error": "Cancellation returned an invalid response."}
-        return {
-            key: result.get(key)
-            for key in ("id", "trackingNumber", "status", "updatedAt")
-        }
+        return {key: result.get(key) for key in ("id", "trackingNumber", "status", "updatedAt")}
