@@ -1,0 +1,4 @@
+SwiftDrop release {{ .Release.Name }} rendered successfully.
+
+Inspect workloads:
+  kubectl get pods,services,jobs -n {{ .Release.Namespace }}

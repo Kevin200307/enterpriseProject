@@ -1,0 +1,171 @@
+global:
+  imageRegistry: ""
+  imagePullSecrets: []
+  imagePullPolicy: IfNotPresent
+  environment: production
+  commonLabels: {}
+  podAnnotations: {}
+
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  annotations: {}
+
+config:
+  jwtAudience: swiftdrop
+  identityIssuerUri: http://identity-service:8080
+  identityJwksUri: http://identity-service:8080/.well-known/jwks.json
+  webOrigins: https://swiftdrop.example.com
+  assistantEnabled: true
+  geminiModel: gemini-2.5-flash-lite
+
+existingSecret: swiftdrop-secrets
+
+services:
+  web:
+    enabled: true
+    image:
+      repository: swiftdrop/web
+      tag: "0.1.0"
+    replicas: 2
+    port: 80
+    probePath: /healthz
+    resources:
+      requests: {cpu: 50m, memory: 64Mi}
+      limits: {cpu: 250m, memory: 128Mi}
+  gateway:
+    enabled: true
+    image:
+      repository: swiftdrop/gateway
+      tag: "0.1.0"
+    replicas: 2
+    port: 8080
+    probePath: /actuator/health
+    resources:
+      requests: {cpu: 150m, memory: 256Mi}
+      limits: {cpu: "1", memory: 768Mi}
+  identity-service:
+    enabled: true
+    image:
+      repository: swiftdrop/identity-service
+      tag: "0.1.0"
+    replicas: 2
+    port: 8080
+    probePath: /actuator/health
+    resources:
+      requests: {cpu: 150m, memory: 256Mi}
+      limits: {cpu: "1", memory: 768Mi}
+  parcel-service:
+    enabled: true
+    image:
+      repository: swiftdrop/parcel-service
+      tag: "0.1.0"
+    replicas: 2
+    port: 8080
+    probePath: /actuator/health
+    resources:
+      requests: {cpu: 150m, memory: 256Mi}
+      limits: {cpu: "1", memory: 768Mi}
+  pricing-service:
+    enabled: true
+    image:
+      repository: swiftdrop/pricing-service
+      tag: "0.1.0"
+    replicas: 2
+    port: 8080
+    probePath: /actuator/health
+    resources:
+      requests: {cpu: 100m, memory: 256Mi}
+      limits: {cpu: 750m, memory: 640Mi}
+  dispatch-service:
+    enabled: true
+    image:
+      repository: swiftdrop/dispatch-service
+      tag: "0.1.0"
+    replicas: 2
+    port: 8080
+    probePath: /actuator/health
+    resources:
+      requests: {cpu: 150m, memory: 256Mi}
+      limits: {cpu: "1", memory: 768Mi}
+  merchant-service:
+    enabled: true
+    image:
+      repository: swiftdrop/merchant-service
+      tag: "0.1.0"
+    replicas: 2
+    port: 8080
+    probePath: /actuator/health
+    resources:
+      requests: {cpu: 150m, memory: 256Mi}
+      limits: {cpu: "1", memory: 768Mi}
+  tracking-service:
+    enabled: true
+    image:
+      repository: swiftdrop/tracking-service
+      tag: "0.1.0"
+    replicas: 2
+    port: 8080
+    probePath: /actuator/health
+    resources:
+      requests: {cpu: 100m, memory: 256Mi}
+      limits: {cpu: 750m, memory: 640Mi}
+  notification-service:
+    enabled: true
+    image:
+      repository: swiftdrop/notification-service
+      tag: "0.1.0"
+    replicas: 2
+    port: 8086
+    probePath: /actuator/health
+    resources:
+      requests: {cpu: 100m, memory: 256Mi}
+      limits: {cpu: 750m, memory: 640Mi}
+  ai-assistant-service:
+    enabled: true
+    image:
+      repository: swiftdrop/ai-assistant-service
+      tag: "0.1.0"
+    replicas: 2
+    port: 8080
+    probePath: /actuator/health
+    resources:
+      requests: {cpu: 100m, memory: 256Mi}
+      limits: {cpu: 500m, memory: 512Mi}
+
+ingress:
+  enabled: false
+  className: nginx
+  host: swiftdrop.example.com
+  tls:
+    enabled: false
+    secretName: swiftdrop-tls
+
+redis:
+  enabled: false
+  image: redis:7.4-alpine
+  storage: 2Gi
+
+rabbitmq:
+  enabled: false
+  image: rabbitmq:4.1-management-alpine
+  storage: 5Gi
+
+mailpit:
+  enabled: false
+  image: axllent/mailpit:v1.27
+
+autoscaling:
+  enabled: false
+  minReplicas: 2
+  maxReplicas: 6
+  targetCPUUtilizationPercentage: 70
+
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
+networkPolicy:
+  enabled: true
