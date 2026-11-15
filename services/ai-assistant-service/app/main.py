@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 
+from app.api.health import router as health_router
 from app.config import Settings, get_settings
 
 
@@ -13,6 +14,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         openapi_url=None,
     )
     application.state.settings = resolved
+    application.include_router(health_router)
     return application
 
 
