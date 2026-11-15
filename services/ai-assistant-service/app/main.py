@@ -1,3 +1,5 @@
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from uuid import uuid4
 
 from fastapi import FastAPI
@@ -17,6 +19,7 @@ from app.infrastructure.logging import configure_logging
 from app.infrastructure.redis import AllowAllRateLimiter, RedisRateLimiter, create_redis
 from app.infrastructure.telemetry import AssistantMetrics
 from app.llm.gemini import create_model_provider
+from app.persistence.checkpoints import postgres_checkpointer
 from app.persistence.database import create_database
 from app.persistence.memory_conversation_repository import InMemoryConversationRepository
 from app.persistence.sql_conversation_repository import SqlConversationRepository
@@ -25,12 +28,35 @@ from app.security.jwt import JwtTokenValidator
 
 def create_app(settings: Settings | None = None) -> FastAPI:
     resolved = settings or get_settings()
+
+    @asynccontextmanager
+    async def lifespan(application: FastAPI) -> AsyncIterator[None]:
+        checkpoint_url = resolved.checkpoint_database_url
+        if checkpoint_url is None:
+            yield
+        else:
+            async with postgres_checkpointer(checkpoint_url.get_secret_value()) as saver:
+                application.state.assistant_runner = AssistantRunner(
+                    application.state.parcel_client,
+                    application.state.pricing_client,
+                    application.state.model_provider,
+                    saver,
+                )
+                yield
+        await application.state.parcel_client.close()
+        await application.state.pricing_client.close()
+        if hasattr(application.state, "redis"):
+            await application.state.redis.aclose()
+        if hasattr(application.state, "database_engine"):
+            await application.state.database_engine.dispose()
+
     application = FastAPI(
         title=resolved.app_name,
         version="0.1.0",
         docs_url=None,
         redoc_url=None,
         openapi_url=None,
+        lifespan=lifespan,
     )
     application.state.settings = resolved
     configure_logging(resolved.log_level)
