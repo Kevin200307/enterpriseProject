@@ -16,7 +16,9 @@ from app.infrastructure.logging import configure_logging
 from app.infrastructure.redis import AllowAllRateLimiter, RedisRateLimiter, create_redis
 from app.infrastructure.telemetry import AssistantMetrics
 from app.llm.gemini import create_model_provider
+from app.persistence.database import create_database
 from app.persistence.memory_conversation_repository import InMemoryConversationRepository
+from app.persistence.sql_conversation_repository import SqlConversationRepository
 from app.security.jwt import JwtTokenValidator
 
 
@@ -37,7 +39,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         resolved.identity_issuer_uri,
         resolved.jwt_audience,
     )
-    application.state.conversations = InMemoryConversationRepository()
+    if resolved.assistant_database_url is None:
+        application.state.conversations = InMemoryConversationRepository()
+    else:
+        engine, sessions = create_database(resolved.assistant_database_url.get_secret_value())
+        application.state.database_engine = engine
+        application.state.conversations = SqlConversationRepository(
+            sessions, resolved.conversation_retention_days
+        )
     application.state.model_provider = create_model_provider(resolved)
     parcel_client = ParcelClient(
         resolved.parcel_service_url,

@@ -1,6 +1,6 @@
 from functools import lru_cache
 
-from pydantic import Field, SecretStr
+from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -39,6 +39,17 @@ class Settings(BaseSettings):
     max_tool_calls_per_turn: int = Field(default=3, ge=1, le=10)
     max_recent_messages: int = Field(default=6, ge=2, le=20)
     max_summary_characters: int = Field(default=2000, ge=200, le=10000)
+
+    @field_validator(
+        "google_api_key",
+        "assistant_database_url",
+        "checkpoint_database_url",
+        "redis_url",
+        mode="before",
+    )
+    @classmethod
+    def blank_secrets_are_unset(cls, value: object) -> object:
+        return None if value == "" else value
 
 
 @lru_cache

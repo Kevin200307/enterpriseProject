@@ -101,14 +101,22 @@ services:
       context: ..
       dockerfile: services/ai-assistant-service/Dockerfile
     environment:
-      JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=75
-      SPRING_AI_OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash-lite}
       ASSISTANT_ENABLED: ${ASSISTANT_ENABLED:-true}
-      JWT_JWK_SET_URI: ${IDENTITY_JWKS_URI:-http://identity-service:8080/.well-known/jwks.json}
-      JWT_ISSUER_URI: ${IDENTITY_ISSUER_URI:-http://identity-service:8080}
+      IDENTITY_JWKS_URI: ${IDENTITY_JWKS_URI:-http://identity-service:8080/.well-known/jwks.json}
+      IDENTITY_ISSUER_URI: ${IDENTITY_ISSUER_URI:-http://identity-service:8080}
       JWT_AUDIENCE: ${JWT_AUDIENCE:-swiftdrop}
       PARCEL_SERVICE_URL: http://parcel-service:8080
       PRICING_SERVICE_URL: http://pricing-service:8080
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+      ASSISTANT_DATABASE_URL: ${ASSISTANT_DATABASE_URL:-}
+      CHECKPOINT_DATABASE_URL: ${CHECKPOINT_DATABASE_URL:-}
+    depends_on:
+      redis:
+        condition: service_healthy
+      identity-service:
+        condition: service_healthy
 
   dispatch-service:
     <<: *defaults
