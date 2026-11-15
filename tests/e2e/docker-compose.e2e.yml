@@ -1,0 +1,121 @@
+x-spring-healthcheck: &spring-healthcheck
+  interval: 10s
+  timeout: 15s
+  start_period: 10m
+  retries: 20
+
+services:
+  rabbitmq:
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 30s
+      retries: 20
+
+  e2e-postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: swiftdrop
+      POSTGRES_PASSWORD: swiftdrop-e2e
+      POSTGRES_DB: postgres
+    volumes:
+      - ../tests/e2e/postgres/init.sql:/docker-entrypoint-initdb.d/00-databases.sql:ro
+    networks:
+      - swiftdrop
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U swiftdrop -d postgres"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  identity-service:
+    healthcheck:
+      <<: *spring-healthcheck
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:8080/actuator/health"]
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://e2e-postgres:5432/identity
+      SPRING_DATASOURCE_USERNAME: swiftdrop
+      SPRING_DATASOURCE_PASSWORD: swiftdrop-e2e
+      ADMIN_BOOTSTRAP_ENABLED: "true"
+      ADMIN_BOOTSTRAP_EMAIL: admin@e2e.swiftdrop.local
+      ADMIN_BOOTSTRAP_PASSWORD: E2eAdmin123!
+    depends_on:
+      e2e-postgres:
+        condition: service_healthy
+
+  parcel-service:
+    healthcheck:
+      <<: *spring-healthcheck
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/actuator/health | grep -q '\"status\":\"UP\"' || exit 1"]
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://e2e-postgres:5432/parcel
+      SPRING_DATASOURCE_USERNAME: swiftdrop
+      SPRING_DATASOURCE_PASSWORD: swiftdrop-e2e
+    depends_on:
+      e2e-postgres:
+        condition: service_healthy
+
+  dispatch-service:
+    healthcheck:
+      <<: *spring-healthcheck
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:8080/actuator/health"]
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://e2e-postgres:5432/dispatch
+      SPRING_DATASOURCE_USERNAME: swiftdrop
+      SPRING_DATASOURCE_PASSWORD: swiftdrop-e2e
+    depends_on:
+      e2e-postgres:
+        condition: service_healthy
+
+  merchant-service:
+    healthcheck:
+      <<: *spring-healthcheck
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:8080/actuator/health"]
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://e2e-postgres:5432/merchant
+      SPRING_DATASOURCE_USERNAME: swiftdrop
+      SPRING_DATASOURCE_PASSWORD: swiftdrop-e2e
+    depends_on:
+      e2e-postgres:
+        condition: service_healthy
+
+  pricing-service:
+    healthcheck:
+      <<: *spring-healthcheck
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/actuator/health | grep -q '\"status\":\"UP\"' || exit 1"]
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://e2e-postgres:5432/pricing
+      SPRING_DATASOURCE_USERNAME: swiftdrop
+      SPRING_DATASOURCE_PASSWORD: swiftdrop-e2e
+    depends_on:
+      e2e-postgres:
+        condition: service_healthy
+
+  tracking-service:
+    healthcheck:
+      <<: *spring-healthcheck
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/actuator/health | grep -q '\"status\":\"UP\"' || exit 1"]
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://e2e-postgres:5432/tracking
+      SPRING_DATASOURCE_USERNAME: swiftdrop
+      SPRING_DATASOURCE_PASSWORD: swiftdrop-e2e
+    depends_on:
+      e2e-postgres:
+        condition: service_healthy
+
+  notification-service:
+    healthcheck:
+      <<: *spring-healthcheck
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:8086/actuator/health"]
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://e2e-postgres:5432/notification
+      SPRING_DATASOURCE_USERNAME: swiftdrop
+      SPRING_DATASOURCE_PASSWORD: swiftdrop-e2e
+    depends_on:
+      e2e-postgres:
+        condition: service_healthy
+
+  gateway:
+    healthcheck:
+      <<: *spring-healthcheck
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:8080/actuator/health"]

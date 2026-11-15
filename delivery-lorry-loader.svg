@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="320" viewBox="0 0 640 320" fill="none" role="img" aria-label="Animated lime green delivery lorry">
+  <defs>
+    <linearGradient id="cargo" x1="0" y1="30" x2="0" y2="228" gradientUnits="userSpaceOnUse"><stop stop-color="#303946"/><stop offset="1" stop-color="#171D27"/></linearGradient>
+    <linearGradient id="cab" x1="418" y1="96" x2="565" y2="256" gradientUnits="userSpaceOnUse"><stop stop-color="#343D4A"/><stop offset="1" stop-color="#181E28"/></linearGradient>
+    <linearGradient id="lime" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#D9FF55"/><stop offset="1" stop-color="#BFFF00"/></linearGradient>
+    <g id="wheel"><circle r="37" fill="#121720" stroke="#303947" stroke-width="7"/><circle r="23" fill="#BBC4CD"/><circle r="17" fill="#77828E"/><circle r="9" fill="#242B35"/><g fill="#303946"><circle cx="0" cy="-19" r="3"/><circle cx="19" cy="0" r="3"/><circle cx="0" cy="19" r="3"/><circle cx="-19" cy="0" r="3"/></g></g>
+  </defs>
+  <g class="truck">
+    <ellipse cx="313" cy="269" rx="278" ry="13" fill="#10151B" opacity=".12"/>
+    <path d="M44 66Q44 49 61 49H398Q416 49 416 67V216H44Z" fill="url(#cargo)" stroke="#3A4450" stroke-width="6"/>
+    <path d="M67 72H393V194H67Z" fill="#202733" opacity=".7"/>
+    <path d="M416 115H483Q499 115 510 130L553 182Q563 194 563 210V237Q563 250 550 250H407V115Z" fill="url(#cab)" stroke="#303946" stroke-width="5"/>
+    <path d="M442 128H481Q488 128 494 137L524 174H442Z" fill="#728296" stroke="#141B25" stroke-width="6" stroke-linejoin="round"/>
+    <path d="M448 135H471L497 165H448Z" fill="#C9D4DE" opacity=".18"/>
+    <path d="M436 189H461" stroke="#68727E" stroke-width="6" stroke-linecap="round"/>
+    <path d="M530 205H562V228H530Z" fill="#C8FF13"/>
+    <path d="M546 190H559V202H546Z" fill="#F4F9FF"/>
+    <path d="M45 216H564V240Q564 248 556 248H49Q39 248 39 238V225Q39 216 45 216Z" fill="#1D242F"/>
+    <path d="M198 226H405" stroke="#CBFF12" stroke-width="13" stroke-linecap="round"/>
+    <path d="M55 218H68V238H55Z" fill="#FF5751"/>
+    <path d="M82 216H107V243H82Z" fill="#151B24"/>
+    <g transform="translate(138 246)"><g class="rotate-wheel"><use href="#wheel"/></g></g>
+    <g transform="translate(475 246)"><g class="rotate-wheel"><use href="#wheel"/></g></g>
+    <path d="M192 105H317" stroke="#D4FF43" stroke-width="19" stroke-linecap="round"/>
+    <path d="M152 144H263" stroke="#C8FF16" stroke-width="12" stroke-linecap="round"/>
+    <path d="M211 177H285" stroke="#C8FF16" stroke-width="9" stroke-linecap="round"/>
+    <path d="M315 65L390 143L315 210H265L335 143L265 65Z" fill="#C8FF16"/>
+    <path d="M407 96C448 94 473 106 493 123H418Q407 123 407 111Z" fill="#C8FF16"/>
+    <rect x="444" y="176" width="14" height="28" rx="6" fill="#141A23" stroke="#47515E" stroke-width="3"/>
+  </g>
+  <style>
+    .truck {transform-origin: center;animation: bounce 1.05s ease-in-out infinite;}
+    .rotate-wheel {animation: wheel 0.85s linear infinite;}
+    @keyframes wheel {to {transform:rotate(360deg)}}
+    @keyframes bounce {0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+    @media (prefers-reduced-motion: reduce){.truck,.rotate-wheel{animation:none}}
+  </style>
+</svg>

@@ -6,5 +6,6 @@ public enum ParcelStatus {
     IN_TRANSIT,
     OUT_FOR_DELIVERY,
     DELIVERED,
-    FAILED
+    FAILED,
+    CANCELLED
 }

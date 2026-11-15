@@ -1,0 +1,20 @@
+{
+  "eventId": "3f1c2b9e-8a4d-4c6e-9b1a-2d7e5f0c1a23",
+  "eventType": "parcel.dispatch.changed",
+  "version": 1,
+  "occurredAt": "2026-09-29T10:15:30Z",
+  "producer": "parcel-service",
+  "payload": {
+    "parcelId": "b6a4e1d2-5c3f-4a8b-9e7d-1f2a3b4c5d6e",
+    "trackingNumber": "SD-4F7K2Q9M",
+    "parcelVersion": 0,
+    "status": "CREATED",
+    "assigneeUserId": null,
+    "pickup": {"contactName":"Sender","phone":"+94771234567","line1":"1 Main St","line2":null,"city":"Colombo","postalCode":"00100","zoneCode":"COLOMBO"},
+    "dropoff": {"contactName":"Recipient","phone":"+94777654321","line1":"2 Lake Rd","line2":null,"city":"Kandy","postalCode":"20000","zoneCode":"KANDY"},
+    "size": "SMALL",
+    "weightKg": 1.25,
+    "createdAt": "2026-09-29T10:15:30Z",
+    "note": null
+  }
+}

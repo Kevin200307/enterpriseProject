@@ -1,3 +1,13 @@
 spring:
   application:
     name: ai-assistant-service
+
+assistant:
+  enabled: ${ASSISTANT_ENABLED:true}
+  services:
+    parcel-base-url: ${PARCEL_SERVICE_URL:http://parcel-service:8080}
+    pricing-base-url: ${PRICING_SERVICE_URL:http://pricing-service:8080}
+  security:
+    jwks: ${JWT_JWK_SET_URI:http://identity-service:8080/.well-known/jwks.json}
+    issuer: ${JWT_ISSUER_URI:http://identity-service:8080}
+    audience: ${JWT_AUDIENCE:swiftdrop}

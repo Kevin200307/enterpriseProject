@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="224" height="224" viewBox="-3 14 224 224" role="img" aria-labelledby="title desc"><title id="title">SwiftDrop parcel icon</title><desc id="desc">Lime green #DDF86C and navy parcel icon with a transparent forward arrow and speed lines. No wordmark or background.</desc><g id="parcel-icon">
+    <path fill="#152C45" d="M29 112h22a5 5 0 0 1 0 10H29a5 5 0 0 1 0-10Zm-12 25h34a5 5 0 0 1 0 10H17a5 5 0 0 1 0-10Z" />
+    <path fill="#DDF86C" fill-rule="evenodd" d="M65 81 130 44 202 83 130 122Z M97 63 163 99 173 93 107 57Z" />
+    <path fill="#152C45" d="M65 91 123 125V204L65 169Z" />
+    <path fill="#DDF86C" fill-rule="evenodd" d="M135 125 202 88V169L135 207Z M146 140H169V129L193 149 169 169V158H146Z" />
+  </g>
+  </svg>

@@ -1,0 +1,1284 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "SwiftDrop Dispatch and Couriers",
+    "version": "1.0.0",
+    "description": "JWT protected dispatch APIs. Courier profile UUIDs differ from identity user UUIDs. See service README for event and recovery semantics."
+  },
+  "security": [
+    {
+      "BearerAuth": []
+    }
+  ],
+  "paths": {
+    "/api/v1/couriers": {
+      "get": {
+        "summary": "List and filter couriers",
+        "description": "DISPATCHER or ADMIN required unless explicitly documented.",
+        "parameters": [
+          {
+            "name": "zone",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "vehicle",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "BIKE",
+                "THREEWHEEL",
+                "VAN"
+              ]
+            }
+          },
+          {
+            "name": "active",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Valid JWT required"
+          },
+          "403": {
+            "description": "Role does not permit operation"
+          },
+          "404": {
+            "description": "Resource not found or courier does not own manifest"
+          },
+          "409": {
+            "description": "Duplicate, full/inactive courier, open assignments or concurrent change"
+          },
+          "503": {
+            "description": "Identity/service authentication unavailable"
+          }
+        }
+      },
+      "post": {
+        "summary": "Register an existing COURIER identity user",
+        "description": "DISPATCHER or ADMIN required unless explicitly documented.",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Courier"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Valid JWT required"
+          },
+          "403": {
+            "description": "Role does not permit operation"
+          },
+          "404": {
+            "description": "Resource not found or courier does not own manifest"
+          },
+          "409": {
+            "description": "Duplicate, full/inactive courier, open assignments or concurrent change"
+          },
+          "503": {
+            "description": "Identity/service authentication unavailable"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CourierInput"
+              },
+              "example": {
+                "userId": "dee3070e-c6f4-4221-a042-17b9959d4095",
+                "vehicleType": "BIKE",
+                "homeZoneCode": "COLOMBO",
+                "phone": "+94771234567",
+                "maxDailyLoad": 20,
+                "active": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/couriers/{id}": {
+      "patch": {
+        "summary": "Patch courier; userId is immutable",
+        "description": "DISPATCHER or ADMIN required unless explicitly documented.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Courier"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Valid JWT required"
+          },
+          "403": {
+            "description": "Role does not permit operation"
+          },
+          "404": {
+            "description": "Resource not found or courier does not own manifest"
+          },
+          "409": {
+            "description": "Duplicate, full/inactive courier, open assignments or concurrent change"
+          },
+          "503": {
+            "description": "Identity/service authentication unavailable"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CourierPatch"
+              },
+              "example": {
+                "vehicleType": "VAN",
+                "maxDailyLoad": 30
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/couriers/me/assignments": {
+      "get": {
+        "summary": "Read own open assignments",
+        "description": "COURIER, DISPATCHER or ADMIN. Identity comes only from JWT subject. Recipient phone is masked before pickup.",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Assignment"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Valid JWT required"
+          },
+          "403": {
+            "description": "Role does not permit operation"
+          },
+          "404": {
+            "description": "Resource not found or courier does not own manifest"
+          },
+          "409": {
+            "description": "Duplicate, full/inactive courier, open assignments or concurrent change"
+          },
+          "503": {
+            "description": "Identity/service authentication unavailable"
+          }
+        }
+      }
+    },
+    "/api/v1/couriers/{id}/manifest": {
+      "get": {
+        "summary": "Read dated courier manifest",
+        "description": "COURIER can read only their own profile; others return 404. DISPATCHER/ADMIN can read all. Colombo day; ordered by pickup and dropoff city.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Assignment"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Valid JWT required"
+          },
+          "403": {
+            "description": "Role does not permit operation"
+          },
+          "404": {
+            "description": "Resource not found or courier does not own manifest"
+          },
+          "409": {
+            "description": "Duplicate, full/inactive courier, open assignments or concurrent change"
+          },
+          "503": {
+            "description": "Identity/service authentication unavailable"
+          }
+        }
+      }
+    },
+    "/api/v1/dispatch/queue": {
+      "get": {
+        "summary": "List unassigned CREATED parcels, oldest first",
+        "description": "DISPATCHER or ADMIN required unless explicitly documented.",
+        "parameters": [
+          {
+            "name": "zone",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/QueueItem"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Valid JWT required"
+          },
+          "403": {
+            "description": "Role does not permit operation"
+          },
+          "404": {
+            "description": "Resource not found or courier does not own manifest"
+          },
+          "409": {
+            "description": "Duplicate, full/inactive courier, open assignments or concurrent change"
+          },
+          "503": {
+            "description": "Identity/service authentication unavailable"
+          }
+        }
+      }
+    },
+    "/api/v1/dispatch/workload": {
+      "get": {
+        "summary": "Read courier workload in one aggregate query",
+        "description": "DISPATCHER or ADMIN required unless explicitly documented.",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/WorkloadRow"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Valid JWT required"
+          },
+          "403": {
+            "description": "Role does not permit operation"
+          },
+          "404": {
+            "description": "Resource not found or courier does not own manifest"
+          },
+          "409": {
+            "description": "Duplicate, full/inactive courier, open assignments or concurrent change"
+          },
+          "503": {
+            "description": "Identity/service authentication unavailable"
+          }
+        }
+      }
+    },
+    "/api/v1/dispatch/suggest": {
+      "get": {
+        "summary": "Suggest up to three matching active couriers",
+        "description": "DISPATCHER or ADMIN required unless explicitly documented.",
+        "parameters": [
+          {
+            "name": "parcelId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Suggestion"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Valid JWT required"
+          },
+          "403": {
+            "description": "Role does not permit operation"
+          },
+          "404": {
+            "description": "Resource not found or courier does not own manifest"
+          },
+          "409": {
+            "description": "Duplicate, full/inactive courier, open assignments or concurrent change"
+          },
+          "503": {
+            "description": "Identity/service authentication unavailable"
+          }
+        }
+      }
+    },
+    "/api/v1/dispatch/stats/daily": {
+      "get": {
+        "summary": "Count assignments created, completed and failed by Colombo day",
+        "description": "DISPATCHER or ADMIN required unless explicitly documented.",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DailyStat"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Valid JWT required"
+          },
+          "403": {
+            "description": "Role does not permit operation"
+          },
+          "404": {
+            "description": "Resource not found or courier does not own manifest"
+          },
+          "409": {
+            "description": "Duplicate, full/inactive courier, open assignments or concurrent change"
+          },
+          "503": {
+            "description": "Identity/service authentication unavailable"
+          }
+        }
+      }
+    },
+    "/api/v1/dispatch/assignments": {
+      "post": {
+        "summary": "Assign courier; same courier is idempotent",
+        "description": "DISPATCHER or ADMIN required unless explicitly documented.",
+        "parameters": [
+          {
+            "name": "reassign",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
+            "name": "X-Request-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "202": {
+            "description": "Remote outcome pending; capacity stays reserved and background retry continues",
+            "headers": {
+              "Location": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Command"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Valid JWT required"
+          },
+          "403": {
+            "description": "Role does not permit operation"
+          },
+          "404": {
+            "description": "Resource not found or courier does not own manifest"
+          },
+          "409": {
+            "description": "Duplicate, full/inactive courier, open assignments or concurrent change"
+          },
+          "503": {
+            "description": "Identity/service authentication unavailable"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "parcelId",
+                  "courierId"
+                ],
+                "properties": {
+                  "parcelId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "courierId": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                }
+              },
+              "example": {
+                "parcelId": "b6a4e1d2-5c3f-4a8b-9e7d-1f2a3b4c5d6e",
+                "courierId": "dee3070e-c6f4-4221-a042-17b9959d4095"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/dispatch/assignments/{id}": {
+      "delete": {
+        "summary": "Unassign with an audit reason",
+        "description": "DISPATCHER or ADMIN required unless explicitly documented.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-Request-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "202": {
+            "description": "Remote outcome pending; capacity stays reserved and background retry continues",
+            "headers": {
+              "Location": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Command"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Valid JWT required"
+          },
+          "403": {
+            "description": "Role does not permit operation"
+          },
+          "404": {
+            "description": "Resource not found or courier does not own manifest"
+          },
+          "409": {
+            "description": "Duplicate, full/inactive courier, open assignments or concurrent change"
+          },
+          "503": {
+            "description": "Identity/service authentication unavailable"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "reason"
+                ],
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1000
+                  }
+                }
+              },
+              "example": {
+                "reason": "Courier vehicle repair"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/dispatch/commands/{id}": {
+      "get": {
+        "summary": "Poll a durable assignment command",
+        "description": "DISPATCHER or ADMIN required unless explicitly documented.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Command"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Valid JWT required"
+          },
+          "403": {
+            "description": "Role does not permit operation"
+          },
+          "404": {
+            "description": "Resource not found or courier does not own manifest"
+          },
+          "409": {
+            "description": "Duplicate, full/inactive courier, open assignments or concurrent change"
+          },
+          "503": {
+            "description": "Identity/service authentication unavailable"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "Courier": {
+        "type": "object",
+        "required": [
+          "id",
+          "userId",
+          "name",
+          "vehicleType",
+          "homeZoneCode",
+          "phone",
+          "maxDailyLoad",
+          "active"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "vehicleType": {
+            "type": "string",
+            "enum": [
+              "BIKE",
+              "THREEWHEEL",
+              "VAN"
+            ]
+          },
+          "homeZoneCode": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "maxDailyLoad": {
+            "type": "integer"
+          },
+          "active": {
+            "type": "boolean"
+          }
+        }
+      },
+      "CourierInput": {
+        "type": "object",
+        "required": [
+          "userId",
+          "vehicleType",
+          "homeZoneCode",
+          "phone",
+          "maxDailyLoad"
+        ],
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "vehicleType": {
+            "type": "string",
+            "enum": [
+              "BIKE",
+              "THREEWHEEL",
+              "VAN"
+            ]
+          },
+          "homeZoneCode": {
+            "type": "string",
+            "pattern": "^[A-Z][A-Z0-9_-]{0,79}$"
+          },
+          "phone": {
+            "type": "string",
+            "pattern": "^(\\+94|0)[1-9][0-9]{8}$"
+          },
+          "maxDailyLoad": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10000
+          },
+          "active": {
+            "type": "boolean"
+          }
+        }
+      },
+      "CourierPatch": {
+        "type": "object",
+        "required": [],
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "vehicleType": {
+            "type": "string",
+            "enum": [
+              "BIKE",
+              "THREEWHEEL",
+              "VAN"
+            ]
+          },
+          "homeZoneCode": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "maxDailyLoad": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10000
+          },
+          "active": {
+            "type": "boolean"
+          }
+        }
+      },
+      "Address": {
+        "type": "object",
+        "required": [
+          "contactName",
+          "phone",
+          "line1",
+          "city",
+          "postalCode"
+        ],
+        "properties": {
+          "contactName": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "line1": {
+            "type": "string"
+          },
+          "line2": {
+            "type": "string",
+            "nullable": true
+          },
+          "city": {
+            "type": "string"
+          },
+          "postalCode": {
+            "type": "string"
+          }
+        }
+      },
+      "QueueItem": {
+        "type": "object",
+        "required": [
+          "parcelId",
+          "trackingNumber",
+          "pickupCity",
+          "size",
+          "weightKg",
+          "createdAt"
+        ],
+        "properties": {
+          "parcelId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "trackingNumber": {
+            "type": "string"
+          },
+          "pickupCity": {
+            "type": "string"
+          },
+          "size": {
+            "type": "string",
+            "enum": [
+              "SMALL",
+              "MEDIUM",
+              "LARGE"
+            ]
+          },
+          "weightKg": {
+            "type": "number"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "Assignment": {
+        "type": "object",
+        "required": [
+          "id",
+          "parcelId",
+          "trackingNumber",
+          "status",
+          "pickup",
+          "dropoff",
+          "size",
+          "weightKg",
+          "assignedAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "parcelId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "trackingNumber": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "CREATED",
+              "PICKED_UP",
+              "IN_TRANSIT",
+              "OUT_FOR_DELIVERY",
+              "DELIVERED",
+              "FAILED"
+            ]
+          },
+          "pickup": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "dropoff": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "size": {
+            "type": "string",
+            "enum": [
+              "SMALL",
+              "MEDIUM",
+              "LARGE"
+            ]
+          },
+          "weightKg": {
+            "type": "number"
+          },
+          "assignedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "Suggestion": {
+        "type": "object",
+        "required": [
+          "courierId",
+          "name",
+          "reason",
+          "remainingCapacity"
+        ],
+        "properties": {
+          "courierId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "remainingCapacity": {
+            "type": "integer"
+          }
+        }
+      },
+      "WorkloadRow": {
+        "type": "object",
+        "required": [
+          "courierId",
+          "name",
+          "active",
+          "activeAssignments",
+          "deliveredToday",
+          "failedToday",
+          "remainingCapacity"
+        ],
+        "properties": {
+          "courierId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "activeAssignments": {
+            "type": "integer"
+          },
+          "deliveredToday": {
+            "type": "integer"
+          },
+          "failedToday": {
+            "type": "integer"
+          },
+          "remainingCapacity": {
+            "type": "integer"
+          }
+        }
+      },
+      "DailyStat": {
+        "type": "object",
+        "required": [
+          "date",
+          "created",
+          "completed",
+          "failed"
+        ],
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "created": {
+            "type": "integer"
+          },
+          "completed": {
+            "type": "integer"
+          },
+          "failed": {
+            "type": "integer"
+          }
+        }
+      },
+      "Page": {
+        "type": "object",
+        "required": [
+          "content",
+          "totalElements",
+          "totalPages",
+          "number",
+          "size"
+        ],
+        "properties": {
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Courier"
+            }
+          },
+          "totalElements": {
+            "type": "integer"
+          },
+          "totalPages": {
+            "type": "integer"
+          },
+          "number": {
+            "type": "integer"
+          },
+          "size": {
+            "type": "integer"
+          }
+        }
+      },
+      "Command": {
+        "type": "object",
+        "required": [
+          "id",
+          "state",
+          "parcelId"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "CONFIRMED",
+              "REJECTED"
+            ]
+          },
+          "parcelId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "courierId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "detail": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "Problem": {
+        "type": "object",
+        "required": [
+          "type",
+          "title",
+          "status",
+          "detail",
+          "errorCode"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "format": "uri"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "integer"
+          },
+          "detail": {
+            "type": "string"
+          },
+          "errorCode": {
+            "type": "string"
+          },
+          "trackingNumbers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "violations": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "field",
+                "message"
+              ],
+              "properties": {
+                "field": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

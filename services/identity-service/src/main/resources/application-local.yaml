@@ -1,0 +1,8 @@
+app:
+  security:
+    admin:
+      enabled: true
+      bootstrap-email: ${ADMIN_BOOTSTRAP_EMAIL:admin@swiftdrop.local}
+      bootstrap-password: ${ADMIN_BOOTSTRAP_PASSWORD:LocalAdmin123!}
+      bootstrap-name: ${ADMIN_BOOTSTRAP_NAME:SwiftDrop Local Administrator}
+      bootstrap-phone: ${ADMIN_BOOTSTRAP_PHONE:+94770000001}

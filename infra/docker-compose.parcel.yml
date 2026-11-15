@@ -1,0 +1,53 @@
+# Parcel-specific additions to the existing stack. Run with both Compose files.
+services:
+  minio:
+    build:
+      context: ..
+      dockerfile: infra/minio/Dockerfile
+      target: server
+    command: server /data --console-address ":9001"
+    restart: unless-stopped
+    networks: [swiftdrop]
+    ports:
+      - "127.0.0.1:${MINIO_API_HOST_PORT:-9000}:9000"
+      - "127.0.0.1:${MINIO_CONSOLE_HOST_PORT:-9001}:9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:?Set MINIO_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:?Set MINIO_SECRET_KEY}
+    volumes:
+      - parcel-minio-data:/data
+
+  minio-init:
+    build:
+      context: ..
+      dockerfile: infra/minio/Dockerfile
+      target: client
+    networks: [swiftdrop]
+    depends_on: [minio]
+    restart: "no"
+    entrypoint: ["/bin/sh", "/init.sh"]
+    environment:
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:?Set MINIO_ACCESS_KEY}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:?Set MINIO_SECRET_KEY}
+      MINIO_PROOF_BUCKET: ${MINIO_PROOF_BUCKET:-parcel-proofs}
+    volumes:
+      - ./minio/init.sh:/init.sh:ro
+
+  parcel-service:
+    environment:
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_PUBLIC_ENDPOINT: ${MINIO_PUBLIC_ENDPOINT:-http://localhost:9000}
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:?Set MINIO_ACCESS_KEY}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:?Set MINIO_SECRET_KEY}
+      MINIO_PROOF_BUCKET: ${MINIO_PROOF_BUCKET:-parcel-proofs}
+      JWT_ISSUER_URI: ${JWT_ISSUER_URI:-http://identity-service:8080}
+      JWT_JWK_SET_URI: ${JWT_JWK_SET_URI:-http://identity-service:8080/.well-known/jwks.json}
+      JWT_AUDIENCE: ${JWT_AUDIENCE:-swiftdrop}
+      PRICING_SERVICE_URL: ${PRICING_SERVICE_URL:-http://pricing-service:8080}
+      PRICING_ESTIMATE_PATH: ${PRICING_ESTIMATE_PATH:-/api/v1/pricing/estimate}
+    depends_on:
+      minio-init:
+        condition: service_completed_successfully
+
+volumes:
+  parcel-minio-data:

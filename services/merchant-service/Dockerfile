@@ -18,8 +18,7 @@ COPY services/merchant-service/src/ services/merchant-service/src/
 RUN --mount=type=cache,target=/root/.m2,sharing=locked \
     ./mvnw -B -DskipTests -f packages/common/pom.xml install \
     && ./mvnw -B -DskipTests -f services/merchant-service/pom.xml package \
-    && cp services/merchant-service/target/*.jar application.jar \
-    && java -Djarmode=tools -jar application.jar extract --layers --destination extracted
+    && cp services/merchant-service/target/*.jar application.jar
 
 ##### Stage 2: runtime image #####
 FROM eclipse-temurin:21-jre-alpine AS runtime
@@ -28,10 +27,7 @@ WORKDIR /app
 RUN addgroup -S spring && adduser -S spring -G spring
 USER spring:spring
 
-COPY --from=build --chown=spring:spring /build/extracted/dependencies/ ./
-COPY --from=build --chown=spring:spring /build/extracted/spring-boot-loader/ ./
-COPY --from=build --chown=spring:spring /build/extracted/snapshot-dependencies/ ./
-COPY --from=build --chown=spring:spring /build/extracted/application/ ./
+COPY --from=build --chown=spring:spring /build/application.jar ./
 
 EXPOSE 8080
 
