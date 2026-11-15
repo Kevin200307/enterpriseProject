@@ -1,0 +1,1 @@
+"""Cross-component assistant tests."""

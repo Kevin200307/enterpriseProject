@@ -1,0 +1,67 @@
+[build-system]
+requires = ["hatchling==1.27.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "swiftdrop-ai-assistant"
+version = "0.1.0"
+description = "SwiftDrop role-aware LangGraph assistant service"
+requires-python = ">=3.12,<3.14"
+dependencies = [
+  "alembic==1.16.5",
+  "asyncpg==0.30.0",
+  "fastapi==0.116.1",
+  "httpx==0.28.1",
+  "langchain-google-genai==2.1.10",
+  "langgraph==0.6.7",
+  "langgraph-checkpoint-postgres==2.0.23",
+  "pydantic-settings==2.10.1",
+  "psycopg[binary]==3.3.9",
+  "pyjwt[crypto]==2.10.1",
+  "redis==6.4.0",
+  "sqlalchemy[asyncio]==2.0.43",
+  "sse-starlette==3.0.2",
+  "uvicorn[standard]==0.35.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "aiosqlite==0.21.0",
+  "mypy==1.17.1",
+  "pytest==8.4.2",
+  "pytest-asyncio==1.1.0",
+  "pytest-cov==6.2.1",
+  "respx==0.22.0",
+  "ruff==0.12.11",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+
+[tool.pytest.ini_options]
+addopts = "-ra --strict-markers"
+asyncio_mode = "auto"
+testpaths = ["tests"]
+markers = [
+  "integration: uses external infrastructure",
+  "live_gemini: makes a live Gemini API request",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "ASYNC", "S"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["S101"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+plugins = ["pydantic.mypy"]
+
+[tool.coverage.run]
+branch = true
+source = ["app"]

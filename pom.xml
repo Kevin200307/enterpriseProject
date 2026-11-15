@@ -16,7 +16,6 @@
 	<modules>
 		<module>packages/common</module>
 		<module>services/gateway</module>
-		<module>services/ai-assistant-service</module>
 		<module>services/dispatch-service</module>
 		<module>services/identity-service</module>
 		<module>services/merchant-service</module>

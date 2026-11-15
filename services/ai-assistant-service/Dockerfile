@@ -1,41 +1,23 @@
 # syntax=docker/dockerfile:1
-# Build context is the repository root, so the shared contracts library is visible:
-#   docker build -f services/ai-assistant-service/Dockerfile .
-
-##### Stage 1: build the application #####
-FROM eclipse-temurin:25-jdk-alpine AS build
-WORKDIR /build
-
-COPY .mvn/ .mvn/
-COPY mvnw ./
-RUN sed -i 's/\r$//' mvnw && chmod +x mvnw
-
-COPY packages/common/ packages/common/
-COPY services/ai-assistant-service/pom.xml services/ai-assistant-service/
-COPY services/ai-assistant-service/src/ services/ai-assistant-service/src/
-
-# sharing=locked: every service build installs the contracts jar into this shared cache.
-RUN --mount=type=cache,target=/root/.m2,sharing=locked \
-    ./mvnw -B -DskipTests -f packages/common/pom.xml install \
-    && ./mvnw -B -DskipTests -f services/ai-assistant-service/pom.xml package \
-    && cp services/ai-assistant-service/target/*.jar application.jar \
-    && java -Djarmode=tools -jar application.jar extract --layers --destination extracted
-
-##### Stage 2: runtime image #####
-FROM eclipse-temurin:25-jre-alpine AS runtime
+FROM python:3.12.10-slim
 WORKDIR /app
 
-RUN addgroup -S spring && adduser -S spring -G spring
-USER spring:spring
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PORT=8080
 
-COPY --from=build --chown=spring:spring /build/extracted/dependencies/ ./
-COPY --from=build --chown=spring:spring /build/extracted/spring-boot-loader/ ./
-COPY --from=build --chown=spring:spring /build/extracted/snapshot-dependencies/ ./
-COPY --from=build --chown=spring:spring /build/extracted/application/ ./
+RUN groupadd --system assistant && useradd --system --gid assistant assistant
 
+COPY services/ai-assistant-service/pyproject.toml ./
+COPY services/ai-assistant-service/app ./app
+COPY services/ai-assistant-service/migrations ./migrations
+COPY services/ai-assistant-service/alembic.ini ./
+RUN pip install --no-cache-dir .
+
+USER assistant:assistant
 EXPOSE 8080
 
 HEALTHCHECK --interval=30s --timeout=3s --start-period=30s --retries=3 \
-    CMD wget -qO- http://localhost:8080/actuator/health | grep -q '"status":"UP"' || exit 1
+    CMD python -c "import json,urllib.request; assert json.load(urllib.request.urlopen('http://localhost:8080/actuator/health'))['status']=='UP'"
 
-ENTRYPOINT ["java", "-jar", "application.jar"]
+ENTRYPOINT ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080"]
