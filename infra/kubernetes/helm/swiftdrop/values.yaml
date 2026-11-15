@@ -191,6 +191,7 @@ podDisruptionBudget:
 
 networkPolicy:
   enabled: true
+  ingressNamespace: ingress-nginx
 
 migrations:
   enabled: true

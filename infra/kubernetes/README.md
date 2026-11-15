@@ -77,6 +77,15 @@ release is allowed.
 
 Detailed commands and recovery procedures are added alongside the implementation commits.
 
+## Network isolation
+
+NetworkPolicy starts with default-deny, permits cluster DNS, permits traffic among pods belonging
+to the same Helm release, and permits the configured Ingress namespace to reach only web and
+gateway. Explicit external egress ports cover HTTPS APIs, PostgreSQL, and authenticated SMTP.
+Production must use a CNI that enforces NetworkPolicy and should additionally restrict external
+destinations through an egress gateway/firewall because standard NetworkPolicy cannot select a
+public service by DNS name.
+
 ## Ingress
 
 Only `web` and `gateway` are externally routed. `/api` and `/ws` go to the gateway; all other
