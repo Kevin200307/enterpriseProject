@@ -194,6 +194,12 @@ networkPolicy:
   enabled: true
   ingressNamespace: ingress-nginx
 
+monitoring:
+  enabled: false
+  namespace: monitoring
+  interval: 30s
+  labels: {}
+
 migrations:
   enabled: true
   backoffLimit: 1

@@ -77,6 +77,14 @@ release is allowed.
 
 Detailed commands and recovery procedures are added alongside the implementation commits.
 
+## Observability
+
+When `monitoring.enabled=true`, the chart emits Prometheus Operator `ServiceMonitor` and
+`PrometheusRule` resources, a Grafana dashboard ConfigMap, and a NetworkPolicy allowing the
+monitoring namespace to scrape application ports. Alerts cover unavailable replicas, repeated
+restarts, and RabbitMQ backlog. Application logs must remain structured and redacted; never add
+JWTs, credentials, addresses, phone numbers, or raw assistant prompts to cluster log labels.
+
 ## Availability and scaling
 
 Replicated application pods are spread across nodes and prefer not to colocate. Production values

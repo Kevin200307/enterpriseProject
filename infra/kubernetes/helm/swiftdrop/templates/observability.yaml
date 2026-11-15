@@ -1,0 +1,99 @@
+{{- if .Values.monitoring.enabled }}
+{{- range $name, $service := .Values.services }}
+{{- if and $service.enabled (ne $name "web") }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "swiftdrop.labels" $ | nindent 4 }}
+    {{- with $.Values.monitoring.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: {{ $.Release.Name }}
+      app.kubernetes.io/component: {{ $name }}
+  namespaceSelector:
+    matchNames: [{{ $.Release.Namespace }}]
+  endpoints:
+    - port: http
+      path: {{ if eq $name "ai-assistant-service" }}/metrics{{ else }}/actuator/prometheus{{ end }}
+      interval: {{ $.Values.monitoring.interval }}
+      scrapeTimeout: 10s
+---
+{{- end }}
+{{- end }}
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ include "swiftdrop.fullname" . }}
+  labels:
+    {{- include "swiftdrop.labels" . | nindent 4 }}
+    {{- with .Values.monitoring.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  groups:
+    - name: swiftdrop.availability
+      rules:
+        - alert: SwiftDropDeploymentUnavailable
+          expr: kube_deployment_status_replicas_available{namespace="{{ .Release.Namespace }}"} < kube_deployment_spec_replicas{namespace="{{ .Release.Namespace }}"}
+          for: 5m
+          labels: {severity: warning}
+          annotations:
+            summary: "SwiftDrop deployment has unavailable replicas"
+        - alert: SwiftDropPodRestarting
+          expr: increase(kube_pod_container_status_restarts_total{namespace="{{ .Release.Namespace }}"}[15m]) > 3
+          for: 5m
+          labels: {severity: warning}
+          annotations:
+            summary: "SwiftDrop pod is restarting repeatedly"
+        - alert: SwiftDropRabbitMqQueueBacklog
+          expr: rabbitmq_queue_messages_ready{namespace="{{ .Release.Namespace }}"} > 1000
+          for: 10m
+          labels: {severity: warning}
+          annotations:
+            summary: "RabbitMQ queue backlog is elevated"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "swiftdrop.fullname" . }}-dashboard
+  labels:
+    {{- include "swiftdrop.labels" . | nindent 4 }}
+    grafana_dashboard: "1"
+data:
+  swiftdrop-overview.json: |-
+    {
+      "title": "SwiftDrop Platform Overview",
+      "uid": "swiftdrop-overview",
+      "schemaVersion": 39,
+      "tags": ["swiftdrop"],
+      "panels": [
+        {"type":"timeseries","title":"Available replicas","targets":[{"expr":"sum(kube_deployment_status_replicas_available{namespace=\"{{ .Release.Namespace }}\"})"}]},
+        {"type":"timeseries","title":"Pod restarts","targets":[{"expr":"sum(rate(kube_pod_container_status_restarts_total{namespace=\"{{ .Release.Namespace }}\"}[5m]))"}]}
+      ]
+    }
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: swiftdrop-monitoring-ingress
+  labels:
+    {{- include "swiftdrop.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ .Values.monitoring.namespace }}
+      ports:
+        - {protocol: TCP, port: 8080}
+        - {protocol: TCP, port: 8086}
+{{- end }}
