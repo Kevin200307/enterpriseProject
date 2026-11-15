@@ -77,6 +77,13 @@ release is allowed.
 
 Detailed commands and recovery procedures are added alongside the implementation commits.
 
+## Ingress
+
+Only `web` and `gateway` are externally routed. `/api` and `/ws` go to the gateway; all other
+paths go to the SPA. NGINX buffering is disabled and one-hour stream timeouts preserve assistant
+SSE and tracking WebSocket connections. Production values must enable TLS and provide a
+certificate Secret through cert-manager or the cloud ingress integration.
+
 ## Database migrations
 
 The Helm release creates bounded migration Jobs. Java services launch their packaged Spring Boot

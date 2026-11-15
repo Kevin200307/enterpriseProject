@@ -34,6 +34,7 @@ config:
   webOrigins: https://swiftdrop.example.com
   assistantEnabled: true
   geminiModel: gemini-2.5-flash-lite
+  webApiBaseUrl: https://swiftdrop.example.com
 
 existingSecret: swiftdrop-secrets
 
@@ -44,8 +45,9 @@ services:
       repository: swiftdrop/web
       tag: "0.1.0"
     replicas: 2
-    port: 80
+    port: 8080
     probePath: /healthz
+    readOnlyRootFilesystem: false
     resources:
       requests: {cpu: 50m, memory: 64Mi}
       limits: {cpu: 250m, memory: 128Mi}
