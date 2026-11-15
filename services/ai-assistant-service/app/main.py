@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 
+from app.api.chat import router as chat_router
 from app.api.conversations import router as conversations_router
 from app.api.health import router as health_router
 from app.config import Settings, get_settings
@@ -24,6 +25,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
     application.state.conversations = InMemoryConversationRepository()
     application.include_router(health_router)
+    application.include_router(chat_router)
     application.include_router(conversations_router)
     return application
 
