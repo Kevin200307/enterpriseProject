@@ -10,8 +10,9 @@ class DeliveryAddress(BaseModel):
     contactName: str = Field(min_length=1, max_length=120)
     phone: str = Field(pattern=r"^\+?[0-9][0-9 -]{6,19}$")
     line1: str = Field(min_length=1, max_length=200)
-    line2: str | None = Field(default=None, max_length=200)
     city: str = Field(min_length=1, max_length=120)
+    postalCode: str = Field(min_length=1, max_length=20)
+    zone: str = Field(min_length=1, max_length=80)
 
 
 class DeliveryDraft(BaseModel):

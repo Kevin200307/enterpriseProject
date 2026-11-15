@@ -12,6 +12,8 @@ def address(city: str) -> DeliveryAddress:
         phone="+94771234567",
         line1="1 Main Street",
         city=city,
+        postalCode="10400",
+        zone="WESTERN",
     )
 
 

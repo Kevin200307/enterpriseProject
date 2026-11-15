@@ -44,12 +44,15 @@ class DownstreamClient:
         bearer_token: str,
         *,
         request_id: str | None = None,
+        extra_headers: dict[str, str] | None = None,
         json_body: object | None = None,
         params: dict[str, str | int | float | bool | None] | None = None,
     ) -> Any:
         if not path.startswith("/") or path.startswith("//"):
             raise ValueError("Downstream path must be an absolute service path")
         headers = {"Authorization": f"Bearer {bearer_token}"}
+        if extra_headers:
+            headers.update(extra_headers)
         if request_id:
             headers["X-Request-Id"] = request_id
         try:

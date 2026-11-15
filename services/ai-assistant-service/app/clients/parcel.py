@@ -29,3 +29,22 @@ class ParcelClient(DownstreamClient):
             token,
             params={"page": page, "size": size},
         )
+
+    async def book(self, request: dict[str, object], token: str, idempotency_key: str) -> Any:
+        return await self.request_json(
+            "POST",
+            "/api/v1/parcels",
+            token,
+            json_body=request,
+            extra_headers={"Idempotency-Key": idempotency_key},
+        )
+
+    async def details_by_tracking(self, tracking_number: str, token: str) -> Any:
+        return await self.request_json(
+            "GET",
+            f"/api/v1/parcels/by-tracking/{tracking_number}/details",
+            token,
+        )
+
+    async def cancel(self, parcel_id: str, token: str) -> Any:
+        return await self.request_json("POST", f"/api/v1/parcels/{parcel_id}/cancel", token)
