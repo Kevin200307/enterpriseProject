@@ -1,3 +1,6 @@
+from typing import Any
+
+from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 
@@ -13,7 +16,9 @@ from app.graph.state import AssistantState
 AGENTS = ("support", "tracking", "customer", "merchant", "courier", "dispatcher", "admin", "denied")
 
 
-def build_assistant_graph() -> CompiledStateGraph[
+def build_assistant_graph(
+    checkpointer: BaseCheckpointSaver[Any] | None = None,
+) -> CompiledStateGraph[
     AssistantState, None, AssistantState, AssistantState
 ]:
     graph = StateGraph(
@@ -37,7 +42,7 @@ def build_assistant_graph() -> CompiledStateGraph[
     )
     for agent in AGENTS:
         graph.add_edge(agent, END)
-    return graph.compile()
+    return graph.compile(checkpointer=checkpointer)
 
 
 def graph_mermaid() -> str:

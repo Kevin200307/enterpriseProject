@@ -32,6 +32,7 @@ class Settings(BaseSettings):
     gemini_max_retries: int = Field(default=1, ge=0, le=3)
     assistant_database_url: SecretStr | None = None
     conversation_retention_days: int = Field(default=30, ge=1, le=365)
+    checkpoint_database_url: SecretStr | None = None
 
 
 @lru_cache
