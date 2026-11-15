@@ -48,3 +48,13 @@ class ParcelClient(DownstreamClient):
 
     async def cancel(self, parcel_id: str, token: str) -> Any:
         return await self.request_json("POST", f"/api/v1/parcels/{parcel_id}/cancel", token)
+
+    async def update_status(
+        self, parcel_id: str, status: str, token: str, note: str | None = None
+    ) -> Any:
+        return await self.request_json(
+            "PATCH",
+            f"/api/v1/parcels/{parcel_id}/status",
+            token,
+            json_body={"status": status, "note": note},
+        )

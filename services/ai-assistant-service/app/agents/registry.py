@@ -29,7 +29,7 @@ AGENTS = {
     "courier": AgentSpec(
         "courier",
         "Help the authenticated courier with parcels assigned to that courier.",
-        frozenset(),
+        frozenset({"courierAssignments", "updateCourierParcelStatus"}),
         "COURIER",
     ),
     "dispatcher": AgentSpec(

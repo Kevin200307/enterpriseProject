@@ -37,6 +37,15 @@ MERCHANT_ORDERS = ToolSpec("merchantOrders", "List authenticated merchant orders
 WEBHOOK_FAILURES = ToolSpec(
     "webhookFailures", "List failed merchant webhook deliveries.", EmptyArguments
 )
+COURIER_ASSIGNMENTS = ToolSpec(
+    "courierAssignments", "List assignments belonging to the authenticated courier.", EmptyArguments
+)
+COURIER_STATUS = ToolSpec(
+    "updateCourierParcelStatus",
+    "Update an assigned parcel through an allowed courier status transition.",
+    EmptyArguments,
+    "HIGH_IMPACT",
+)
 
 
 def allowed_tools(principal: AssistantPrincipal) -> tuple[ToolSpec, ...]:
@@ -45,4 +54,6 @@ def allowed_tools(principal: AssistantPrincipal) -> tuple[ToolSpec, ...]:
         tools.append(LIST_MY_PARCELS)
     if principal.has_role("MERCHANT"):
         tools.extend((MERCHANT_OVERVIEW, MERCHANT_ORDERS, WEBHOOK_FAILURES))
+    if principal.has_role("COURIER"):
+        tools.extend((COURIER_ASSIGNMENTS, COURIER_STATUS))
     return tuple(tools)
