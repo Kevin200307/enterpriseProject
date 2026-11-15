@@ -23,6 +23,10 @@ class Settings(BaseSettings):
     jwt_audience: str = "swiftdrop"
     parcel_service_url: str = "http://parcel-service:8080"
     pricing_service_url: str = "http://pricing-service:8080"
+    merchant_service_url: str = "http://merchant-service:8080"
+    dispatch_service_url: str = "http://dispatch-service:8080"
+    identity_service_url: str = "http://identity-service:8080"
+    notification_service_url: str = "http://notification-service:8086"
     downstream_timeout_seconds: float = Field(default=5.0, gt=0, le=30)
     google_api_key: SecretStr | None = None
     gemini_model: str = "gemini-2.5-flash-lite"

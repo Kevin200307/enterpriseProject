@@ -23,7 +23,7 @@ AGENTS = {
     "merchant": AgentSpec(
         "merchant",
         "Help the authenticated merchant with merchant-owned SwiftDrop resources.",
-        frozenset(),
+        frozenset({"merchantOverview", "merchantOrders", "webhookFailures"}),
         "MERCHANT",
     ),
     "courier": AgentSpec(
