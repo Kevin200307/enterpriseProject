@@ -1,4 +1,9 @@
+from uuid import uuid4
+
 from fastapi import FastAPI
+from fastapi import Request as FastApiRequest
+from starlette.middleware.base import RequestResponseEndpoint
+from starlette.responses import Response
 
 from app.api.chat import router as chat_router
 from app.api.conversations import router as conversations_router
@@ -7,7 +12,9 @@ from app.clients.parcel import ParcelClient
 from app.clients.pricing import PricingClient
 from app.config import Settings, get_settings
 from app.graph.runner import AssistantRunner
+from app.infrastructure.logging import configure_logging
 from app.infrastructure.redis import AllowAllRateLimiter, RedisRateLimiter, create_redis
+from app.infrastructure.telemetry import AssistantMetrics
 from app.llm.gemini import create_model_provider
 from app.persistence.memory_conversation_repository import InMemoryConversationRepository
 from app.security.jwt import JwtTokenValidator
@@ -23,6 +30,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         openapi_url=None,
     )
     application.state.settings = resolved
+    configure_logging(resolved.log_level)
+    application.state.metrics = AssistantMetrics()
     application.state.token_validator = JwtTokenValidator(
         resolved.identity_jwks_uri,
         resolved.identity_issuer_uri,
@@ -53,6 +62,19 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.include_router(health_router)
     application.include_router(chat_router)
     application.include_router(conversations_router)
+
+    @application.middleware("http")
+    async def request_context(
+        request: FastApiRequest, call_next: RequestResponseEndpoint
+    ) -> Response:
+        request_id = request.headers.get("X-Request-Id") or str(uuid4())
+        response = await call_next(request)
+        response.headers["X-Request-Id"] = request_id
+        await application.state.metrics.increment(
+            f"http_{request.method.lower()}_{response.status_code}"
+        )
+        return response
+
     return application
 
 

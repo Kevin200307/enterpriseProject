@@ -33,3 +33,9 @@ async def readiness(request: Request) -> ReadinessResponse:
         "runtime": "ready",
     }
     return ReadinessResponse(status="UP", components=components)
+
+
+@router.get("/actuator/metrics")
+async def metrics(request: Request) -> dict[str, int]:
+    result: dict[str, int] = await request.app.state.metrics.snapshot()
+    return result
