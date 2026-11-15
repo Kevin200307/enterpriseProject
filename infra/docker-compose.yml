@@ -109,6 +109,10 @@ services:
       JWT_AUDIENCE: ${JWT_AUDIENCE:-swiftdrop}
       PARCEL_SERVICE_URL: http://parcel-service:8080
       PRICING_SERVICE_URL: http://pricing-service:8080
+      MERCHANT_SERVICE_URL: http://merchant-service:8080
+      DISPATCH_SERVICE_URL: http://dispatch-service:8080
+      IDENTITY_SERVICE_URL: http://identity-service:8080
+      NOTIFICATION_SERVICE_URL: http://notification-service:8086
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
       ASSISTANT_DATABASE_URL: ${ASSISTANT_DATABASE_URL:-}
       CHECKPOINT_DATABASE_URL: ${CHECKPOINT_DATABASE_URL:-}

@@ -1,7 +1,8 @@
 # SwiftDrop
 
 A cloud-native parcel delivery and courier management platform, built as a distributed
-microservices system on Java 21 / Spring Boot with a React single-page application.
+microservices system on Java 21 / Spring Boot, a Python AI assistant, and a React single-page
+application.
 
 Customers book deliveries and track them live. Merchants place orders through a web console or a
 scoped REST API and receive signed webhooks. Couriers work a daily manifest and capture proof of
@@ -54,7 +55,7 @@ Cross-cutting behaviour worth knowing:
 ## Architecture
 
 Microservices behind an API gateway that also acts as a backend-for-frontend. Nine deployable
-units: eight Spring Boot services plus the gateway.
+units: seven Spring Boot domain services, one Python assistant service, plus the gateway.
 
 **Database per service.** Six services own a PostgreSQL database each, tracking-service keeps its
 read projection entirely in Redis, and the AI assistant holds no durable state. No service has a
@@ -76,7 +77,7 @@ deduplicating on the event id because delivery is at-least-once.
 | `merchant-service` | Merchant onboarding and approval, API key lifecycle, order ingestion, signed outbound webhooks |
 | `tracking-service` | Privacy-reduced read projection in Redis, STOMP and SSE push |
 | `notification-service` | Event-driven email and SMS, per-user preferences, delivery log, retry scheduler |
-| `ai-assistant-service` | Conversational assistant exposing read-oriented domain tools over SSE |
+| `ai-assistant-service` | Python FastAPI/LangGraph/Gemini role-aware assistant over SSE |
 
 ### Parcel lifecycle
 
@@ -100,7 +101,7 @@ reattempted, so the graph contains a cycle.
 |---|---|
 | Frontend | React 18.3, TypeScript, Vite, Tailwind CSS, TanStack Query, React Router |
 | Edge | Spring Cloud Gateway (WebFlux / Netty), Redis token-bucket rate limiting, Resilience4j |
-| Backend | Java 21, Spring Boot 4.1.1, Spring Security, Spring Data JPA, Bean Validation |
+| Backend | Java 21/Spring Boot 4.1.1 plus Python 3.12/FastAPI/LangGraph for the assistant |
 | Persistence | PostgreSQL (Neon), one database per service, Flyway migrations |
 | Cache / projection | Redis 7 |
 | Messaging | RabbitMQ 3, topic exchange `parcel.events`, dead-letter exchange `swiftdrop.dlx` |
@@ -125,7 +126,7 @@ enterpriseProject/
 │   ├── merchant-service/     Merchant API keys, orders, webhooks
 │   ├── tracking-service/     Redis projection, STOMP and SSE
 │   ├── notification-service/ Email and SMS pipeline
-│   └── ai-assistant-service/ Spring AI tool-calling assistant
+│   └── ai-assistant-service/ Python FastAPI + LangGraph assistant
 ├── packages/common/          Shared event contracts, enums, error codes
 ├── infra/
 │   ├── docker-compose.yml          Full local stack

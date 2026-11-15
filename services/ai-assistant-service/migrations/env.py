@@ -1,4 +1,5 @@
 import asyncio
+import os
 
 from alembic import context
 from sqlalchemy.engine import Connection
@@ -7,6 +8,9 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 from app.persistence.models import Base
 
 target_metadata = Base.metadata
+database_url = os.getenv("ASSISTANT_DATABASE_URL")
+if database_url:
+    context.config.set_main_option("sqlalchemy.url", database_url.replace("%", "%%"))
 
 
 def run_migrations_offline() -> None:
