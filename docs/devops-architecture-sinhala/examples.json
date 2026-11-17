@@ -1,0 +1,116 @@
+[
+  {
+    "number": 1,
+    "section": "repository",
+    "language": "Repository map",
+    "code": "enterpriseProject/\n  apps/web/                  Browser application\n  services/gateway/          Public API routing\n  services/*-service/        Domain services + assistant\n  packages/common/           Shared events and domain types\n  infra/kubernetes/          Helm, scripts and migrations\n  .github/workflows/         Validation and release automation\n  docs/                      Design and learning material"
+  },
+  {
+    "number": 2,
+    "section": "code-reading",
+    "language": "Conceptual call trace · source-derived pseudocode",
+    "code": "HTTP POST /api/v1/parcels\n  ParcelController.book(...)\n    ParcelService.book(...)\n      authorize actor\n      check idempotency key and payload hash\n      call pricing API\n      save parcel + history + outbox\n    return ParcelView"
+  },
+  {
+    "number": 3,
+    "section": "http",
+    "language": "Conceptual protocol path · illustrative production URL",
+    "code": "https://swiftdrop.example.com/api/v1/parcels?page=0\n|scheme|       host       |       path        |query|\n\nDNS lookup → TCP connection → TLS → HTTP → application"
+  },
+  {
+    "number": 4,
+    "section": "frontend",
+    "language": "PowerShell",
+    "code": "Invoke-WebRequest -UseBasicParsing `\n  -Uri http://localhost:8088/config.js\nInvoke-WebRequest -UseBasicParsing `\n  -Uri http://localhost:8088/healthz"
+  },
+  {
+    "number": 5,
+    "section": "sql-transactions",
+    "language": "SQL pseudocode · not runnable table definitions",
+    "code": "BEGIN;\n-- conceptual example: one owning database\nINSERT INTO parcels (...);\nINSERT INTO parcel_history (...);\nINSERT INTO outbox_events (...);\nCOMMIT;"
+  },
+  {
+    "number": 6,
+    "section": "idempotency",
+    "language": "HTTP sketch · no usable token included",
+    "code": "POST /api/v1/parcels\nAuthorization: Bearer REDACTED\nIdempotency-Key: local-booking-0001\n\nSame payload + same key → same business operation"
+  },
+  {
+    "number": 7,
+    "section": "realtime",
+    "language": "PowerShell",
+    "code": "curl.exe -N --max-time 15 `\n  -H \"Host: swiftdrop.local\" `\n  \"http://localhost:8088/api/v1/tracking/public/TRACKING_NUMBER/stream\""
+  },
+  {
+    "number": 8,
+    "section": "configuration",
+    "language": "PowerShell",
+    "code": "helm template swiftdrop infra/kubernetes/helm/swiftdrop `\n  -n swiftdrop `\n  -f infra/kubernetes/helm/swiftdrop/values-local.yaml"
+  },
+  {
+    "number": 9,
+    "section": "build-artifacts",
+    "language": "PowerShell",
+    "code": "# Build one Java service and the reactor modules it needs.\n.\\mvnw.cmd -pl services/parcel-service -am package\n# Local full-image build: choose a fresh tag.\n$tag = \"arch-$(Get-Date -Format 'yyyyMMdd-HHmmss')\"\n.\\infra\\kubernetes\\scripts\\build-images.ps1 -Tag $tag"
+  },
+  {
+    "number": 10,
+    "section": "environments",
+    "language": "PowerShell",
+    "code": "docker version\nkind get clusters\nkubectl config get-contexts\nkubectl --context kind-swiftdrop get nodes"
+  },
+  {
+    "number": 11,
+    "section": "deployment-view",
+    "language": "PowerShell",
+    "code": "kubectl --context kind-swiftdrop -n swiftdrop get deploy,sts\nkubectl --context kind-swiftdrop -n swiftdrop get svc,ingress\nkubectl --context kind-swiftdrop -n swiftdrop get pvc,jobs"
+  },
+  {
+    "number": 12,
+    "section": "release-rollback",
+    "language": "PowerShell",
+    "code": "helm --kube-context kind-swiftdrop history swiftdrop -n swiftdrop\nhelm --kube-context kind-swiftdrop status swiftdrop -n swiftdrop\n# Read first; choose a reviewed revision before a rollback.\nkubectl --context kind-swiftdrop -n swiftdrop get deploy,sts"
+  },
+  {
+    "number": 13,
+    "section": "capacity",
+    "language": "PowerShell",
+    "code": "# Requires a functioning metrics API.\nkubectl --context kind-swiftdrop top nodes\nkubectl --context kind-swiftdrop -n swiftdrop top pods\nkubectl --context kind-swiftdrop -n swiftdrop get hpa"
+  },
+  {
+    "number": 14,
+    "section": "observability",
+    "language": "PowerShell",
+    "code": "kubectl --context kind-swiftdrop -n swiftdrop logs `\n  deployment/gateway --tail=100\nkubectl --context kind-swiftdrop -n swiftdrop get events `\n  --sort-by=.metadata.creationTimestamp"
+  },
+  {
+    "number": 15,
+    "section": "incident-http",
+    "language": "PowerShell",
+    "code": "kubectl --context kind-swiftdrop -n swiftdrop get svc,endpointslices\nkubectl --context kind-swiftdrop -n swiftdrop get pods -o wide\nkubectl --context kind-swiftdrop -n swiftdrop logs `\n  deployment/gateway --tail=100"
+  },
+  {
+    "number": 16,
+    "section": "incident-events",
+    "language": "Diagnostic decision path · read-only investigation first",
+    "code": "Parcel committed?\n  → Outbox record pending or published?\n    → Broker accepted and routed?\n      → Consumer deserialized and processed?\n        → Preference allowed the channel?\n          → Provider accepted? Delivery log updated?"
+  },
+  {
+    "number": 17,
+    "section": "first-day",
+    "language": "PowerShell",
+    "code": "rg -n 'routes:|Path=/api/v1/parcels' `\n  services/gateway/src/main/resources/application.yaml\nrg -n 'public ParcelView book|recordChange|pricing.estimate' `\n  services/parcel-service/src/main/java"
+  },
+  {
+    "number": 18,
+    "section": "readonly-lab",
+    "language": "PowerShell",
+    "code": "Set-Location F:\\EAD\\enterpriseProject\nkubectl config get-contexts\nkubectl --context kind-swiftdrop get nodes\nkubectl --context kind-swiftdrop -n swiftdrop get deploy,sts\nkubectl --context kind-swiftdrop -n swiftdrop get pods -o wide\nkubectl --context kind-swiftdrop -n swiftdrop get svc,ingress\nkubectl --context kind-swiftdrop -n swiftdrop get endpointslices\nkubectl --context kind-swiftdrop -n swiftdrop get jobs,pvc\nhelm --kube-context kind-swiftdrop status swiftdrop -n swiftdrop"
+  },
+  {
+    "number": 19,
+    "section": "workflow-lab",
+    "language": "PowerShell",
+    "code": "# First inspect the local environment.\n.\\infra\\kubernetes\\scripts\\verify-cluster.ps1\n.\\infra\\kubernetes\\tests\\smoke-tests.ps1\n# Creates a synthetic local customer and parcel.\n.\\infra\\kubernetes\\tests\\smoke-tests.ps1 -Workflow"
+  }
+]

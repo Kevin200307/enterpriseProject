@@ -8,4 +8,11 @@
 **/.env
 apps
 infra
+!infra/
+infra/*
+!infra/kubernetes/
+infra/kubernetes/*
+!infra/kubernetes/migrations/
+!infra/kubernetes/maven-settings.xml
+**/.venv*/
 docs

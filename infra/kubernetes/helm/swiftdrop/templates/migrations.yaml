@@ -1,8 +1,21 @@
-{{- if .Values.migrations.enabled }}
-{{- range $name := .Values.migrations.javaServices }}
+﻿{{- if and .Values.migrations.enabled (not .Values.bootstrapOnly) }}
+{{- range $name := concat .Values.migrations.javaServices (list "ai-assistant-service") }}
 {{- $service := index $.Values.services $name }}
 {{- if $service.enabled }}
-{{- $prefix := upper (trimSuffix "-SERVICE" (replace "-" "_" (upper $name))) }}
+{{- $assistant := eq $name "ai-assistant-service" }}
+{{- $prefix := upper (trimSuffix "-service" $name) }}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "swiftdrop.serviceAccountName" (dict "root" $ "service" (printf "%s-migration" $name)) }}
+  labels:
+    {{- include "swiftdrop.labels" $ | nindent 4 }}
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: "-10"
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+automountServiceAccountToken: false
+---
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -11,39 +24,53 @@ metadata:
     {{- include "swiftdrop.labels" $ | nindent 4 }}
     app.kubernetes.io/component: {{ $name }}-migration
   annotations:
-    helm.sh/hook: post-install,pre-upgrade
+    helm.sh/hook: pre-install,pre-upgrade
     helm.sh/hook-weight: "-5"
     helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
 spec:
   backoffLimit: {{ $.Values.migrations.backoffLimit }}
   activeDeadlineSeconds: {{ $.Values.migrations.activeDeadlineSeconds }}
-  ttlSecondsAfterFinished: 300
+  ttlSecondsAfterFinished: 86400
   template:
     metadata:
       labels:
         app.kubernetes.io/instance: {{ $.Release.Name }}
         app.kubernetes.io/component: {{ $name }}-migration
+        swiftdrop.io/migration: "true"
     spec:
       restartPolicy: Never
-      serviceAccountName: {{ include "swiftdrop.serviceAccountName" (dict "root" $ "service" $name) }}
+      serviceAccountName: {{ include "swiftdrop.serviceAccountName" (dict "root" $ "service" (printf "%s-migration" $name)) }}
       automountServiceAccountToken: false
       securityContext:
         {{- toYaml $.Values.podSecurityContext | nindent 8 }}
+      {{- with $.Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       containers:
         - name: migrate
           image: {{ include "swiftdrop.image" (dict "root" $ "service" $service) | quote }}
           imagePullPolicy: {{ $.Values.global.imagePullPolicy }}
-          args: ["--spring.main.web-application-type=none", "--spring.main.lazy-initialization=true"]
+          {{- if $assistant }}
+          command: ["python", "-m", "app.migrate"]
+          {{- else }}
+          command: ["java", "-cp", "migration-runner:application.jar:lib/*", "DatabaseMigration"]
+          {{- end }}
           securityContext:
             {{- toYaml $.Values.containerSecurityContext | nindent 12 }}
             runAsUser: {{ $service.runAsUser }}
             readOnlyRootFilesystem: true
-          envFrom:
-            - configMapRef: {name: {{ include "swiftdrop.fullname" $ }}-config}
           env:
+            {{- if $assistant }}
+            - name: ASSISTANT_DATABASE_URL
+              valueFrom:
+                secretKeyRef: {name: {{ $.Values.existingSecret }}, key: ASSISTANT_DATABASE_URL}
+            - name: CHECKPOINT_DATABASE_URL
+              valueFrom:
+                secretKeyRef: {name: {{ $.Values.existingSecret }}, key: CHECKPOINT_DATABASE_URL}
+            {{- else }}
             {{- include "swiftdrop.databaseEnv" (dict "root" $ "prefix" $prefix) | nindent 12 }}
-            - name: SPRING_FLYWAY_ENABLED
-              value: "true"
+            {{- end }}
           resources:
             requests: {cpu: 100m, memory: 256Mi}
             limits: {cpu: "1", memory: 768Mi}
@@ -54,55 +81,5 @@ spec:
           emptyDir: {sizeLimit: 128Mi}
 ---
 {{- end }}
-{{- end }}
-{{- $assistant := index .Values.services "ai-assistant-service" }}
-{{- if $assistant.enabled }}
-apiVersion: batch/v1
-kind: Job
-metadata:
-  name: ai-assistant-service-migrate-{{ .Release.Revision }}
-  labels:
-    {{- include "swiftdrop.labels" . | nindent 4 }}
-    app.kubernetes.io/component: ai-assistant-migration
-  annotations:
-    helm.sh/hook: post-install,pre-upgrade
-    helm.sh/hook-weight: "-5"
-    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
-spec:
-  backoffLimit: {{ .Values.migrations.backoffLimit }}
-  activeDeadlineSeconds: {{ .Values.migrations.activeDeadlineSeconds }}
-  ttlSecondsAfterFinished: 300
-  template:
-    metadata:
-      labels:
-        app.kubernetes.io/instance: {{ .Release.Name }}
-        app.kubernetes.io/component: ai-assistant-migration
-    spec:
-      restartPolicy: Never
-      serviceAccountName: {{ include "swiftdrop.serviceAccountName" (dict "root" . "service" "ai-assistant-service") }}
-      automountServiceAccountToken: false
-      securityContext:
-        {{- toYaml .Values.podSecurityContext | nindent 8 }}
-      containers:
-        - name: migrate
-          image: {{ include "swiftdrop.image" (dict "root" . "service" $assistant) | quote }}
-          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
-          command: ["alembic", "upgrade", "head"]
-          env:
-            - name: ASSISTANT_DATABASE_URL
-              valueFrom:
-                secretKeyRef: {name: {{ .Values.existingSecret }}, key: ASSISTANT_DATABASE_URL}
-          securityContext:
-            {{- toYaml .Values.containerSecurityContext | nindent 12 }}
-            runAsUser: {{ $assistant.runAsUser }}
-            readOnlyRootFilesystem: true
-          resources:
-            requests: {cpu: 50m, memory: 128Mi}
-            limits: {cpu: 500m, memory: 512Mi}
-          volumeMounts:
-            - {name: tmp, mountPath: /tmp}
-      volumes:
-        - name: tmp
-          emptyDir: {sizeLimit: 64Mi}
 {{- end }}
 {{- end }}

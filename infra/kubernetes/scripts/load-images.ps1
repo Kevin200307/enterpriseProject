@@ -1,7 +1,8 @@
 [CmdletBinding()]
 param(
     [string]$ClusterName = "swiftdrop",
-    [string]$Tag = "dev"
+    [string]$Tag = "dev",
+    [ValidatePattern('^linux/(amd64|arm64)(/v8)?$')][string]$Platform
 )
 
 $ErrorActionPreference = "Stop"
@@ -19,10 +20,15 @@ $services = @(
     "tracking-service",
     "notification-service",
     "ai-assistant-service",
-    "web"
+    "web",
+    "minio",
+    "minio-client"
 )
+$images = @()
 foreach ($service in $services) {
     $image = "swiftdrop/$service`:$Tag"
-    docker image inspect $image | Out-Null
-    kind load docker-image $image --name $ClusterName
+    $images += $image
 }
+$importArguments = @{ Images = $images; ClusterName = $ClusterName }
+if ($Platform) { $importArguments.Platform = $Platform }
+& (Join-Path $PSScriptRoot "import-kind-images.ps1") @importArguments

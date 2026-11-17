@@ -72,7 +72,8 @@ updates in `pyproject.toml`; do not perform unbounded automatic upgrades.
 
 Set `ASSISTANT_DATABASE_URL` to use durable SQLAlchemy conversation/audit storage and
 `CHECKPOINT_DATABASE_URL` to resume LangGraph threads by conversation UUID. Both use async
-PostgreSQL URLs such as `postgresql+asyncpg://user:password@host/database`. Run application
+PostgreSQL: the application URL uses `postgresql+asyncpg://user:password@host/database`, while
+the checkpoint URL uses the psycopg form `postgresql://user:password@host/database`. Run application
 migrations before deployment:
 
 ```powershell
@@ -81,7 +82,16 @@ migrations before deployment:
 
 Supply `ASSISTANT_DATABASE_URL` through the deployment secret manager; never commit it.
 LangGraph creates its checkpoint schema through the controlled application startup
-path. Conversation retention defaults to 30 days; checkpoint and audit pruning should use the
+path by default for Compose and standalone development. Kubernetes sets `CHECKPOINT_AUTO_SETUP=false`
+and runs both schemas once through a bounded Helm migration Job before starting replicas:
+
+```powershell
+.venv\Scripts\python -m app.migrate
+```
+
+This command requires both database URLs, runs Alembic before LangGraph checkpoint setup, and
+exits nonzero if either fails. Runtime replicas connect to the existing checkpoint schema without
+performing schema changes. Conversation retention defaults to 30 days; checkpoint and audit pruning should use the
 same environment retention policy. Back up application tables independently of checkpoint
 tables.
 

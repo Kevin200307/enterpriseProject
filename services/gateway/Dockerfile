@@ -7,6 +7,7 @@ FROM eclipse-temurin:21-jdk-alpine AS build
 WORKDIR /build
 
 COPY .mvn/ .mvn/
+COPY infra/kubernetes/maven-settings.xml ./maven-settings.xml
 COPY mvnw ./
 RUN sed -i 's/\r$//' mvnw && chmod +x mvnw
 
@@ -16,8 +17,8 @@ COPY services/gateway/src/ services/gateway/src/
 
 # sharing=locked: every service build installs the contracts jar into this shared cache.
 RUN --mount=type=cache,target=/root/.m2,sharing=locked \
-    ./mvnw -B -DskipTests -f packages/common/pom.xml install \
-    && ./mvnw -B -DskipTests -f services/gateway/pom.xml package \
+    ./mvnw -B -s maven-settings.xml -DskipTests -f packages/common/pom.xml install \
+    && ./mvnw -B -s maven-settings.xml -DskipTests -f services/gateway/pom.xml package \
     && cp services/gateway/target/*.jar application.jar \
     && java -Djarmode=tools -jar application.jar extract --layers --destination extracted
 

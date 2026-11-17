@@ -15,3 +15,7 @@ infra/kubernetes/.kube/
 infra/kubernetes/rendered/
 infra/kubernetes/**/*secret*.local.yaml
 infra/kubernetes/**/*.kubeconfig
+.venv-k8s/
+infra/kubernetes/**/target/
+infra/kubernetes/**/__pycache__/
+infra/kubernetes/**/.pytest_cache/

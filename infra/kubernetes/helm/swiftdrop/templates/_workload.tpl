@@ -30,7 +30,7 @@
 {{- $root := .root -}}
 {{- $name := .name -}}
 {{- $service := index $root.Values.services $name -}}
-{{- if $service.enabled }}
+{{- if and $service.enabled (not $root.Values.bootstrapOnly) }}
 apiVersion: v1
 kind: Service
 metadata:
@@ -57,6 +57,7 @@ metadata:
     app.kubernetes.io/component: {{ $name }}
 spec:
   replicas: {{ $service.replicas }}
+  progressDeadlineSeconds: {{ max 600 (add 300 (mul $root.Values.probes.startup.failureThreshold $root.Values.probes.startup.periodSeconds)) }}
   revisionHistoryLimit: 3
   strategy:
     type: RollingUpdate
@@ -114,20 +115,23 @@ spec:
             - {name: http, containerPort: {{ $service.port }}}
           envFrom:
             - configMapRef: {name: {{ include "swiftdrop.fullname" $root }}-config}
-          {{- with .env }}
           env:
+            {{- if has $name $root.Values.migrations.javaServices }}
+            - name: SPRING_FLYWAY_ENABLED
+              value: "false"
+            {{- end }}
+            {{- with .env }}
             {{- tpl . $root | nindent 12 }}
-          {{- end }}
+            {{- end }}
           startupProbe:
-            httpGet: {path: {{ $service.probePath }}, port: http}
-            failureThreshold: 30
-            periodSeconds: 5
+            httpGet: {path: {{ $service.startupProbePath | default $service.probePath }}, port: http}
+            {{- toYaml $root.Values.probes.startup | nindent 12 }}
           readinessProbe:
-            httpGet: {path: {{ $service.probePath }}, port: http}
+            httpGet: {path: {{ $service.readinessProbePath | default $service.probePath }}, port: http}
             periodSeconds: 10
             timeoutSeconds: 3
           livenessProbe:
-            httpGet: {path: {{ $service.probePath }}, port: http}
+            httpGet: {path: {{ $service.livenessProbePath | default $service.probePath }}, port: http}
             initialDelaySeconds: 30
             periodSeconds: 20
             timeoutSeconds: 3

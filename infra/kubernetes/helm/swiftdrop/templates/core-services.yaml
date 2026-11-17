@@ -1,5 +1,6 @@
 {{- $parcelEnv := include "swiftdrop.databaseEnv" (dict "root" . "prefix" "PARCEL") }}
 {{- $parcelEnv = printf "%s\n%s" $parcelEnv (include "swiftdrop.rabbitEnv" .) }}
+{{- $parcelEnv = printf "%s\n%s" $parcelEnv "- name: MINIO_ACCESS_KEY\n  valueFrom:\n    secretKeyRef: {name: {{ .Values.existingSecret }}, key: MINIO_ACCESS_KEY}\n- name: MINIO_SECRET_KEY\n  valueFrom:\n    secretKeyRef: {name: {{ .Values.existingSecret }}, key: MINIO_SECRET_KEY}" }}
 {{ include "swiftdrop.applicationWorkload" (dict "root" . "name" "parcel-service" "env" $parcelEnv) }}
 ---
 {{- $pricingEnv := include "swiftdrop.databaseEnv" (dict "root" . "prefix" "PRICING") }}

@@ -4,11 +4,21 @@ on:
   pull_request:
     paths:
       - "infra/kubernetes/**"
+      - "services/**/Dockerfile"
+      - "services/ai-assistant-service/app/**"
+      - "services/gateway/src/**"
+      - "services/notification-service/src/**"
+      - ".dockerignore"
       - ".github/workflows/kubernetes-validate.yml"
   push:
     branches: [main]
     paths:
       - "infra/kubernetes/**"
+      - "services/**/Dockerfile"
+      - "services/ai-assistant-service/app/**"
+      - "services/gateway/src/**"
+      - "services/notification-service/src/**"
+      - ".dockerignore"
       - ".github/workflows/kubernetes-validate.yml"
 
 permissions:
@@ -28,6 +38,32 @@ jobs:
       - name: Lint and render chart
         shell: pwsh
         run: ./infra/kubernetes/tests/helm-render-tests.ps1
+
+      - name: Verify local deployment orchestration without a cluster
+        shell: pwsh
+        run: ./infra/kubernetes/tests/local-script-tests.ps1
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Verify migration and bootstrap manifests
+        run: |
+          python -m pip install pytest==8.4.2 PyYAML==6.0.3
+          python -m pytest infra/kubernetes/tests/test_chart.py -q
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - name: Verify migration runner success, retries and failure
+        run: ./mvnw -B -f infra/kubernetes/migrations/pom.xml test
+
+      - name: Verify event decoding and Kubernetes probe security
+        run: >-
+          ./mvnw -B -s infra/kubernetes/maven-settings.xml
+          -pl services/gateway,services/notification-service -am
+          -Dtest=RabbitMQConfigTest,ParcelStatusNotificationListenerTest,NotificationServiceTest,SecurityConfigTests
+          -Dsurefire.failIfNoSpecifiedTests=false
+          -Dlogging.level.root=WARN -Ddebug=false test
 
       - name: Render validation artifacts
         run: |

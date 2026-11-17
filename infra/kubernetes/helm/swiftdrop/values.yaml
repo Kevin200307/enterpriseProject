@@ -38,6 +38,16 @@ config:
 
 existingSecret: swiftdrop-secrets
 
+# First local install provisions dependencies before the pre-upgrade migration hooks.
+# deploy-local.ps1 sets this only when the release does not yet exist.
+bootstrapOnly: false
+
+probes:
+  startup:
+    failureThreshold: 30
+    periodSeconds: 5
+    timeoutSeconds: 3
+
 services:
   web:
     enabled: true
@@ -61,6 +71,9 @@ services:
     replicas: 2
     port: 8080
     probePath: /actuator/health
+    startupProbePath: /actuator/health/liveness
+    readinessProbePath: /actuator/health/readiness
+    livenessProbePath: /actuator/health/liveness
     resources:
       requests: {cpu: 150m, memory: 256Mi}
       limits: {cpu: "1", memory: 768Mi}
@@ -165,6 +178,7 @@ ingress:
   enabled: false
   className: nginx
   host: swiftdrop.example.com
+  additionalHosts: []
   tls:
     enabled: false
     secretName: swiftdrop-tls
@@ -193,6 +207,18 @@ localPostgresql:
   enabled: false
   image: postgres:17.6-alpine
   storage: 10Gi
+
+# Production uses an existing S3-compatible service and a pre-provisioned private bucket.
+objectStorage:
+  endpoint: https://objects.example.internal
+  publicEndpoint: https://objects.example.com
+  bucket: parcel-proofs
+  region: us-east-1
+  local:
+    enabled: false
+    serverImage: swiftdrop/minio:dev
+    clientImage: swiftdrop/minio-client:dev
+    storage: 5Gi
 
 autoscaling:
   enabled: false

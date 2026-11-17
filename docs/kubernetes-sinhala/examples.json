@@ -1,0 +1,236 @@
+[
+  {
+    "number": 1,
+    "section": "containers",
+    "language": "PowerShell",
+    "code": "docker version\ndocker info --format '{{.OSType}}/{{.Architecture}}'\nkubectl version --client\nhelm version\nkind version"
+  },
+  {
+    "number": 2,
+    "section": "objects",
+    "language": "PowerShell",
+    "code": "kubectl --context kind-swiftdrop -n swiftdrop get deploy,sts\nkubectl --context kind-swiftdrop -n swiftdrop get jobs,pvc\nkubectl --context kind-swiftdrop -n swiftdrop get svc,ingress"
+  },
+  {
+    "number": 3,
+    "section": "context",
+    "language": "PowerShell",
+    "code": "Set-Location F:\\EAD\\enterpriseProject\nkubectl config get-contexts\nkubectl config current-context\nkubectl config use-context kind-swiftdrop\nkubectl --context kind-swiftdrop get nodes\nkubectl --context kind-swiftdrop -n swiftdrop get pods"
+  },
+  {
+    "number": 4,
+    "section": "yaml",
+    "language": "YAML · teaching example",
+    "code": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: web-example\n  namespace: learning\nspec:\n  replicas: 1\n  selector:\n    matchLabels: {app: web-example}\n  template:\n    metadata:\n      labels: {app: web-example}\n    spec:\n      automountServiceAccountToken: false\n      containers:\n        - name: web\n          image: swiftdrop/web:NEW_TAG\n          ports: [{containerPort: 8080}]\n          resources:\n            requests: {cpu: 50m, memory: 64Mi}\n            limits: {cpu: 250m, memory: 128Mi}\n          readinessProbe:\n            httpGet: {path: /healthz, port: 8080}"
+  },
+  {
+    "number": 5,
+    "section": "service-dns",
+    "language": "PowerShell",
+    "code": "kubectl --context kind-swiftdrop -n swiftdrop get svc\nkubectl --context kind-swiftdrop -n swiftdrop get endpointslices\nkubectl --context kind-swiftdrop -n swiftdrop describe svc gateway"
+  },
+  {
+    "number": 6,
+    "section": "prerequisites",
+    "language": "PowerShell",
+    "code": "Set-Location F:\\EAD\\enterpriseProject\ndocker version\ndocker info --format '{{.OSType}}/{{.Architecture}}'\nkubectl version --client\nkind version\nhelm version\nGet-Command docker,kubectl,kind,helm"
+  },
+  {
+    "number": 7,
+    "section": "create-cluster",
+    "language": "PowerShell",
+    "code": ".\\infra\\kubernetes\\scripts\\create-local-cluster.ps1\nkubectl config current-context\nkubectl --context kind-swiftdrop get nodes -o wide\nkubectl --context kind-swiftdrop -n kube-system get pods"
+  },
+  {
+    "number": 8,
+    "section": "local-ingress",
+    "language": "PowerShell",
+    "code": ".\\infra\\kubernetes\\scripts\\install-local-addons.ps1\nkubectl --context kind-swiftdrop -n ingress-nginx get pods\nkubectl --context kind-swiftdrop get ingressclass"
+  },
+  {
+    "number": 9,
+    "section": "build",
+    "language": "PowerShell",
+    "code": "Set-Location F:\\EAD\\enterpriseProject\n$releaseTag = \"book-$(Get-Date -Format 'yyyyMMdd-HHmmss')\"\n.\\infra\\kubernetes\\scripts\\build-images.ps1 -Tag $releaseTag\nif ($LASTEXITCODE -ne 0) { throw 'Image build failed' }\ndocker image ls --filter 'reference=swiftdrop/*'"
+  },
+  {
+    "number": 10,
+    "section": "build",
+    "language": "PowerShell",
+    "code": "java -version\njavac -version\n.\\infra\\kubernetes\\scripts\\build-images.ps1 `\n  -UseHostJavaBuild -Tag $releaseTag"
+  },
+  {
+    "number": 11,
+    "section": "load",
+    "language": "PowerShell",
+    "code": ".\\infra\\kubernetes\\scripts\\load-images.ps1 -Tag $releaseTag\nif ($LASTEXITCODE -ne 0) { throw 'Image import failed' }"
+  },
+  {
+    "number": 12,
+    "section": "load",
+    "language": "PowerShell",
+    "code": "$dependencies = @('postgres:17.6-alpine', 'redis:7.4-alpine',\n  'rabbitmq:4.1-management-alpine', 'axllent/mailpit:v1.27')\nforeach ($image in $dependencies) {\n  docker pull $image\n  if ($LASTEXITCODE -ne 0) { throw \"Pull failed: $image\" }\n}\n.\\infra\\kubernetes\\scripts\\import-kind-images.ps1 `\n  -Images $dependencies"
+  },
+  {
+    "number": 13,
+    "section": "helm",
+    "language": "Repository map",
+    "code": "infra/kubernetes/\n  helm/swiftdrop/\n    Chart.yaml + values.schema.json\n    values.yaml + values-local.yaml\n    values-production.example.yaml\n    templates/\n  scripts/ + migrations/ + tests/\n  kind/cluster.yaml"
+  },
+  {
+    "number": 14,
+    "section": "helm",
+    "language": "PowerShell",
+    "code": "helm lint infra/kubernetes/helm/swiftdrop `\n  -f infra/kubernetes/helm/swiftdrop/values-local.yaml\nhelm template swiftdrop infra/kubernetes/helm/swiftdrop `\n  -n swiftdrop `\n  -f infra/kubernetes/helm/swiftdrop/values-local.yaml"
+  },
+  {
+    "number": 15,
+    "section": "secrets",
+    "language": "PowerShell",
+    "code": "# Metadata only; do not print Secret data.\nkubectl --context kind-swiftdrop -n swiftdrop get secret\nkubectl --context kind-swiftdrop -n swiftdrop get configmap"
+  },
+  {
+    "number": 16,
+    "section": "bootstrap",
+    "language": "PowerShell",
+    "code": ".\\infra\\kubernetes\\scripts\\deploy-local.ps1 -Tag $releaseTag\n.\\infra\\kubernetes\\scripts\\verify-cluster.ps1\n.\\infra\\kubernetes\\tests\\smoke-tests.ps1\n.\\infra\\kubernetes\\tests\\smoke-tests.ps1 -Workflow"
+  },
+  {
+    "number": 17,
+    "section": "flyway",
+    "language": "Container process · chart runs this automatically",
+    "code": "java -cp \"migration-runner:application.jar:lib/*\" DatabaseMigration"
+  },
+  {
+    "number": 18,
+    "section": "flyway",
+    "language": "PowerShell",
+    "code": "kubectl --context kind-swiftdrop -n swiftdrop get jobs\n# Replace JOB_NAME with a failed migration Job name.\nkubectl --context kind-swiftdrop -n swiftdrop logs job/JOB_NAME"
+  },
+  {
+    "number": 19,
+    "section": "assistant-migration",
+    "language": "Container process · assistant migration Job",
+    "code": "python -m app.migrate"
+  },
+  {
+    "number": 20,
+    "section": "storage",
+    "language": "PowerShell",
+    "code": "kubectl --context kind-swiftdrop -n swiftdrop get pvc\nkubectl --context kind-swiftdrop get pv,storageclass\nkubectl --context kind-swiftdrop -n swiftdrop describe pvc PVC_NAME"
+  },
+  {
+    "number": 21,
+    "section": "dependencies",
+    "language": "PowerShell",
+    "code": "# Local browser access to signed proof URLs, when needed.\nkubectl --context kind-swiftdrop -n swiftdrop `\n  port-forward service/minio 9000:9000"
+  },
+  {
+    "number": 22,
+    "section": "installation-checklist",
+    "language": "PowerShell",
+    "code": "Set-Location F:\\EAD\\enterpriseProject\n$releaseTag = \"local-$(Get-Date -Format 'yyyyMMdd-HHmmss')\"\n\n.\\infra\\kubernetes\\scripts\\create-local-cluster.ps1\n.\\infra\\kubernetes\\scripts\\install-local-addons.ps1\n.\\infra\\kubernetes\\scripts\\build-images.ps1 -Tag $releaseTag\n.\\infra\\kubernetes\\scripts\\load-images.ps1 -Tag $releaseTag\n.\\infra\\kubernetes\\scripts\\deploy-local.ps1 -Tag $releaseTag\n\n.\\infra\\kubernetes\\scripts\\verify-cluster.ps1\n.\\infra\\kubernetes\\tests\\smoke-tests.ps1\n.\\infra\\kubernetes\\tests\\smoke-tests.ps1 -Workflow"
+  },
+  {
+    "number": 23,
+    "section": "customer-api-login",
+    "language": "PowerShell",
+    "code": "$base = 'http://localhost:8088'\n$run = [guid]::NewGuid().ToString('N')\n$mail = \"book-$run@swiftdrop.local\"\n$pass = [guid]::NewGuid().ToString('N') + 'Aa1!'\nfunction Local-Api($method, $path, $body, $extra = @{}) {\n  $head = @{Host='swiftdrop.local'}\n  foreach ($k in $extra.Keys) { $head[$k] = $extra[$k] }\n  $request = @{Method=$method; Uri=\"$base$path\";\n    Headers=$head; TimeoutSec=30}\n  if ($null -ne $body) {\n    $request.ContentType = 'application/json'\n    $request.Body = $body | ConvertTo-Json -Depth 10\n  }\n  Invoke-RestMethod @request\n}\nLocal-Api POST '/api/v1/auth/register' @{\n  email=$mail; password=$pass; fullName='Book Lab'\n  phone='+94770000000'\n} | Out-Null\n$login = Local-Api POST '/api/v1/auth/login' @{\n  email=$mail; password=$pass\n}\n$auth = @{Authorization=\"Bearer $($login.accessToken)\"}\n$quote = Local-Api POST '/api/v1/pricing/estimate' @{\n  fromCity='Colombo'; toCity='Colombo'; size='SMALL'\n  weightKg=1.0; express=$false\n} $auth"
+  },
+  {
+    "number": 24,
+    "section": "customer-api-booking",
+    "language": "PowerShell",
+    "code": "$address = @{\n  contactName='Book Lab'; phone='+94770000000'\n  line1='1 Test Road'; city='Colombo'\n  postalCode='00100'; zone=$quote.zoneFrom\n}\n$booking = @{\n  pickup=$address; dropoff=$address; size='SMALL'\n  weightKg=1.0; express=$false\n}\n$auth['Idempotency-Key'] = \"book-$run\"\n$parcel = Local-Api POST '/api/v1/parcels' $booking $auth\n$again = Local-Api POST '/api/v1/parcels' $booking $auth\nif ($again.id -ne $parcel.id) { throw 'Duplicate booking' }\n# A projection may initially return 404; poll with a deadline.\n$trackingPath = \"/api/v1/tracking/$($parcel.trackingNumber)\"\n$cancelPath = \"/api/v1/parcels/$($parcel.id)/cancel\"\n$cancelled = Local-Api POST $cancelPath $null $auth\nif ($cancelled.status -ne 'CANCELLED') {\n  throw 'Cancellation was not confirmed'\n}"
+  },
+  {
+    "number": 25,
+    "section": "courier",
+    "language": "JSON · separate status-request examples",
+    "code": "{\"status\":\"FAILED\",\"failedReason\":\"Recipient unavailable\"}\n{\"status\":\"DELIVERED\",\"proofId\":\"PARCEL_OWNED_PROOF_UUID\"}"
+  },
+  {
+    "number": 26,
+    "section": "probes",
+    "language": "YAML · gateway paths / local startup window",
+    "code": "startupProbe:\n  httpGet: {path: /actuator/health/liveness, port: 8080}\n  periodSeconds: 5\n  timeoutSeconds: 3\n  failureThreshold: 120\nreadinessProbe:\n  httpGet: {path: /actuator/health/readiness, port: 8080}\nlivenessProbe:\n  httpGet: {path: /actuator/health/liveness, port: 8080}"
+  },
+  {
+    "number": 27,
+    "section": "resources",
+    "language": "PowerShell",
+    "code": "kubectl --context kind-swiftdrop -n swiftdrop get hpa\n# Requires a working metrics API; not installed by every local setup.\nkubectl --context kind-swiftdrop top nodes\nkubectl --context kind-swiftdrop -n swiftdrop top pods"
+  },
+  {
+    "number": 28,
+    "section": "security",
+    "language": "PowerShell",
+    "code": "kubectl --context kind-swiftdrop -n swiftdrop get sa\nkubectl --context kind-swiftdrop -n swiftdrop get role,rolebinding\nkubectl --context kind-swiftdrop auth can-i get pods -n swiftdrop\nkubectl --context kind-swiftdrop auth can-i get secrets -n swiftdrop"
+  },
+  {
+    "number": 29,
+    "section": "observability",
+    "language": "PowerShell",
+    "code": "kubectl --context kind-swiftdrop -n swiftdrop get pods -o wide\nkubectl --context kind-swiftdrop -n swiftdrop get events `\n  --sort-by=.metadata.creationTimestamp\nkubectl --context kind-swiftdrop -n swiftdrop logs `\n  deployment/gateway --tail=100"
+  },
+  {
+    "number": 30,
+    "section": "verification",
+    "language": "PowerShell",
+    "code": ".\\infra\\kubernetes\\scripts\\verify-cluster.ps1\n.\\infra\\kubernetes\\tests\\smoke-tests.ps1 -Workflow"
+  },
+  {
+    "number": 31,
+    "section": "ci-validation",
+    "language": "PowerShell",
+    "code": "helm lint infra/kubernetes/helm/swiftdrop\n.\\infra\\kubernetes\\tests\\helm-render-tests.ps1\n.\\infra\\kubernetes\\tests\\local-script-tests.ps1\n# Use a development Python environment with pytest and PyYAML.\npy -3.12 -m pytest infra/kubernetes/tests/test_chart.py -q"
+  },
+  {
+    "number": 32,
+    "section": "rollback",
+    "language": "PowerShell",
+    "code": "helm --kube-context kind-swiftdrop history swiftdrop -n swiftdrop\nhelm --kube-context kind-swiftdrop status swiftdrop -n swiftdrop\n# Replace REVISION after reviewing history and schema compatibility.\nhelm --kube-context kind-swiftdrop rollback swiftdrop REVISION `\n  -n swiftdrop --wait --timeout 15m\n.\\infra\\kubernetes\\scripts\\verify-cluster.ps1\n.\\infra\\kubernetes\\tests\\smoke-tests.ps1 -Workflow"
+  },
+  {
+    "number": 33,
+    "section": "troubleshooting",
+    "language": "PowerShell",
+    "code": "kubectl --context kind-swiftdrop -n swiftdrop get pods -o wide\nkubectl --context kind-swiftdrop -n swiftdrop describe pod POD_NAME\nkubectl --context kind-swiftdrop -n swiftdrop logs POD_NAME `\n  --previous --tail=100\nkubectl --context kind-swiftdrop -n swiftdrop get events `\n  --sort-by=.metadata.creationTimestamp"
+  },
+  {
+    "number": 34,
+    "section": "image-dns-errors",
+    "language": "PowerShell",
+    "code": "docker info --format '{{.OSType}}/{{.Architecture}}'\ndocker image inspect \"swiftdrop/gateway:$releaseTag\" `\n  --format '{{.Os}}/{{.Architecture}}'\n.\\infra\\kubernetes\\scripts\\load-images.ps1 -Tag $releaseTag\nkubectl --context kind-swiftdrop -n kube-system get pods"
+  },
+  {
+    "number": 35,
+    "section": "image-dns-errors",
+    "language": "PowerShell",
+    "code": "# Example only: choose resolver IPs reachable and allowed on your network.\n.\\infra\\kubernetes\\scripts\\configure-local-dns.ps1 `\n  -DnsServers @('8.8.8.8','8.8.4.4')"
+  },
+  {
+    "number": 36,
+    "section": "node-recovery",
+    "language": "PowerShell",
+    "code": "# Read-only preparation.\nkubectl --context kind-swiftdrop get nodes\nkubectl --context kind-swiftdrop -n swiftdrop get pdb,pods -o wide\n# Planned lab maintenance only, after capacity/storage review.\nkubectl --context kind-swiftdrop drain NODE_NAME --ignore-daemonsets\nkubectl --context kind-swiftdrop uncordon NODE_NAME"
+  },
+  {
+    "number": 37,
+    "section": "gateway-api",
+    "language": "YAML · illustrative migration fragment",
+    "code": "apiVersion: gateway.networking.k8s.io/v1\nkind: HTTPRoute\nmetadata:\n  name: swiftdrop-routes\n  namespace: swiftdrop\nspec:\n  parentRefs:\n    - name: swiftdrop-edge\n  hostnames: [\"swiftdrop.example.com\"]\n  rules:\n    - matches:\n        - path: {type: PathPrefix, value: /api}\n        - path: {type: PathPrefix, value: /ws}\n      backendRefs:\n        - {name: gateway, port: 8080}\n    - matches:\n        - path: {type: PathPrefix, value: /}\n      backendRefs:\n        - {name: web, port: 8080}"
+  },
+  {
+    "number": 38,
+    "section": "operator-runbook",
+    "language": "PowerShell",
+    "code": "kubectl config current-context\nhelm --kube-context kind-swiftdrop status swiftdrop -n swiftdrop\nkubectl --context kind-swiftdrop -n swiftdrop get deploy,sts,pods\nkubectl --context kind-swiftdrop -n swiftdrop get jobs,pvc,ingress\n.\\infra\\kubernetes\\scripts\\verify-cluster.ps1"
+  },
+  {
+    "number": 39,
+    "section": "command-reference",
+    "language": "PowerShell",
+    "code": "# Context and platform\nkubectl config get-contexts\nkubectl --context kind-swiftdrop get nodes\n\n# Workloads and routing\nkubectl --context kind-swiftdrop -n swiftdrop get deploy,sts,pods\nkubectl --context kind-swiftdrop -n swiftdrop get svc,ingress\nkubectl --context kind-swiftdrop -n swiftdrop get endpointslices\n\n# Events and diagnostic logs\nkubectl --context kind-swiftdrop -n swiftdrop describe pod POD_NAME\nkubectl --context kind-swiftdrop -n swiftdrop logs POD_NAME --tail=100\nkubectl --context kind-swiftdrop -n swiftdrop logs POD_NAME --previous\n\n# Release and storage\nhelm --kube-context kind-swiftdrop history swiftdrop -n swiftdrop\nhelm --kube-context kind-swiftdrop status swiftdrop -n swiftdrop\nkubectl --context kind-swiftdrop -n swiftdrop get jobs,pvc\n\n# Safe local verification\n.\\infra\\kubernetes\\scripts\\verify-cluster.ps1\n.\\infra\\kubernetes\\tests\\smoke-tests.ps1"
+  }
+]

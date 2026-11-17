@@ -1,0 +1,18 @@
+{
+  "pdf": "SwiftDrop-Kubernetes-A-Z-Sinhala.pdf",
+  "pages": 69,
+  "sinhala_characters": 20510,
+  "links": 148,
+  "internal_page_links": 64,
+  "external_links": 84,
+  "outline_items": 74,
+  "code_examples": 39,
+  "diagrams": 18,
+  "bytes": 2200305,
+  "layout_overflow": 0,
+  "missing_sinhala_glyphs": [],
+  "fonts_self_contained": true,
+  "font": "Noto Sans Sinhala (SIL OFL; embedded glyph resources)",
+  "reference_review": "2026-11-16",
+  "runtime_evidence": "Repository implementation record; no cluster changes performed for this book."
+}

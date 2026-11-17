@@ -97,6 +97,10 @@ jobs:
         run: |
           set -euo pipefail
           args=()
+          rollback_flag=--atomic
+          if [[ "$(helm upgrade --help)" == *"--rollback-on-failure"* ]]; then
+            rollback_flag=--rollback-on-failure
+          fi
           for service in web gateway identity-service parcel-service pricing-service dispatch-service merchant-service tracking-service notification-service ai-assistant-service; do
             args+=(--set "services.${service}.image.repository=swiftdrop-${service}")
             args+=(--set "services.${service}.image.tag=${GITHUB_SHA}")
@@ -106,7 +110,7 @@ jobs:
             --values infra/kubernetes/helm/swiftdrop/values-production.example.yaml \
             --set "global.imageRegistry=${REGISTRY}/${GITHUB_REPOSITORY_OWNER}" \
             "${args[@]}" \
-            --atomic --wait --timeout 15m
+            "$rollback_flag" --wait --wait-for-jobs --timeout 15m
       - name: Record deployed release
         run: |
           helm status swiftdrop --namespace swiftdrop

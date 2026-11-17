@@ -1,3 +1,4 @@
+{{- if not .Values.bootstrapOnly }}
 {{- if .Values.monitoring.enabled }}
 {{- range $name, $service := .Values.services }}
 {{- if and $service.enabled (ne $name "web") }}
@@ -96,4 +97,6 @@ spec:
       ports:
         - {protocol: TCP, port: 8080}
         - {protocol: TCP, port: 8086}
+{{- end }}
+
 {{- end }}

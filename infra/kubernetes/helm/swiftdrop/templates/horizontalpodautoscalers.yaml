@@ -1,3 +1,4 @@
+{{- if not .Values.bootstrapOnly }}
 {{- if .Values.autoscaling.enabled }}
 {{- range $name := .Values.autoscaling.services }}
 {{- $service := index $.Values.services $name }}
@@ -35,4 +36,6 @@ spec:
 ---
 {{- end }}
 {{- end }}
+{{- end }}
+
 {{- end }}

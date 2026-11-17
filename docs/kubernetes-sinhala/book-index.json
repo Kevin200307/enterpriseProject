@@ -1,0 +1,416 @@
+[
+  {
+    "page": 1,
+    "id": "cover",
+    "title": "Kubernetes A–Z",
+    "part": ""
+  },
+  {
+    "page": 2,
+    "id": "about",
+    "title": "භාවිතය, පරාසය සහ සාක්ෂි",
+    "part": "මෙම පොත ගැන"
+  },
+  {
+    "page": 3,
+    "id": "contents-1",
+    "title": "පටුන · 1 / 3",
+    "part": "පටුන"
+  },
+  {
+    "page": 4,
+    "id": "contents-2",
+    "title": "පටුන · 2 / 3",
+    "part": "පටුන"
+  },
+  {
+    "page": 5,
+    "id": "contents-3",
+    "title": "පටුන · 3 / 3",
+    "part": "පටුන"
+  },
+  {
+    "page": 6,
+    "id": "roadmap",
+    "title": "මුල සිට අවසානය දක්වා ගමන",
+    "part": "01 / පදනම සහ පද්ධති සැලැස්ම"
+  },
+  {
+    "page": 7,
+    "id": "containers",
+    "title": "Docker සහ Kubernetes",
+    "part": "01 / පදනම සහ පද්ධති සැලැස්ම"
+  },
+  {
+    "page": 8,
+    "id": "control-plane",
+    "title": "Cluster එක ඇතුළත සිදුවන්නේ කුමක්ද?",
+    "part": "01 / පදනම සහ පද්ධති සැලැස්ම"
+  },
+  {
+    "page": 9,
+    "id": "reconciliation",
+    "title": "Desired state සහ reconciliation",
+    "part": "01 / පදනම සහ පද්ධති සැලැස්ම"
+  },
+  {
+    "page": 10,
+    "id": "objects",
+    "title": "නිවැරදි Kubernetes object එක තෝරන්න",
+    "part": "01 / පදනම සහ පද්ධති සැලැස්ම"
+  },
+  {
+    "page": 11,
+    "id": "context",
+    "title": "Context, namespace සහ labels",
+    "part": "01 / පදනම සහ පද්ධති සැලැස්ම"
+  },
+  {
+    "page": 12,
+    "id": "yaml",
+    "title": "YAML manifest එකක් කියවීම",
+    "part": "01 / පදනම සහ පද්ධති සැලැස්ම"
+  },
+  {
+    "page": 13,
+    "id": "service-dns",
+    "title": "Service සහ DNS request එක ගෙනයන හැටි",
+    "part": "01 / පදනම සහ පද්ධති සැලැස්ම"
+  },
+  {
+    "page": 14,
+    "id": "architecture",
+    "title": "SwiftDrop සම්පූර්ණ සැලැස්ම",
+    "part": "01 / පදනම සහ පද්ධති සැලැස්ම"
+  },
+  {
+    "page": 15,
+    "id": "service-map",
+    "title": "Service එකකට අයිති වගකීම",
+    "part": "01 / පදනම සහ පද්ධති සැලැස්ම"
+  },
+  {
+    "page": 16,
+    "id": "request-flow",
+    "title": "Browser සිට database එක දක්වා",
+    "part": "01 / පදනම සහ පද්ධති සැලැස්ම"
+  },
+  {
+    "page": 17,
+    "id": "prerequisites",
+    "title": "ස්ථාපනයට පෙර සූදානම",
+    "part": "01 / පදනම සහ පද්ධති සැලැස්ම"
+  },
+  {
+    "page": 18,
+    "id": "create-cluster",
+    "title": "Local cluster එක නිර්මාණය",
+    "part": "01 / පදනම සහ පද්ධති සැලැස්ම"
+  },
+  {
+    "page": 19,
+    "id": "local-ingress",
+    "title": "Ingress සහ controller ජීවනචක්‍රය",
+    "part": "01 / පදනම සහ පද්ධති සැලැස්ම"
+  },
+  {
+    "page": 20,
+    "id": "images",
+    "title": "Application එක image එකකට සකස් කිරීම",
+    "part": "02 / Images සිට ක්‍රියාත්මක release එක දක්වා"
+  },
+  {
+    "page": 21,
+    "id": "build",
+    "title": "Images build කරන සම්පූර්ණ පියවර",
+    "part": "02 / Images සිට ක්‍රියාත්මක release එක දක්වා"
+  },
+  {
+    "page": 22,
+    "id": "load",
+    "title": "Docker images Kind තුළට ගෙනයන්න",
+    "part": "02 / Images සිට ක්‍රියාත්මක release එක දක්වා"
+  },
+  {
+    "page": 23,
+    "id": "helm",
+    "title": "Helm chart එක සංවිධානය වී ඇති හැටි",
+    "part": "02 / Images සිට ක්‍රියාත්මක release එක දක්වා"
+  },
+  {
+    "page": 24,
+    "id": "secrets",
+    "title": "ConfigMap සහ Secret නිවැරදි භාවිතය",
+    "part": "02 / Images සිට ක්‍රියාත්මක release එක දක්වා"
+  },
+  {
+    "page": 25,
+    "id": "bootstrap",
+    "title": "පළමු deployment එකේ අදියර දෙක",
+    "part": "02 / Images සිට ක්‍රියාත්මක release එක දක්වා"
+  },
+  {
+    "page": 26,
+    "id": "flyway",
+    "title": "Java database migrations",
+    "part": "02 / Images සිට ක්‍රියාත්මක release එක දක්වා"
+  },
+  {
+    "page": 27,
+    "id": "assistant-migration",
+    "title": "Assistant persistence සහ checkpoints",
+    "part": "02 / Images සිට ක්‍රියාත්මක release එක දක්වා"
+  },
+  {
+    "page": 28,
+    "id": "storage",
+    "title": "Persistent data රැකගැනීම",
+    "part": "02 / Images සිට ක්‍රියාත්මක release එක දක්වා"
+  },
+  {
+    "page": 29,
+    "id": "dependencies",
+    "title": "Infrastructure dependencies හතර",
+    "part": "02 / Images සිට ක්‍රියාත්මක release එක දක්වා"
+  },
+  {
+    "page": 30,
+    "id": "installation-checklist",
+    "title": "ස්ථාපන ක්‍රියාවලිය එක පිටුවක",
+    "part": "02 / Images සිට ක්‍රියාත්මක release එක දක්වා"
+  },
+  {
+    "page": 31,
+    "id": "auth",
+    "title": "Login සිට authorized request එක දක්වා",
+    "part": "03 / සම්පූර්ණ application workflows"
+  },
+  {
+    "page": 32,
+    "id": "customer",
+    "title": "Customer booking එකේ සම්පූර්ණ ගමන",
+    "part": "03 / සම්පූර්ණ application workflows"
+  },
+  {
+    "page": 33,
+    "id": "customer-api-login",
+    "title": "Customer API lab: account සහ quote",
+    "part": "03 / සම්පූර්ණ application workflows"
+  },
+  {
+    "page": 34,
+    "id": "customer-api-booking",
+    "title": "Customer API lab: booking සහ cancellation",
+    "part": "03 / සම්පූර්ණ application workflows"
+  },
+  {
+    "page": 35,
+    "id": "events",
+    "title": "Event-driven workflow එක ඇතුළත",
+    "part": "03 / සම්පූර්ණ application workflows"
+  },
+  {
+    "page": 36,
+    "id": "tracking-notifications",
+    "title": "Tracking සහ notification තහවුරු කිරීම",
+    "part": "03 / සම්පූර්ණ application workflows"
+  },
+  {
+    "page": 37,
+    "id": "merchant",
+    "title": "Merchant onboarding සිට webhook දක්වා",
+    "part": "03 / සම්පූර්ණ application workflows"
+  },
+  {
+    "page": 38,
+    "id": "dispatch",
+    "title": "Dispatcher assignment workflow",
+    "part": "03 / සම්පූර්ණ application workflows"
+  },
+  {
+    "page": 39,
+    "id": "courier",
+    "title": "Courier delivery lifecycle",
+    "part": "03 / සම්පූර්ණ application workflows"
+  },
+  {
+    "page": 40,
+    "id": "proof-receipt",
+    "title": "Delivery proof සහ PDF receipt",
+    "part": "03 / සම්පූර්ණ application workflows"
+  },
+  {
+    "page": 41,
+    "id": "admin",
+    "title": "Administrator workflow",
+    "part": "03 / සම්පූර්ණ application workflows"
+  },
+  {
+    "page": 42,
+    "id": "assistant",
+    "title": "AI assistant: request එකේ සැබෑ ගමන",
+    "part": "03 / සම්පූර්ණ application workflows"
+  },
+  {
+    "page": 43,
+    "id": "confirmation",
+    "title": "AI write operations සඳහා confirmation",
+    "part": "03 / සම්පූර්ණ application workflows"
+  },
+  {
+    "page": 44,
+    "id": "probes",
+    "title": "Probes තුනේ වගකීම්",
+    "part": "04 / පරීක්ෂණ, ආරක්ෂාව සහ මෙහෙයුම්"
+  },
+  {
+    "page": 45,
+    "id": "resources",
+    "title": "CPU, memory සහ scaling",
+    "part": "04 / පරීක්ෂණ, ආරක්ෂාව සහ මෙහෙයුම්"
+  },
+  {
+    "page": 46,
+    "id": "security",
+    "title": "Pod සහ Kubernetes API ආරක්ෂාව",
+    "part": "04 / පරීක්ෂණ, ආරක්ෂාව සහ මෙහෙයුම්"
+  },
+  {
+    "page": 47,
+    "id": "network-policy",
+    "title": "NetworkPolicy හි සැබෑ ආරක්ෂාව",
+    "part": "04 / පරීක්ෂණ, ආරක්ෂාව සහ මෙහෙයුම්"
+  },
+  {
+    "page": 48,
+    "id": "observability",
+    "title": "පද්ධතිය නිරීක්ෂණය කරන workflow එක",
+    "part": "04 / පරීක්ෂණ, ආරක්ෂාව සහ මෙහෙයුම්"
+  },
+  {
+    "page": 49,
+    "id": "verification",
+    "title": "පරීක්ෂණ ස්ථර සහ ලැබුණු සාක්ෂි",
+    "part": "04 / පරීක්ෂණ, ආරක්ෂාව සහ මෙහෙයුම්"
+  },
+  {
+    "page": 50,
+    "id": "ci-validation",
+    "title": "Pull request validation workflow",
+    "part": "04 / පරීක්ෂණ, ආරක්ෂාව සහ මෙහෙයුම්"
+  },
+  {
+    "page": 51,
+    "id": "release-cd",
+    "title": "Image publishing සිට deployment දක්වා",
+    "part": "04 / පරීක්ෂණ, ආරක්ෂාව සහ මෙහෙයුම්"
+  },
+  {
+    "page": 52,
+    "id": "production",
+    "title": "Production යාමට පෙර අවසාන gates",
+    "part": "04 / පරීක්ෂණ, ආරක්ෂාව සහ මෙහෙයුම්"
+  },
+  {
+    "page": 53,
+    "id": "rollback",
+    "title": "Rolling update සහ rollback workflow",
+    "part": "04 / පරීක්ෂණ, ආරක්ෂාව සහ මෙහෙයුම්"
+  },
+  {
+    "page": 54,
+    "id": "troubleshooting",
+    "title": "ගැටලුවේ මූල හේතුව සොයායන්න",
+    "part": "05 / ගැටලු විසඳීම සහ ප්‍රායෝගික මෙහෙයුම්"
+  },
+  {
+    "page": 55,
+    "id": "image-dns-errors",
+    "title": "Image import, TLS සහ DNS errors",
+    "part": "05 / ගැටලු විසඳීම සහ ප්‍රායෝගික මෙහෙයුම්"
+  },
+  {
+    "page": 56,
+    "id": "data-errors",
+    "title": "Database සහ message failures",
+    "part": "05 / ගැටලු විසඳීම සහ ප්‍රායෝගික මෙහෙයුම්"
+  },
+  {
+    "page": 57,
+    "id": "backup",
+    "title": "Backup සිට verified restore දක්වා",
+    "part": "05 / ගැටලු විසඳීම සහ ප්‍රායෝගික මෙහෙයුම්"
+  },
+  {
+    "page": 58,
+    "id": "node-recovery",
+    "title": "Pod සහ node failure recovery",
+    "part": "05 / ගැටලු විසඳීම සහ ප්‍රායෝගික මෙහෙයුම්"
+  },
+  {
+    "page": 59,
+    "id": "gateway-api",
+    "title": "Gateway API වෙත migration සැලැස්ම",
+    "part": "05 / ගැටලු විසඳීම සහ ප්‍රායෝගික මෙහෙයුම්"
+  },
+  {
+    "page": 60,
+    "id": "fault-load",
+    "title": "Fault සහ load testing සැලැස්ම",
+    "part": "05 / ගැටලු විසඳීම සහ ප්‍රායෝගික මෙහෙයුම්"
+  },
+  {
+    "page": 61,
+    "id": "operator-runbook",
+    "title": "දිනපතා operator workflow එක",
+    "part": "05 / ගැටලු විසඳීම සහ ප්‍රායෝගික මෙහෙයුම්"
+  },
+  {
+    "page": 62,
+    "id": "exercises",
+    "title": "ප්‍රායෝගික අභ්‍යාස සහ viva ප්‍රශ්න",
+    "part": "05 / ගැටලු විසඳීම සහ ප්‍රායෝගික මෙහෙයුම්"
+  },
+  {
+    "page": 63,
+    "id": "command-reference",
+    "title": "ඉක්මන් command reference",
+    "part": "05 / ගැටලු විසඳීම සහ ප්‍රායෝගික මෙහෙයුම්"
+  },
+  {
+    "page": 64,
+    "id": "glossary-a-m",
+    "title": "A–M: වැදගත් පද",
+    "part": "අතිරේක A / ශබ්දකෝෂය"
+  },
+  {
+    "page": 65,
+    "id": "glossary-n-z",
+    "title": "N–Z: වැදගත් පද",
+    "part": "අතිරේක A / ශබ්දකෝෂය"
+  },
+  {
+    "page": 66,
+    "id": "repository-guide",
+    "title": "Repository එකේ කොහෙද බලන්නේ?",
+    "part": "අතිරේක B / සම්බන්ධ files"
+  },
+  {
+    "page": 67,
+    "id": "references-1",
+    "title": "මූලාශ්‍ර · 1 / 3",
+    "part": "අතිරේක C / නිල මූලාශ්‍ර"
+  },
+  {
+    "page": 68,
+    "id": "references-2",
+    "title": "මූලාශ්‍ර · 2 / 3",
+    "part": "අතිරේක C / නිල මූලාශ්‍ර"
+  },
+  {
+    "page": 69,
+    "id": "references-3",
+    "title": "මූලාශ්‍ර · 3 / 3",
+    "part": "අතිරේක C / නිල මූලාශ්‍ර"
+  }
+]

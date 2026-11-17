@@ -69,6 +69,7 @@ spec:
       automountServiceAccountToken: false
       securityContext:
         runAsNonRoot: true
+        fsGroup: 70
         seccompProfile: {type: RuntimeDefault}
       containers:
         - name: postgres
@@ -86,26 +87,36 @@ spec:
                 secretKeyRef: {name: {{ $.Values.existingSecret }}, key: {{ $key }}}
 {{- end }}
             - {name: PGDATA, value: /var/lib/postgresql/data/pgdata}
+          startupProbe:
+            exec: {command: ["sh", "-ec", "pg_isready -U postgres -d postgres"]}
+            failureThreshold: 60
+            periodSeconds: 5
+            timeoutSeconds: 5
           readinessProbe:
             exec: {command: ["sh", "-ec", "pg_isready -U postgres -d postgres"]}
             initialDelaySeconds: 10
             periodSeconds: 5
+            timeoutSeconds: 5
           livenessProbe:
             exec: {command: ["sh", "-ec", "pg_isready -U postgres -d postgres"]}
             initialDelaySeconds: 30
             periodSeconds: 10
+            timeoutSeconds: 5
           resources:
             requests: {cpu: 100m, memory: 256Mi}
             limits: {cpu: "1", memory: 1Gi}
           securityContext:
             allowPrivilegeEscalation: false
             capabilities: {drop: ["ALL"]}
-            runAsUser: 999
+            runAsUser: 70
             readOnlyRootFilesystem: false
           volumeMounts:
             - {name: data, mountPath: /var/lib/postgresql/data}
+            - {name: socket, mountPath: /var/run/postgresql}
             - {name: init, mountPath: /docker-entrypoint-initdb.d/10-create-service-databases.sh, subPath: 10-create-service-databases.sh}
       volumes:
+        - name: socket
+          emptyDir: {sizeLimit: 16Mi}
         - name: init
           configMap:
             name: swiftdrop-postgres-init

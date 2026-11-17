@@ -1,6 +1,7 @@
 [CmdletBinding()]
 param(
-    [string]$ClusterName = "swiftdrop"
+    [string]$ClusterName = "swiftdrop",
+    [ValidateRange(60, 1800)][int]$WaitSeconds = 600
 )
 
 $ErrorActionPreference = "Stop"
@@ -21,12 +22,12 @@ $clusters = @(kind get clusters)
 if ($clusters -contains $ClusterName) {
     Write-Host "Kind cluster '$ClusterName' already exists."
 } else {
-    kind create cluster --name $ClusterName --config $clusterConfig --wait 180s
+    kind create cluster --name $ClusterName --config $clusterConfig --wait "${WaitSeconds}s" --retain
     if ($LASTEXITCODE -ne 0) { throw "Kind cluster creation failed." }
 }
 
 kubectl config use-context "kind-$ClusterName" | Out-Null
 if ($LASTEXITCODE -ne 0) { throw "Could not select the Kind cluster context." }
-kubectl wait --for=condition=Ready nodes --all --timeout=180s
+kubectl --context "kind-$ClusterName" wait --for=condition=Ready nodes --all --timeout="${WaitSeconds}s"
 if ($LASTEXITCODE -ne 0) { throw "Kind cluster nodes did not become ready." }
-kubectl get nodes -o wide
+kubectl --context "kind-$ClusterName" get nodes -o wide

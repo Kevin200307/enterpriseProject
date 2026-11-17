@@ -38,6 +38,7 @@ spec:
     spec:
       automountServiceAccountToken: false
       securityContext:
+        fsGroup: 999
         seccompProfile: {type: RuntimeDefault}
       containers:
         - name: redis
@@ -51,14 +52,21 @@ spec:
                 secretKeyRef: {name: {{ .Values.existingSecret }}, key: REDIS_PASSWORD}
           ports:
             - {name: redis, containerPort: 6379}
+          startupProbe:
+            exec: {command: ["sh", "-ec", "redis-cli -a \"$REDIS_PASSWORD\" --no-auth-warning ping"]}
+            failureThreshold: 30
+            periodSeconds: 5
+            timeoutSeconds: 5
           readinessProbe:
             exec: {command: ["sh", "-ec", "redis-cli -a \"$REDIS_PASSWORD\" --no-auth-warning ping"]}
             initialDelaySeconds: 5
             periodSeconds: 5
+            timeoutSeconds: 5
           livenessProbe:
             exec: {command: ["sh", "-ec", "redis-cli -a \"$REDIS_PASSWORD\" --no-auth-warning ping"]}
             initialDelaySeconds: 20
             periodSeconds: 10
+            timeoutSeconds: 5
           resources:
             requests: {cpu: 50m, memory: 64Mi}
             limits: {cpu: 500m, memory: 256Mi}

@@ -2,6 +2,37 @@
 
 ## Objective
 
+Implementation continuation (16 November 2026): the local Kind cluster runs Kubernetes 1.35.0
+with all ten applications, PostgreSQL, Redis, RabbitMQ, Mailpit, private MinIO, and HTTP ingress.
+The two-stage Helm installation provisions dependencies before seven bounded migration Jobs.
+Flyway, Alembic, and LangGraph schema setup completed successfully and were rerun successfully
+against the existing databases. Local credentials and PVCs survived bootstrap recovery.
+
+Recorded local release: Helm revision 7 in `kind-swiftdrop` / namespace `swiftdrop`, available
+at `http://localhost:8088`. Application images use `k8s-3aedc20-local`, with
+`gateway:k8s-3aedc20-probes1` and `notification-service:k8s-3aedc20-notifyfix1` for the verified
+runtime fixes. Build future full releases under a new tag before using the build/load/deploy scripts.
+
+Ingress workflow tests passed for registration/login, pricing, booking idempotence, public
+tracking, email delivery, cancellation, authenticated assistant SSE, and persisted history.
+An assistant rolling restart retained conversation history while the core parcel API stayed
+available. Verification also found and fixed the notification consumer's legacy Jackson timestamp
+conversion, Docker's platform archive import incompatibility, and probe timeouts under shared CPU
+load. Gateway probes now use dedicated readiness/liveness groups rather than downstream aggregates.
+
+Validation: Helm lint/render and fourteen chart regression cases pass. Kubernetes 1.35 schemas
+validate 64 local and 67 production resources without errors or skipped schemas. Four Java migration
+process tests, local bootstrap/credential/context/image-loader script checks, 17 notification tests,
+18 gateway security tests, Ruff, mypy, and twelve focused assistant migration/checkpoint/SSE tests
+pass. The earlier full assistant suite had 89 passes, one skipped live Gemini test, and one existing
+courier-tool registry expectation failure in `tests/tools/test_tools.py`.
+
+Still pending: a fresh-cluster rerun of the final sources, production secret synchronization and
+managed-service connectivity, strict per-service NetworkPolicies on an enforcing CNI, observability,
+TLS, image vulnerability review/digest promotion, additional role workflows, and comprehensive
+fault/load/restore tests. Kind's default CNI does not enforce NetworkPolicy; local readiness is not
+proof of production network isolation. Gemini provider calls remain unverified without an API key.
+
 Add a secure, repeatable Kubernetes deployment for the complete SwiftDrop platform while
 keeping Docker Compose as the default local-development environment. Use one Helm chart to
 deploy the web application, gateway, Java domain services, Python AI assistant, Redis, and

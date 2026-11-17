@@ -37,6 +37,7 @@ spec:
     spec:
       automountServiceAccountToken: false
       securityContext:
+        fsGroup: 999
         seccompProfile: {type: RuntimeDefault}
       containers:
         - name: rabbitmq
@@ -52,15 +53,18 @@ spec:
           ports:
             - {name: amqp, containerPort: 5672}
             - {name: management, containerPort: 15672}
+          startupProbe:
+            tcpSocket: {port: amqp}
+            failureThreshold: 60
+            periodSeconds: 5
+            timeoutSeconds: 5
           readinessProbe:
-            exec: {command: ["rabbitmq-diagnostics", "-q", "ping"]}
+            tcpSocket: {port: amqp}
             initialDelaySeconds: 15
             periodSeconds: 10
-          livenessProbe:
-            exec: {command: ["rabbitmq-diagnostics", "-q", "status"]}
-            initialDelaySeconds: 45
-            periodSeconds: 20
-            timeoutSeconds: 10
+            timeoutSeconds: 5
+          # RabbitMQ recommends TCP readiness without a liveness probe. Repeated CLI health
+          # processes can time out under CPU contention and restart a healthy broker.
           resources:
             requests: {cpu: 100m, memory: 256Mi}
             limits: {cpu: "1", memory: 768Mi}

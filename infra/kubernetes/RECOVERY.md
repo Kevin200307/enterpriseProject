@@ -12,6 +12,16 @@ helm rollback swiftdrop <revision> -n swiftdrop --wait --timeout 15m
 An atomic deployment rolls itself back when migrations or readiness fail. Preserve failed Job
 logs before retrying. Never repair a failed schema by manually editing production tables.
 
+Helm rollback restores workload specifications; it does not undo database schema changes. Keep
+migrations compatible with both the new application and the previous release. Successful hooks
+are deleted; failed migration Jobs remain for up to one day. Correct the migration or deployment
+configuration and rerun the release rather than enabling schema changes in every replica.
+
+The first local deployment has a dependency-only bootstrap revision followed by the application
+revision. If initial migrations fail, the dependency revision remains available for diagnosis and
+`deploy-local.ps1` can retry without recreating credentials. Do not roll an existing application
+back to its bootstrap revision unless deliberately removing application workloads.
+
 ## Disable the assistant
 
 Set `config.assistantEnabled=false` and deploy the chart. Core delivery APIs remain available.

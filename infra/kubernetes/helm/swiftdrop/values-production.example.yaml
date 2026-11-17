@@ -32,6 +32,14 @@ mailpit:
   smtpHost: smtp.example.internal
   smtpPort: 587
 
+objectStorage:
+  endpoint: https://objects.example.internal
+  publicEndpoint: https://objects.example.com
+  bucket: parcel-proofs
+  region: us-east-1
+  local:
+    enabled: false
+
 ingress:
   enabled: true
   className: nginx
