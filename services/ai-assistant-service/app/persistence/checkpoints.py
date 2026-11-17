@@ -14,9 +14,10 @@ def checkpoint_config(conversation_id: UUID) -> RunnableConfig:
 
 @asynccontextmanager
 async def postgres_checkpointer(
-    database_url: str,
+    database_url: str, *, setup: bool = True,
 ) -> AsyncIterator[BaseCheckpointSaver[Any]]:
-    """Open and initialize the production LangGraph checkpointer."""
+    """Open the checkpointer; Kubernetes delegates schema setup to its migration Job."""
     async with AsyncPostgresSaver.from_conn_string(database_url) as saver:
-        await saver.setup()
+        if setup:
+            await saver.setup()
         yield saver

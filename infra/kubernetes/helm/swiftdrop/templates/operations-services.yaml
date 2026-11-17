@@ -1,0 +1,13 @@
+{{- $dispatchEnv := include "swiftdrop.databaseEnv" (dict "root" . "prefix" "DISPATCH") }}
+{{- $dispatchEnv = printf "%s\n%s" $dispatchEnv (include "swiftdrop.rabbitEnv" .) }}
+{{- $dispatchEnv = printf "%s\n%s" $dispatchEnv "- name: DISPATCH_CLIENT_SECRET\n  valueFrom:\n    secretKeyRef: {name: {{ .Values.existingSecret }}, key: DISPATCH_CLIENT_SECRET}" }}
+{{ include "swiftdrop.applicationWorkload" (dict "root" . "name" "dispatch-service" "env" $dispatchEnv) }}
+---
+{{- $merchantEnv := include "swiftdrop.databaseEnv" (dict "root" . "prefix" "MERCHANT") }}
+{{- $merchantEnv = printf "%s\n%s" $merchantEnv (include "swiftdrop.rabbitEnv" .) }}
+{{ include "swiftdrop.applicationWorkload" (dict "root" . "name" "merchant-service" "env" $merchantEnv) }}
+---
+{{- $notificationEnv := include "swiftdrop.databaseEnv" (dict "root" . "prefix" "NOTIFICATION") }}
+{{- $notificationEnv = printf "%s\n%s" $notificationEnv (include "swiftdrop.rabbitEnv" .) }}
+{{- $notificationEnv = printf "%s\n%s" $notificationEnv "- name: PORT\n  value: \"8086\"\n- name: MAIL_USERNAME\n  valueFrom:\n    secretKeyRef: {name: {{ .Values.existingSecret }}, key: MAIL_USERNAME, optional: true}\n- name: MAIL_PASSWORD\n  valueFrom:\n    secretKeyRef: {name: {{ .Values.existingSecret }}, key: MAIL_PASSWORD, optional: true}" }}
+{{ include "swiftdrop.applicationWorkload" (dict "root" . "name" "notification-service" "env" $notificationEnv) }}

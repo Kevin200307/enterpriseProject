@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["global", "existingSecret", "services"],
+  "properties": {
+    "probes": {
+      "type": "object",
+      "required": ["startup"],
+      "properties": {
+        "startup": {
+          "type": "object",
+          "required": ["failureThreshold", "periodSeconds", "timeoutSeconds"],
+          "additionalProperties": false,
+          "properties": {
+            "failureThreshold": {"type": "integer", "minimum": 1, "maximum": 240},
+            "periodSeconds": {"type": "integer", "minimum": 1, "maximum": 30},
+            "timeoutSeconds": {"type": "integer", "minimum": 1, "maximum": 30}
+          }
+        }
+      }
+    },
+    "bootstrapOnly": {"type": "boolean"},
+    "objectStorage": {
+      "type": "object",
+      "required": ["endpoint", "publicEndpoint", "bucket", "region", "local"],
+      "properties": {
+        "endpoint": {"type": "string", "pattern": "^https?://"},
+        "publicEndpoint": {"type": "string", "pattern": "^https?://"},
+        "bucket": {"type": "string", "minLength": 3},
+        "region": {"type": "string", "minLength": 1},
+        "local": {
+          "type": "object",
+          "required": ["enabled", "serverImage", "clientImage", "storage"],
+          "properties": {
+            "enabled": {"type": "boolean"},
+            "serverImage": {"type": "string", "minLength": 1},
+            "clientImage": {"type": "string", "minLength": 1},
+            "storage": {"type": "string", "minLength": 1}
+          }
+        }
+      }
+    },
+    "global": {
+      "type": "object",
+      "required": ["imagePullPolicy", "environment"],
+      "properties": {
+        "imagePullPolicy": {"enum": ["Always", "IfNotPresent", "Never"]},
+        "environment": {"type": "string", "minLength": 1}
+      }
+    },
+    "existingSecret": {"type": "string", "minLength": 1},
+    "services": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["enabled", "image", "replicas", "port", "probePath", "resources"],
+        "properties": {
+          "enabled": {"type": "boolean"},
+          "replicas": {"type": "integer", "minimum": 1, "maximum": 50},
+          "port": {"type": "integer", "minimum": 1, "maximum": 65535},
+          "probePath": {"type": "string", "pattern": "^/"},
+          "startupProbePath": {"type": "string", "pattern": "^/"},
+          "readinessProbePath": {"type": "string", "pattern": "^/"},
+          "livenessProbePath": {"type": "string", "pattern": "^/"},
+          "image": {
+            "type": "object",
+            "required": ["repository", "tag"],
+            "properties": {
+              "repository": {"type": "string", "minLength": 1},
+              "tag": {"type": "string", "minLength": 1, "not": {"const": "latest"}}
+            }
+          },
+          "resources": {
+            "type": "object",
+            "required": ["requests", "limits"]
+          }
+        }
+      }
+    }
+  }
+}

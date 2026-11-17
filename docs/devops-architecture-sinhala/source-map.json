@@ -1,0 +1,344 @@
+{
+  "date": "2026-11-16",
+  "commit": "3aedc20fbb748a57a9f4121310bb961ba53a50b9",
+  "working_tree_dirty": true,
+  "scope": "Public source files; working-tree hashes identify the reviewed contents. No secrets or live cluster state captured.",
+  "files": [
+    {
+      "id": "R01",
+      "path": "pom.xml",
+      "line": 16,
+      "focus": "<modules>",
+      "purpose": "Java reactor සහ shared package build order",
+      "sha256": "95e19537b3dbe73bf0ddaf351ad324b2522f95099226a3764ddcbedf990d6886"
+    },
+    {
+      "id": "R02",
+      "path": "apps/web/package.json",
+      "line": 6,
+      "focus": "\"scripts\"",
+      "purpose": "Frontend build / test commands",
+      "sha256": "3a1e22d43c330fe9eb5491b7602fec6d253e447bcba7fac5725c6d5164a71b60"
+    },
+    {
+      "id": "R03",
+      "path": "apps/web/src/config/env.ts",
+      "line": 1,
+      "focus": "const runtime",
+      "purpose": "Browser runtime configuration precedence",
+      "sha256": "0315c062f8fe625edfa56fa4fe97e99d83508972cf711c1160c5cb16133511ae"
+    },
+    {
+      "id": "R04",
+      "path": "apps/web/src/api/client.ts",
+      "line": 32,
+      "focus": "async function send",
+      "purpose": "Fetch, auth retry සහ errors",
+      "sha256": "be81135dab0a20c3eefa51811f2c87b5a944bf3f0c78b005d46c04b559e48e35"
+    },
+    {
+      "id": "R05",
+      "path": "apps/web/src/auth/tokenStore.ts",
+      "line": 12,
+      "focus": "export const tokenStore",
+      "purpose": "In-memory access token / single-flight refresh",
+      "sha256": "6b12161870a0151e0e42c8e03b82667a03a6f85740f18cdac29d5d3327a81a2f"
+    },
+    {
+      "id": "R06",
+      "path": "services/gateway/src/main/resources/application.yaml",
+      "line": 52,
+      "focus": "routes:",
+      "purpose": "Gateway routes / timeout settings",
+      "sha256": "89b94045a0924398c984b5db93c8c6d2f80a122e1a38e4ef33b945a56aca72d4"
+    },
+    {
+      "id": "R07",
+      "path": "services/gateway/src/main/java/lk/ac/mrt/swiftdrop/gateway/filter/IdentityHeaderFilter.java",
+      "line": 41,
+      "focus": "withTrustedHeaders",
+      "purpose": "Untrusted identity headers වෙනස් කිරීම",
+      "sha256": "4040504eacb37dd867fe53d991a204924fedeb03f4cadb224657fd7e1f7a39b1"
+    },
+    {
+      "id": "R08",
+      "path": "services/gateway/src/main/java/lk/ac/mrt/swiftdrop/gateway/config/SecurityConfig.java",
+      "line": 19,
+      "focus": "SecurityWebFilterChain",
+      "purpose": "Gateway authorization boundary",
+      "sha256": "1539736ffda40c59ee38c0e3a8842a8acf30bcff404dabee8c72846c3e0e75e6"
+    },
+    {
+      "id": "R09",
+      "path": "services/identity-service/src/main/java/lk/ac/mrt/swiftdrop/identity_service/api/AuthController.java",
+      "line": 122,
+      "focus": "public ResponseEntity<AuthResponse> login",
+      "purpose": "Login response සහ refresh cookie",
+      "sha256": "bf4371c344bd1f75ec7f139db2fae2cfff1fb9acd873a51b5a132dc41e07a1d4"
+    },
+    {
+      "id": "R10",
+      "path": "services/identity-service/src/main/java/lk/ac/mrt/swiftdrop/identity_service/service/impl/RefreshTokenServiceImpl.java",
+      "line": 60,
+      "focus": "public TokenRotationResult rotate",
+      "purpose": "Refresh rotation / replay handling",
+      "sha256": "f5803ad34bc0718f3d8f8281e29be3131123f9524ab30a54f8dffe440d97dc38"
+    },
+    {
+      "id": "R11",
+      "path": "services/parcel-service/src/main/java/lk/ac/mrt/swiftdrop/parcel_service/api/ParcelController.java",
+      "line": 25,
+      "focus": "public ResponseEntity<ParcelView> book",
+      "purpose": "HTTP mapping → domain service",
+      "sha256": "33474a024eb925b50b4275e3da7b9389f850beb2b195420d54e37511f4e7474c"
+    },
+    {
+      "id": "R12",
+      "path": "services/parcel-service/src/main/java/lk/ac/mrt/swiftdrop/parcel_service/service/ParcelService.java",
+      "line": 69,
+      "focus": "public ParcelView book",
+      "purpose": "Booking / ownership / outbox transaction",
+      "sha256": "86b4063ef2f8c8c5390198277d167d5b49ec584d37bf9e9edb97a1c1814556c9"
+    },
+    {
+      "id": "R13",
+      "path": "services/parcel-service/src/main/resources/db/migration/V1__parcel_foundation.sql",
+      "line": 30,
+      "focus": "uq_parcel_customer_booking",
+      "purpose": "Database uniqueness constraints",
+      "sha256": "7f972204f3b72695a127e9e27713c5b0905eec33e43c1b4d4c9dc6db1742532d"
+    },
+    {
+      "id": "R14",
+      "path": "services/parcel-service/src/main/java/lk/ac/mrt/swiftdrop/parcel_service/service/ParcelStateMachine.java",
+      "line": 9,
+      "focus": "TRANSITIONS",
+      "purpose": "Allowed parcel transitions",
+      "sha256": "d8410b7b02a2b73566e01455b3e2138d7272eb5f2e318a6fef69f3dc36f5de83"
+    },
+    {
+      "id": "R15",
+      "path": "services/parcel-service/src/main/java/lk/ac/mrt/swiftdrop/parcel_service/messaging/OutboxPublisher.java",
+      "line": 29,
+      "focus": "public void publish",
+      "purpose": "Publish confirms / retry retention",
+      "sha256": "6d0187b2b776938e3785c7feda2807073e8e6decda0e23fe6d6fec1a92c9f250"
+    },
+    {
+      "id": "R16",
+      "path": "services/parcel-service/src/main/java/lk/ac/mrt/swiftdrop/parcel_service/repository/OutboxRepository.java",
+      "line": 10,
+      "focus": "PESSIMISTIC_WRITE",
+      "purpose": "Publisher locking boundary",
+      "sha256": "8b2806b6c7487219d8346e4ad5b5d99a02660cba9b2387a916566c1841493206"
+    },
+    {
+      "id": "R17",
+      "path": "packages/common/src/main/java/lk/ac/mrt/swiftdrop/contracts/events/EventEnvelope.java",
+      "line": 11,
+      "focus": "public record EventEnvelope",
+      "purpose": "Event ID / version / timestamp contract",
+      "sha256": "8b46dcac313ad3b9fc8b51b9adcafa386048b4d6dbf06c5ca9258a50a4604763"
+    },
+    {
+      "id": "R18",
+      "path": "services/pricing-service/src/main/java/lk/ac/mrt/swiftdrop/pricing_service/service/PricingEngine.java",
+      "line": 10,
+      "focus": "class PricingEngine",
+      "purpose": "Pricing strategy composition",
+      "sha256": "1a827ad6d8bbaa92fea212b53f44fe0b86052240e5bf9880dc4c82829a842f94"
+    },
+    {
+      "id": "R19",
+      "path": "services/tracking-service/src/main/java/lk/ac/mrt/swiftdrop/tracking_service/listener/TrackingEventListener.java",
+      "line": 71,
+      "focus": "private void processEvent",
+      "purpose": "Projection update සහ dedup markers",
+      "sha256": "f877d73a464883495b4e3478daa5a10074a48f38b71311e4bfa2474ee2d1bd26"
+    },
+    {
+      "id": "R20",
+      "path": "services/tracking-service/src/main/java/lk/ac/mrt/swiftdrop/tracking_service/service/impl/DefaultTrackingProjectionService.java",
+      "line": 146,
+      "focus": "getProjection(String",
+      "purpose": "Cache lookup / snapshot backfill",
+      "sha256": "d6f3a557e9460d84a44f1bb164c4f4cb0b0553b82400bd79a35b7fa111d207f6"
+    },
+    {
+      "id": "R21",
+      "path": "apps/web/src/realtime/ladder.ts",
+      "line": 25,
+      "focus": "export function runLadder",
+      "purpose": "WebSocket → SSE → polling fallback",
+      "sha256": "c57bda04a650c2d9f1e3745997003e7e9edcb9d45dff12c92823260ddc448d48"
+    },
+    {
+      "id": "R22",
+      "path": "services/notification-service/src/main/java/lk/ac/mrt/swiftdrop/notification_service/service/NotificationService.java",
+      "line": 45,
+      "focus": "void handleParcelStatusChanged",
+      "purpose": "Preferences / channel send / delivery log",
+      "sha256": "068a6ecfad01f3bef5638f9c7e789f7b03ad907b4be46ef6e00b17334c6521d4"
+    },
+    {
+      "id": "R23",
+      "path": "services/notification-service/src/main/java/lk/ac/mrt/swiftdrop/notification_service/config/RabbitMQConfig.java",
+      "line": 18,
+      "focus": "class RabbitMQConfig",
+      "purpose": "Event converter සහ listener configuration",
+      "sha256": "74bbf43b267ab5d9b97e55d64388b61282b6fc02b265084355cfffd9b825865a"
+    },
+    {
+      "id": "R24",
+      "path": "services/merchant-service/src/main/java/lk/ac/mrt/swiftdrop/merchant_service/service/MerchantOrderService.java",
+      "line": 41,
+      "focus": "public View create",
+      "purpose": "Order reference → parcel API integration",
+      "sha256": "42c51402ccbde7a8cff9467cd0ee6bcbf55d02e94ca41707cb03422b1ce00558"
+    },
+    {
+      "id": "R25",
+      "path": "services/merchant-service/src/main/java/lk/ac/mrt/swiftdrop/merchant_service/service/WebhookService.java",
+      "line": 41,
+      "focus": "void deliver",
+      "purpose": "HMAC headers / retries / receiver URL checks",
+      "sha256": "f27a0396d38d793a13153c3fec6e58c61097f4c5a8c5582ab154ddac5a0ea46b"
+    },
+    {
+      "id": "R26",
+      "path": "services/dispatch-service/src/main/java/lk/ac/mrt/swiftdrop/dispatch_service/service/AssignmentService.java",
+      "line": 22,
+      "focus": "private CommandView execute",
+      "purpose": "RPC පිටත තබන command orchestration",
+      "sha256": "eca7f0b03f2321aa79ec5f1a146ae96b9f31656c745486c45496055c45eb0729"
+    },
+    {
+      "id": "R27",
+      "path": "services/dispatch-service/src/main/java/lk/ac/mrt/swiftdrop/dispatch_service/service/AssignmentTransactions.java",
+      "line": 27,
+      "focus": "public AssignmentCommand prepare",
+      "purpose": "Prepare / reserve / confirm / reject transactions",
+      "sha256": "c6aa1d974b80471fbea9905a2c622590032990f7322f61f3c9849b0d90754d31"
+    },
+    {
+      "id": "R28",
+      "path": "services/parcel-service/src/main/java/lk/ac/mrt/swiftdrop/parcel_service/service/ProofService.java",
+      "line": 22,
+      "focus": "class ProofService",
+      "purpose": "Private object upload / metadata / ownership",
+      "sha256": "c9e10d2fc6b6c7c627b519022df57e3a053c4da0575c8377b733354cbea6d9e8"
+    },
+    {
+      "id": "R29",
+      "path": "services/ai-assistant-service/app/main.py",
+      "line": 29,
+      "focus": "def create_app",
+      "purpose": "Runtime persistence සහ clients wiring",
+      "sha256": "07afb8cc6f13df8fe501c42be24edfff9a205e7fee0625a1881d98a188a3f5f5"
+    },
+    {
+      "id": "R30",
+      "path": "services/ai-assistant-service/app/graph/runner.py",
+      "line": 45,
+      "focus": "async def run",
+      "purpose": "Actual chat handlers / model fallback",
+      "sha256": "f3c41da7c5e81dcc7847490001f83e703fee9a1aad4081d801d949081e884e5f"
+    },
+    {
+      "id": "R31",
+      "path": "services/ai-assistant-service/app/workflows/operations.py",
+      "line": 42,
+      "focus": "class InMemoryOperationStore",
+      "purpose": "Process-local pending operations",
+      "sha256": "aa9563663c2b2d92349cd03941319924e1881729a3cb0ad87c0bdd74a4eb63e2"
+    },
+    {
+      "id": "R32",
+      "path": "services/ai-assistant-service/app/api/health.py",
+      "line": 38,
+      "focus": "@router.get(\"/actuator/metrics\")",
+      "purpose": "Actual health සහ JSON metric routes",
+      "sha256": "25c0e7ada67308d5ae5fa277af40a1f6e4efe2327c4b73b3778446de3e4eea18"
+    },
+    {
+      "id": "R33",
+      "path": "apps/web/Dockerfile",
+      "line": 2,
+      "focus": "FROM node",
+      "purpose": "Frontend build → nginx runtime",
+      "sha256": "def0aabd1ded7380f9b405345fc430468e882001eb74f416b62a69b890210db6"
+    },
+    {
+      "id": "R34",
+      "path": "services/parcel-service/Dockerfile",
+      "line": 6,
+      "focus": "FROM",
+      "purpose": "Java build / runtime artifact",
+      "sha256": "09c71942c267a160a8430e9123b9c11a89f2028d910577d3098853a28b509360"
+    },
+    {
+      "id": "R35",
+      "path": "infra/kubernetes/helm/swiftdrop/values.yaml",
+      "line": 51,
+      "focus": "services:",
+      "purpose": "Deployment defaults සහ workload contract",
+      "sha256": "33143807903d975eb8d9da11134df3a6ecd9f7b9e6ff9b30ebf23a4d389cfe05"
+    },
+    {
+      "id": "R36",
+      "path": "infra/kubernetes/helm/swiftdrop/templates/migrations.yaml",
+      "line": 20,
+      "focus": "kind: Job",
+      "purpose": "Bounded schema migration hooks",
+      "sha256": "d4fb6382eebab1ef7e5647770937931ac5f9ee327d6b13df6db70579a7ccbd91"
+    },
+    {
+      "id": "R37",
+      "path": "infra/kubernetes/scripts/deploy-local.ps1",
+      "line": 2,
+      "focus": "param(",
+      "purpose": "Two-stage local deployment orchestration",
+      "sha256": "f828e9cee69c764f2b3366d024d1a11ccad857564b8308690cffae35af62547e"
+    },
+    {
+      "id": "R38",
+      "path": "infra/kubernetes/helm/swiftdrop/templates/networkpolicies.yaml",
+      "line": 38,
+      "focus": "swiftdrop-internal-traffic",
+      "purpose": "Current broad internal policy",
+      "sha256": "69023f00a3415a9986fe16079da01504c8cb0e47923bd2d069e8080c6e6c8df3"
+    },
+    {
+      "id": "R39",
+      "path": "infra/kubernetes/helm/swiftdrop/templates/observability.yaml",
+      "line": 6,
+      "focus": "kind: ServiceMonitor",
+      "purpose": "Scrape paths / rules / missing runtime integration checks",
+      "sha256": "cacf5bcf37527c337681be87f5cdb6004d975d951506ba656c589456fb15e088"
+    },
+    {
+      "id": "R40",
+      "path": ".github/workflows/kubernetes-validate.yml",
+      "line": 27,
+      "focus": "jobs:",
+      "purpose": "Pre-release validation gates",
+      "sha256": "9e3e7c479ecf3b2b84758129ad07c10d072bf6a40e88e23de7c8633285bacd39"
+    },
+    {
+      "id": "R41",
+      "path": ".github/workflows/kubernetes-release.yml",
+      "line": 21,
+      "focus": "jobs:",
+      "purpose": "Build / publish / sign / deploy",
+      "sha256": "d6e253e9cd9266aa0ca670530eea04215c47a15352acbe3efe93df056e64e789"
+    },
+    {
+      "id": "R42",
+      "path": "kubernetesclusterimplementationplan.md",
+      "line": 11,
+      "focus": "Recorded local release",
+      "purpose": "Dated verified results සහ pending work",
+      "sha256": "8b8b388b200e645c46d1d2747e372fad8913aeec245cd06042a589cc1108e57e"
+    }
+  ]
+}

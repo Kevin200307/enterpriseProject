@@ -1,0 +1,7 @@
+.git/
+.github/
+.idea/
+.vscode/
+*.local.yaml
+*.kubeconfig
+rendered/

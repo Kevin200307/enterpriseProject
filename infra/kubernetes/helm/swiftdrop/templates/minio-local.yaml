@@ -1,0 +1,136 @@
+{{- if .Values.objectStorage.local.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: minio
+  labels:
+    {{- include "swiftdrop.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: minio
+  ports:
+    - {name: s3, port: 9000, targetPort: s3}
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: minio
+  labels:
+    {{- include "swiftdrop.labels" . | nindent 4 }}
+spec:
+  serviceName: minio
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: minio
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/component: minio
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        fsGroup: 10001
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: minio
+          image: {{ .Values.objectStorage.local.serverImage | quote }}
+          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+          args: ["server", "/data", "--console-address", ":9001"]
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: {drop: ["ALL"]}
+          env:
+            - {name: HOME, value: /tmp}
+            - name: MINIO_ROOT_USER
+              valueFrom:
+                secretKeyRef: {name: {{ .Values.existingSecret }}, key: MINIO_ACCESS_KEY}
+            - name: MINIO_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef: {name: {{ .Values.existingSecret }}, key: MINIO_SECRET_KEY}
+          ports:
+            - {name: s3, containerPort: 9000}
+          startupProbe:
+            httpGet: {path: /minio/health/live, port: s3}
+            failureThreshold: 30
+            periodSeconds: 5
+          readinessProbe:
+            httpGet: {path: /minio/health/ready, port: s3}
+          livenessProbe:
+            httpGet: {path: /minio/health/live, port: s3}
+          resources:
+            requests: {cpu: 100m, memory: 256Mi}
+            limits: {cpu: "1", memory: 512Mi}
+          volumeMounts:
+            - {name: data, mountPath: /data}
+            - {name: tmp, mountPath: /tmp}
+      volumes:
+        - name: tmp
+          emptyDir: {sizeLimit: 64Mi}
+  volumeClaimTemplates:
+    - metadata: {name: data}
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests: {storage: {{ .Values.objectStorage.local.storage }}}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: minio-bucket-{{ .Release.Revision }}
+  labels:
+    {{- include "swiftdrop.labels" . | nindent 4 }}
+spec:
+  backoffLimit: 1
+  activeDeadlineSeconds: 180
+  ttlSecondsAfterFinished: 86400
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/component: minio-init
+    spec:
+      restartPolicy: Never
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: bucket
+          image: {{ .Values.objectStorage.local.clientImage | quote }}
+          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+          command: ["/bin/sh", "-ec"]
+          args:
+            - |
+              until mc alias set local "$MINIO_ENDPOINT" "$MINIO_ACCESS_KEY" "$MINIO_SECRET_KEY" >/dev/null 2>&1; do sleep 2; done
+              mc mb --ignore-existing "local/$MINIO_PROOF_BUCKET"
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: ["ALL"]}
+          env:
+            - {name: HOME, value: /tmp}
+            - {name: MINIO_ENDPOINT, value: {{ .Values.objectStorage.endpoint | quote }}}
+            - {name: MINIO_PROOF_BUCKET, value: {{ .Values.objectStorage.bucket | quote }}}
+            - name: MINIO_ACCESS_KEY
+              valueFrom:
+                secretKeyRef: {name: {{ .Values.existingSecret }}, key: MINIO_ACCESS_KEY}
+            - name: MINIO_SECRET_KEY
+              valueFrom:
+                secretKeyRef: {name: {{ .Values.existingSecret }}, key: MINIO_SECRET_KEY}
+          resources:
+            requests: {cpu: 25m, memory: 32Mi}
+            limits: {cpu: 250m, memory: 128Mi}
+          volumeMounts:
+            - {name: tmp, mountPath: /tmp}
+      volumes:
+        - name: tmp
+          emptyDir: {sizeLimit: 32Mi}
+{{- end }}

@@ -1,0 +1,2 @@
+{{- $webEnv := "- name: API_BASE_URL\n  value: {{ .Values.config.webApiBaseUrl | quote }}\n- name: WS_URL\n  value: {{ printf \"%s/ws\" (trimSuffix \"/\" .Values.config.webApiBaseUrl) | quote }}" }}
+{{ include "swiftdrop.applicationWorkload" (dict "root" . "name" "web" "env" $webEnv) }}

@@ -1,0 +1,482 @@
+[
+  {
+    "page": 1,
+    "id": "cover",
+    "title": "Architecture & DevOps",
+    "part": ""
+  },
+  {
+    "page": 2,
+    "id": "about",
+    "title": "ඔබට අවශ්‍ය project understanding එක",
+    "part": "මෙම පොත භාවිත කරන්න"
+  },
+  {
+    "page": 3,
+    "id": "contents-1",
+    "title": "පටුන · 1 / 3",
+    "part": "පටුන"
+  },
+  {
+    "page": 4,
+    "id": "contents-2",
+    "title": "පටුන · 2 / 3",
+    "part": "පටුන"
+  },
+  {
+    "page": 5,
+    "id": "contents-3",
+    "title": "පටුන · 3 / 3",
+    "part": "පටුන"
+  },
+  {
+    "page": 6,
+    "id": "business",
+    "title": "මුලින්ම ව්‍යාපාරය තේරුම් ගනිමු",
+    "part": "01 / පද්ධතිය මුල සිට තේරුම් ගැනීම"
+  },
+  {
+    "page": 7,
+    "id": "devops-role",
+    "title": "DevOps engineer කෙනෙකුගේ වගකීම",
+    "part": "01 / පද්ධතිය මුල සිට තේරුම් ගැනීම"
+  },
+  {
+    "page": 8,
+    "id": "views",
+    "title": "Architecture එක රූප කිහිපයකින් බලමු",
+    "part": "01 / පද්ධතිය මුල සිට තේරුම් ගැනීම"
+  },
+  {
+    "page": 9,
+    "id": "context",
+    "title": "System context: ඇතුළත සහ පිටත",
+    "part": "01 / පද්ධතිය මුල සිට තේරුම් ගැනීම"
+  },
+  {
+    "page": 10,
+    "id": "architecture",
+    "title": "සම්පූර්ණ application architecture",
+    "part": "01 / පද්ධතිය මුල සිට තේරුම් ගැනීම"
+  },
+  {
+    "page": 11,
+    "id": "communication",
+    "title": "Synchronous සහ asynchronous වැඩ",
+    "part": "01 / පද්ධතිය මුල සිට තේරුම් ගැනීම"
+  },
+  {
+    "page": 12,
+    "id": "design-tradeoffs",
+    "title": "තාක්ෂණ තේරීම්වල වාසි සහ වියදම්",
+    "part": "01 / පද්ධතිය මුල සිට තේරුම් ගැනීම"
+  },
+  {
+    "page": 13,
+    "id": "repository",
+    "title": "Repository එක කියවීමේ මාර්ගය",
+    "part": "01 / පද්ධතිය මුල සිට තේරුම් ගැනීම"
+  },
+  {
+    "page": 14,
+    "id": "code-reading",
+    "title": "Java code එක අර්ථයෙන් කියවමු",
+    "part": "01 / පද්ධතිය මුල සිට තේරුම් ගැනීම"
+  },
+  {
+    "page": 15,
+    "id": "runtime",
+    "title": "Process, port සහ filesystem",
+    "part": "01 / පද්ධතිය මුල සිට තේරුම් ගැනීම"
+  },
+  {
+    "page": 16,
+    "id": "http",
+    "title": "HTTP, DNS සහ TLS මූලික සංකල්ප",
+    "part": "01 / පද්ධතිය මුල සිට තේරුම් ගැනීම"
+  },
+  {
+    "page": 17,
+    "id": "network",
+    "title": "Browser network සහ cluster network",
+    "part": "01 / පද්ධතිය මුල සිට තේරුම් ගැනීම"
+  },
+  {
+    "page": 18,
+    "id": "frontend",
+    "title": "Frontend එක deploy වන හැටි",
+    "part": "01 / පද්ධතිය මුල සිට තේරුම් ගැනීම"
+  },
+  {
+    "page": 19,
+    "id": "auth",
+    "title": "JWT සහ trust boundary",
+    "part": "01 / පද්ධතිය මුල සිට තේරුම් ගැනීම"
+  },
+  {
+    "page": 20,
+    "id": "sessions",
+    "title": "Session, refresh සහ roles",
+    "part": "02 / Requests, business rules සහ data ගමන"
+  },
+  {
+    "page": 21,
+    "id": "data-ownership",
+    "title": "කවර data එකට අයිතිය කාටද?",
+    "part": "02 / Requests, business rules සහ data ගමන"
+  },
+  {
+    "page": 22,
+    "id": "sql-transactions",
+    "title": "Database සහ transaction එක සරලව",
+    "part": "02 / Requests, business rules සහ data ගමන"
+  },
+  {
+    "page": 23,
+    "id": "data-model",
+    "title": "Data model එකේ සම්බන්ධතා",
+    "part": "02 / Requests, business rules සහ data ගමන"
+  },
+  {
+    "page": 24,
+    "id": "booking",
+    "title": "එක booking request එක පසුපස යමු",
+    "part": "02 / Requests, business rules සහ data ගමන"
+  },
+  {
+    "page": 25,
+    "id": "idempotency",
+    "title": "Retry එකෙන් duplicate booking නොවීමට",
+    "part": "02 / Requests, business rules සහ data ගමන"
+  },
+  {
+    "page": 26,
+    "id": "pricing",
+    "title": "Pricing එක වෙනම service එකක් ඇයි?",
+    "part": "02 / Requests, business rules සහ data ගමන"
+  },
+  {
+    "page": 27,
+    "id": "lifecycle",
+    "title": "Parcel state machine එක",
+    "part": "02 / Requests, business rules සහ data ගමන"
+  },
+  {
+    "page": 28,
+    "id": "outbox",
+    "title": "Transactional outbox එක අවශ්‍ය ඇයි?",
+    "part": "02 / Requests, business rules සහ data ගමන"
+  },
+  {
+    "page": 29,
+    "id": "rabbitmq",
+    "title": "RabbitMQ: exchange, queue සහ ack",
+    "part": "02 / Requests, business rules සහ data ගමන"
+  },
+  {
+    "page": 30,
+    "id": "dedup",
+    "title": "Duplicates, ordering සහ dead letters",
+    "part": "02 / Requests, business rules සහ data ගමන"
+  },
+  {
+    "page": 31,
+    "id": "tracking",
+    "title": "Tracking read model සහ Redis",
+    "part": "02 / Requests, business rules සහ data ගමන"
+  },
+  {
+    "page": 32,
+    "id": "realtime",
+    "title": "WebSocket, SSE සහ polling",
+    "part": "02 / Requests, business rules සහ data ගමන"
+  },
+  {
+    "page": 33,
+    "id": "notifications",
+    "title": "Email සහ SMS pipeline එක",
+    "part": "02 / Requests, business rules සහ data ගමන"
+  },
+  {
+    "page": 34,
+    "id": "merchant",
+    "title": "Merchant order එකේ data consistency",
+    "part": "02 / Requests, business rules සහ data ගමන"
+  },
+  {
+    "page": 35,
+    "id": "webhooks",
+    "title": "Webhook යනු පිටතට යන request එකක්",
+    "part": "02 / Requests, business rules සහ data ගමන"
+  },
+  {
+    "page": 36,
+    "id": "dispatch",
+    "title": "Dispatch command එක සහ reconciliation",
+    "part": "02 / Requests, business rules සහ data ගමන"
+  },
+  {
+    "page": 37,
+    "id": "proofs",
+    "title": "Object storage සහ proof-of-delivery",
+    "part": "02 / Requests, business rules සහ data ගමන"
+  },
+  {
+    "page": 38,
+    "id": "assistant",
+    "title": "AI assistant එක architecture එකට එක්වන්නේ කෙසේද?",
+    "part": "02 / Requests, business rules සහ data ගමන"
+  },
+  {
+    "page": 39,
+    "id": "assistant-boundaries",
+    "title": "AI feature එකේ සැබෑ සීමා",
+    "part": "02 / Requests, business rules සහ data ගමන"
+  },
+  {
+    "page": 40,
+    "id": "configuration",
+    "title": "Configuration කොහෙන් එන්නේද?",
+    "part": "03 / Code සිට running environment එක දක්වා"
+  },
+  {
+    "page": 41,
+    "id": "build-artifacts",
+    "title": "Build එක ඇත්තටම සාදන්නේ මොනවාද?",
+    "part": "03 / Code සිට running environment එක දක්වා"
+  },
+  {
+    "page": 42,
+    "id": "supply-chain",
+    "title": "Versions සහ software supply chain",
+    "part": "03 / Code සිට running environment එක දක්වා"
+  },
+  {
+    "page": 43,
+    "id": "environments",
+    "title": "Compose, Kind සහ production වෙන්කර බලන්න",
+    "part": "03 / Code සිට running environment එක දක්වා"
+  },
+  {
+    "page": 44,
+    "id": "deployment-view",
+    "title": "Application map එක Kubernetes වෙත ගැළපීම",
+    "part": "03 / Code සිට running environment එක දක්වා"
+  },
+  {
+    "page": 45,
+    "id": "startup-migrations",
+    "title": "Startup order සහ schema compatibility",
+    "part": "03 / Code සිට running environment එක දක්වා"
+  },
+  {
+    "page": 46,
+    "id": "secrets-tls",
+    "title": "Credentials, certificates සහ rotation",
+    "part": "03 / Code සිට running environment එක දක්වා"
+  },
+  {
+    "page": 47,
+    "id": "cloud-iac",
+    "title": "Cloud topology සහ Infrastructure as Code",
+    "part": "03 / Code සිට running environment එක දක්වා"
+  },
+  {
+    "page": 48,
+    "id": "ci-cd",
+    "title": "CI සහ CD architecture එක",
+    "part": "03 / Code සිට running environment එක දක්වා"
+  },
+  {
+    "page": 49,
+    "id": "release-rollback",
+    "title": "Release එකක් භාරගැනීම සහ rollback",
+    "part": "03 / Code සිට running environment එක දක්වා"
+  },
+  {
+    "page": 50,
+    "id": "failure-map",
+    "title": "Failure එකක බලපෑම කොතැනටද?",
+    "part": "04 / DevOps මෙහෙයුම් සහ failures තේරුම් ගැනීම"
+  },
+  {
+    "page": 51,
+    "id": "probe-semantics",
+    "title": "Healthy, Ready සහ වැඩ කරනවා යන්න",
+    "part": "04 / DevOps මෙහෙයුම් සහ failures තේරුම් ගැනීම"
+  },
+  {
+    "page": 52,
+    "id": "timeouts",
+    "title": "Timeout, retry සහ circuit breaker",
+    "part": "04 / DevOps මෙහෙයුම් සහ failures තේරුම් ගැනීම"
+  },
+  {
+    "page": 53,
+    "id": "capacity",
+    "title": "Capacity ගණනය කරන්නේ කෙසේද?",
+    "part": "04 / DevOps මෙහෙයුම් සහ failures තේරුම් ගැනීම"
+  },
+  {
+    "page": 54,
+    "id": "observability",
+    "title": "Logs, metrics සහ traces එකට භාවිත කරන්න",
+    "part": "04 / DevOps මෙහෙයුම් සහ failures තේරුම් ගැනීම"
+  },
+  {
+    "page": 55,
+    "id": "metrics-reality",
+    "title": "Monitoring YAML එක තිබුණත් වැඩ කරනවාද?",
+    "part": "04 / DevOps මෙහෙයුම් සහ failures තේරුම් ගැනීම"
+  },
+  {
+    "page": 56,
+    "id": "slo",
+    "title": "SLI, SLO සහ error budget",
+    "part": "04 / DevOps මෙහෙයුම් සහ failures තේරුම් ගැනීම"
+  },
+  {
+    "page": 57,
+    "id": "incident-http",
+    "title": "Incident 01: UI load වේ, API fail වේ",
+    "part": "04 / DevOps මෙහෙයුම් සහ failures තේරුම් ගැනීම"
+  },
+  {
+    "page": 58,
+    "id": "incident-events",
+    "title": "Incident 02: booking ඇත, email නැත",
+    "part": "04 / DevOps මෙහෙයුම් සහ failures තේරුම් ගැනීම"
+  },
+  {
+    "page": 59,
+    "id": "incident-auth",
+    "title": "Incident 03: login / refresh අසාර්ථකයි",
+    "part": "04 / DevOps මෙහෙයුම් සහ failures තේරුම් ගැනීම"
+  },
+  {
+    "page": 60,
+    "id": "backup",
+    "title": "Backup, restore සහ disaster recovery",
+    "part": "04 / DevOps මෙහෙයුම් සහ failures තේරුම් ගැනීම"
+  },
+  {
+    "page": 61,
+    "id": "security",
+    "title": "Security boundaries පහක් අඳින්න",
+    "part": "04 / DevOps මෙහෙයුම් සහ failures තේරුම් ගැනීම"
+  },
+  {
+    "page": 62,
+    "id": "production-gaps",
+    "title": "Production පෙර පැහැදිලි කළ යුතු දේ",
+    "part": "04 / DevOps මෙහෙයුම් සහ failures තේරුම් ගැනීම"
+  },
+  {
+    "page": 63,
+    "id": "change-audit",
+    "title": "AI-assisted code change එකක් audit කරමු",
+    "part": "04 / DevOps මෙහෙයුම් සහ failures තේරුම් ගැනීම"
+  },
+  {
+    "page": 64,
+    "id": "test-confidence",
+    "title": "Test එකක් කියන්නේ කුමන සාක්ෂියක්ද?",
+    "part": "04 / DevOps මෙහෙයුම් සහ failures තේරුම් ගැනීම"
+  },
+  {
+    "page": 65,
+    "id": "first-day",
+    "title": "පළමු දවසේ code walkthrough එක",
+    "part": "05 / තනිවම පද්ධතිය භාරගැනීමට පුහුණුව"
+  },
+  {
+    "page": 66,
+    "id": "readonly-lab",
+    "title": "Read-only lab: map එක runtime එකට සම්බන්ධ කරන්න",
+    "part": "05 / තනිවම පද්ධතිය භාරගැනීමට පුහුණුව"
+  },
+  {
+    "page": 67,
+    "id": "workflow-lab",
+    "title": "Guided lab: එක journey එක තහවුරු කරන්න",
+    "part": "05 / තනිවම පද්ධතිය භාරගැනීමට පුහුණුව"
+  },
+  {
+    "page": 68,
+    "id": "design-exercises",
+    "title": "Design exercises සහ පිළිතුරු",
+    "part": "05 / තනිවම පද්ධතිය භාරගැනීමට පුහුණුව"
+  },
+  {
+    "page": 69,
+    "id": "learning-plan",
+    "title": "දින 30ක ඉගෙනීමේ මාර්ගය",
+    "part": "05 / තනිවම පද්ධතිය භාරගැනීමට පුහුණුව"
+  },
+  {
+    "page": 70,
+    "id": "handover",
+    "title": "Project එක භාරගැනීමට අවශ්‍ය pack එක",
+    "part": "05 / තනිවම පද්ධතිය භාරගැනීමට පුහුණුව"
+  },
+  {
+    "page": 71,
+    "id": "glossary-system",
+    "title": "Architecture සහ data පද",
+    "part": "අතිරේක A / ශබ්දකෝෂය"
+  },
+  {
+    "page": 72,
+    "id": "glossary-ops",
+    "title": "DevOps සහ operations පද",
+    "part": "අතිරේක A / ශබ්දකෝෂය"
+  },
+  {
+    "page": 73,
+    "id": "source-code-1",
+    "title": "Code map · 1 / 5",
+    "part": "අතිරේක B / Source reading index"
+  },
+  {
+    "page": 74,
+    "id": "source-code-2",
+    "title": "Code map · 2 / 5",
+    "part": "අතිරේක B / Source reading index"
+  },
+  {
+    "page": 75,
+    "id": "source-code-3",
+    "title": "Code map · 3 / 5",
+    "part": "අතිරේක B / Source reading index"
+  },
+  {
+    "page": 76,
+    "id": "source-code-4",
+    "title": "Code map · 4 / 5",
+    "part": "අතිරේක B / Source reading index"
+  },
+  {
+    "page": 77,
+    "id": "source-code-5",
+    "title": "Code map · 5 / 5",
+    "part": "අතිරේක B / Source reading index"
+  },
+  {
+    "page": 78,
+    "id": "references-1",
+    "title": "මූලාශ්‍ර · 1 / 3",
+    "part": "අතිරේක C / නිල මූලාශ්‍ර"
+  },
+  {
+    "page": 79,
+    "id": "references-2",
+    "title": "මූලාශ්‍ර · 2 / 3",
+    "part": "අතිරේක C / නිල මූලාශ්‍ර"
+  },
+  {
+    "page": 80,
+    "id": "references-3",
+    "title": "මූලාශ්‍ර · 3 / 3",
+    "part": "අතිරේක C / නිල මූලාශ්‍ර"
+  }
+]

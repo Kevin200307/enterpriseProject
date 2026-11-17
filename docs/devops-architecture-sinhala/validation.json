@@ -1,0 +1,21 @@
+{
+  "pdf": "SwiftDrop-Architecture-and-DevOps-Sinhala.pdf",
+  "pages": 80,
+  "sinhala_characters": 22604,
+  "links": 378,
+  "internal_page_links": 299,
+  "external_links": 79,
+  "outline_items": 83,
+  "code_examples": 19,
+  "diagrams": 22,
+  "bytes": 2560437,
+  "layout_overflow": 0,
+  "missing_sinhala_glyphs": [],
+  "fonts_self_contained": true,
+  "font": "Noto Sans Sinhala (SIL OFL; embedded glyph resources)",
+  "reference_review": "2026-11-16",
+  "runtime_evidence": "Repository implementation record; no cluster changes performed for this book.",
+  "source_files": 42,
+  "source_commit": "3aedc20fbb748a57a9f4121310bb961ba53a50b9",
+  "source_working_tree_dirty": true
+}

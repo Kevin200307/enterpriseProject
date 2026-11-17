@@ -96,7 +96,8 @@ public class SecurityConfig {
 								"/docs", "/docs/**",
 								"/swagger-ui.html", "/swagger-ui/**", "/webjars/**",
 								"/v3/api-docs", "/v3/api-docs/**",
-								"/actuator/health")
+								"/actuator/health",
+								"/actuator/health/liveness", "/actuator/health/readiness")
 								.permitAll()
 						.anyExchange().authenticated())
 				.exceptionHandling(exceptions -> exceptions

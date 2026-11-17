@@ -35,7 +35,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         if checkpoint_url is None:
             yield
         else:
-            async with postgres_checkpointer(checkpoint_url.get_secret_value()) as saver:
+            async with postgres_checkpointer(
+                checkpoint_url.get_secret_value(), setup=resolved.checkpoint_auto_setup
+            ) as saver:
                 application.state.assistant_runner = AssistantRunner(
                     application.state.parcel_client,
                     application.state.pricing_client,

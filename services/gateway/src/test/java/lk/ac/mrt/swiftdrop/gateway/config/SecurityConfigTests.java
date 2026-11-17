@@ -31,7 +31,8 @@ import org.springframework.mock.http.server.reactive.MockServerHttpResponse;
 				"gateway.browser.origins=http://localhost:5173,http://localhost:5174",
 				"spring.cloud.gateway.server.webflux.httpclient.connect-timeout=100",
 				"spring.cloud.gateway.server.webflux.httpclient.response-timeout=500ms",
-				"resilience4j.timelimiter.configs.default.timeout-duration=500ms"
+				"resilience4j.timelimiter.configs.default.timeout-duration=500ms",
+				"management.endpoint.health.probes.enabled=true"
 		})
 class SecurityConfigTests {
 
@@ -168,6 +169,23 @@ class SecurityConfigTests {
 				.exchange()
 				.expectStatus().value(status ->
 						org.assertj.core.api.Assertions.assertThat(status).isNotEqualTo(401));
+	}
+
+	@Test
+	void kubernetesProbesAreAnonymousWhenDownstreamServicesAreUnavailable() {
+		for (String group : new String[] { "liveness", "readiness" }) {
+			client.get()
+					.uri("/actuator/health/" + group)
+					.exchange()
+					.expectStatus().isOk()
+					.expectBody().jsonPath("$.status").isEqualTo("UP");
+		}
+	}
+
+	@Test
+	void otherActuatorPathsRemainProtected() {
+		client.get().uri("/actuator/env").exchange().expectStatus().isUnauthorized();
+		client.get().uri("/actuator/health/downstream").exchange().expectStatus().isUnauthorized();
 	}
 
 	@Test

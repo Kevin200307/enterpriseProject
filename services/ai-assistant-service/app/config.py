@@ -37,6 +37,7 @@ class Settings(BaseSettings):
     assistant_database_url: SecretStr | None = None
     conversation_retention_days: int = Field(default=30, ge=1, le=365)
     checkpoint_database_url: SecretStr | None = None
+    checkpoint_auto_setup: bool = True
     redis_url: SecretStr | None = None
     assistant_requests_per_hour: int = Field(default=20, ge=1, le=1000)
     max_model_calls_per_turn: int = Field(default=2, ge=1, le=5)

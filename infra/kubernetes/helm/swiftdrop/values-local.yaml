@@ -1,0 +1,58 @@
+global:
+  environment: local
+  imagePullPolicy: Never
+
+namespacePolicy:
+  create: false
+  enforce: baseline
+
+config:
+  webOrigins: http://localhost:8088,http://swiftdrop.local:8088
+  webApiBaseUrl: http://localhost:8088
+
+# Allow the Java services to start together on a shared Docker Desktop CPU allocation.
+probes:
+  startup:
+    failureThreshold: 120
+
+services:
+  web: {replicas: 1, image: {repository: swiftdrop/web, tag: dev}}
+  gateway: {replicas: 1, image: {repository: swiftdrop/gateway, tag: dev}}
+  identity-service: {replicas: 1, image: {repository: swiftdrop/identity-service, tag: dev}}
+  parcel-service: {replicas: 1, image: {repository: swiftdrop/parcel-service, tag: dev}}
+  pricing-service: {replicas: 1, image: {repository: swiftdrop/pricing-service, tag: dev}}
+  dispatch-service: {replicas: 1, image: {repository: swiftdrop/dispatch-service, tag: dev}}
+  merchant-service: {replicas: 1, image: {repository: swiftdrop/merchant-service, tag: dev}}
+  tracking-service: {replicas: 1, image: {repository: swiftdrop/tracking-service, tag: dev}}
+  notification-service: {replicas: 1, image: {repository: swiftdrop/notification-service, tag: dev}}
+  ai-assistant-service: {replicas: 1, image: {repository: swiftdrop/ai-assistant-service, tag: dev}}
+
+redis:
+  enabled: true
+
+rabbitmq:
+  enabled: true
+
+mailpit:
+  enabled: true
+
+localPostgresql:
+  enabled: true
+
+objectStorage:
+  endpoint: http://minio:9000
+  # Use kubectl port-forward for signed object URLs; object storage stays private in Kubernetes.
+  publicEndpoint: http://localhost:9000
+  local:
+    enabled: true
+
+ingress:
+  enabled: true
+  host: swiftdrop.local
+  additionalHosts: [localhost]
+
+autoscaling:
+  enabled: false
+
+podDisruptionBudget:
+  enabled: false

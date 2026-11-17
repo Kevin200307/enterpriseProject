@@ -7,19 +7,22 @@ FROM eclipse-temurin:21-jdk-alpine AS build
 WORKDIR /build
 
 COPY .mvn/ .mvn/
+COPY infra/kubernetes/maven-settings.xml ./maven-settings.xml
 COPY mvnw ./
 RUN sed -i 's/\r$//' mvnw && chmod +x mvnw
 
 COPY packages/common/ packages/common/
 COPY services/parcel-service/pom.xml services/parcel-service/
 COPY services/parcel-service/src/ services/parcel-service/src/
+COPY infra/kubernetes/migrations/DatabaseMigration.java ./
 
 # sharing=locked: every service build installs the contracts jar into this shared cache.
 RUN --mount=type=cache,target=/root/.m2,sharing=locked \
-    ./mvnw -B -DskipTests -f packages/common/pom.xml install \
-    && ./mvnw -B -DskipTests -f services/parcel-service/pom.xml package \
+    ./mvnw -B -s maven-settings.xml -DskipTests -f packages/common/pom.xml install \
+    && ./mvnw -B -s maven-settings.xml -DskipTests -f services/parcel-service/pom.xml package \
     && cp services/parcel-service/target/*.jar application.jar \
-    && java -Djarmode=tools -jar application.jar extract --layers --destination extracted
+    && java -Djarmode=tools -jar application.jar extract --layers --destination extracted \
+    && javac -cp 'extracted/dependencies/lib/*' -d migration-runner DatabaseMigration.java
 
 ##### Stage 2: runtime image #####
 FROM eclipse-temurin:21-jre-alpine AS runtime
@@ -32,6 +35,7 @@ COPY --from=build --chown=spring:spring /build/extracted/dependencies/ ./
 COPY --from=build --chown=spring:spring /build/extracted/spring-boot-loader/ ./
 COPY --from=build --chown=spring:spring /build/extracted/snapshot-dependencies/ ./
 COPY --from=build --chown=spring:spring /build/extracted/application/ ./
+COPY --from=build --chown=spring:spring /build/migration-runner/ ./migration-runner/
 
 EXPOSE 8080
 

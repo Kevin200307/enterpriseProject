@@ -8,3 +8,14 @@ pricingv1plan.md
 dispatchv1plan.md
 trackingv1plan.md
 agentcommitplan.md
+
+
+# Local Kubernetes state and rendered secrets
+infra/kubernetes/.kube/
+infra/kubernetes/rendered/
+infra/kubernetes/**/*secret*.local.yaml
+infra/kubernetes/**/*.kubeconfig
+.venv-k8s/
+infra/kubernetes/**/target/
+infra/kubernetes/**/__pycache__/
+infra/kubernetes/**/.pytest_cache/

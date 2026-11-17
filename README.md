@@ -58,7 +58,8 @@ Microservices behind an API gateway that also acts as a backend-for-frontend. Ni
 units: seven Spring Boot domain services, one Python assistant service, plus the gateway.
 
 **Database per service.** Six services own a PostgreSQL database each, tracking-service keeps its
-read projection entirely in Redis, and the AI assistant holds no durable state. No service has a
+read projection entirely in Redis, and the AI assistant can persist conversations and checkpoints
+in its own PostgreSQL database. No service has a
 foreign key into another service's database; cross-boundary references are UUID columns enforced in
 application code.
 
@@ -107,8 +108,8 @@ reattempted, so the graph contains a cycle.
 | Messaging | RabbitMQ 3, topic exchange `parcel.events`, dead-letter exchange `swiftdrop.dlx` |
 | Object storage | MinIO (proof-of-delivery photos) |
 | Mail | Mailpit locally, SMTP in deployed environments |
-| AI | Spring AI with an OpenAI-compatible provider |
-| Orchestration | Docker Compose |
+| AI | Python FastAPI, LangGraph, Gemini |
+| Orchestration | Docker Compose for development; Helm and Kind Kubernetes implementation |
 
 ---
 
@@ -258,6 +259,8 @@ must be running. Tests that require Docker skip themselves when it is unavailabl
 | [`docs/DESIGN.md`](docs/DESIGN.md) | Full design pack: use case diagrams, ER model, architecture and justification, integration patterns, sequence diagrams, design patterns, and a record of known defects |
 | [`docs/diagrams/`](docs/diagrams/) | 18 rendered diagrams as PNG. The Mermaid or PlantUML source for each is embedded in `DESIGN.md` |
 | [`report/SwiftDrop_Project_Report.pdf`](report/SwiftDrop_Project_Report.pdf) | Academic project report, 46 pages, all diagrams embedded |
+| [Kubernetes A–Z — Sinhala PDF book](docs/kubernetes-sinhala/SwiftDrop-Kubernetes-A-Z-Sinhala.pdf) | Kubernetes fundamentals, deployment, application workflows, CI/CD, security and recovery; editable sources and rebuild instructions in [`docs/kubernetes-sinhala/`](docs/kubernetes-sinhala/) |
+| [Architecture & DevOps — Sinhala PDF book](docs/devops-architecture-sinhala/SwiftDrop-Architecture-and-DevOps-Sinhala.pdf) | Understand the project from business journeys through source code, networking, data, events, delivery and operations; guided labs, source references and a 30-day learning plan |
 | Service READMEs | Each service documents its own API contracts and configuration |
 
 Every claim in the design pack and report was verified against the source code. Where behaviour
@@ -270,10 +273,14 @@ diverges from the intended design, it is recorded rather than smoothed over.
 The platform runs end to end: authentication, pricing, booking, dispatch, courier workflow, live
 tracking, notifications and the merchant API are all implemented and covered by tests.
 
+The [local Kubernetes deployment](infra/kubernetes/README.md) has been verified on Kind with all
+ten applications ready. Ingress tests cover customer authentication, pricing, idempotent booking,
+tracking, email delivery, cancellation, assistant SSE, and conversation persistence across an
+assistant restart.
+
 Designed and documented, but not yet built:
 
-- Kubernetes deployment via an umbrella Helm chart, with autoscaling on the edge and tracking
-  workloads
+- Production Kubernetes deployment, enforced network isolation, load testing, and full disaster recovery validation
 - Playwright browser end-to-end smoke tests
 - Write-capable AI assistant tools (booking, dispatch assignment, merchant operations); the three
   existing tools are read-only

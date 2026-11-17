@@ -1,0 +1,5 @@
+__pycache__/
+layout-issues.json
+assets/preview-*.png
+assets/pdf-check-*.png
+book-render.tmp.pdf

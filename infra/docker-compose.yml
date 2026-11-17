@@ -325,7 +325,7 @@ services:
       context: ../apps/web
       dockerfile: Dockerfile
     ports:
-      - "${WEB_HOST_PORT:-5174}:80"
+      - "${WEB_HOST_PORT:-5174}:8080"
     environment:
       API_BASE_URL: ${WEB_API_BASE_URL:-http://localhost:8081}
       ASSISTANT_ENABLED: ${ASSISTANT_ENABLED:-true}

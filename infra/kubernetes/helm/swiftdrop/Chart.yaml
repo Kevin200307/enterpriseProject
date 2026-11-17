@@ -1,0 +1,7 @@
+apiVersion: v2
+name: swiftdrop
+description: Helm deployment for the SwiftDrop delivery platform
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+kubeVersion: ">=1.29.0-0"
